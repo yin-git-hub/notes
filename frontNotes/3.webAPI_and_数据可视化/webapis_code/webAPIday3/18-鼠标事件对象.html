@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <style>
+      body {
+        height: 3000px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div>
+      <span class="q1"></span>,
+      <span class="q2"></span>
+    </div>
+    <div>
+      <span class="q11"></span>,
+      <span class="q22"></span>
+    </div>
+    <div>
+      <span class="q111"></span>,
+      <span class="q222"></span>
+    </div>
+    <script>
+      // 鼠标事件对象 MouseEvent
+      document.addEventListener("mousemove", function (e) {
+        var d1 = document.querySelector(".q1");
+        var d2 = document.querySelector(".q2");
+        var d11 = document.querySelector(".q11");
+        var d22 = document.querySelector(".q22");
+        var d111 = document.querySelector(".q111");
+        var d222 = document.querySelector(".q222");
+        // 1. client 鼠标在可视区的x和y坐标
+        d1.innerHTML = e.clientX;
+        d2.innerHTML = e.clientY;
+        d11.innerHTML = e.pageX;
+        d22.innerHTML = e.pageY;
+        d111.innerHTML = e.screenX;
+        d222.innerHTML = e.screenY;
+        console.log(e.clientX);
+        console.log(e.clientY);
+        console.log("---------------------");
+
+        // 2. page 鼠标在页面文档的x和y坐标
+        console.log(e.pageX);
+        console.log(e.pageY);
+        console.log("---------------------");
+
+        // 3. screen 鼠标在电脑屏幕的x和y坐标
+        console.log(e.screenX);
+        console.log(e.screenY);
+      });
+    </script>
+  </body>
+</html>

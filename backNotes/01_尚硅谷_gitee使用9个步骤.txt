@@ -1,0 +1,78 @@
+gitee使用 9个步骤：
+
+1.创建项目，初始化项目，并设置项目账号
+	①创建项目  D:\workspace\java01\giteedemo
+	②初始化本地库  git init  (在项目当前目录下，执行命令)
+		生成.git文件夹，它就是本地库。注意，隐含文件夹。
+	②设置项目账号，如果不设置采用全局账号
+		全局账号：~/.gitconfig
+		局部账号：.git/config
+			git config user.name "zhangsanatguigu"
+			git config user.email "dev111_atguigu@163.com"
+		全局和局部同时存在，局部生效。没有配置局部，全局生效。
+		
+2.开发代码，并且进行提交操作
+	git add .
+	git commit -m "xxx"
+		
+3.注册号gitee账号，并在gitee上创建远程库
+	远程库会生成url，客户端可以通过url远程访问远程库
+	https://gitee.com/zhangsanatguigu/giteedemo  基于用户名和密码访问方式
+	
+4.映射远程库地址，给url定义别名，简化操作，push本地库代码到远程库上
+	git remote add origin https://gitee.com/zhangsanatguigu/giteedemo
+	git push origin master
+		需要输入gitee账号和密码
+--------------------------------------------------------------------------------
+5.克隆别人仓库
+	git clone https://gitee.com/zhangsanatguigu/giteedemo giteedemo
+	
+	指定克隆仓库路径 以及克隆到本地项目自定义名称。
+	可以克隆提交者配置的url映射。但是不能克隆提交者的账号(.git/config)。
+
+6.配置账号，不用再初始化仓库了，clone就初始化好了这个仓库
+	
+			局部账号：.git/config
+			git config user.name "lisiatguigu"
+			git config user.email "dev222_atguigu@163.com"
+
+7.修改代码并提交
+	git add 
+	git commit -m ""
+
+8.push代码到远程库，需要建立合作伙伴关系，否则，不允许push
+	①演示不是合作伙伴关系会怎样，提交时需要输入丽思的账号和密码。但是库拥有者是张三，所以无权访问。
+		$ git push origin master
+			remote: Permission to zhangsanatguigu/giteedemo.git denied to lisiatguigu.
+			fatal: unable to access 'https://gitee.com/zhangsanatguigu/giteedemo': The requested URL returned error: 403
+		
+	②演示建立合作伙伴关系（张三向丽思发起合作伙伴邀请，丽思同意邀请）
+		$ git push origin master
+		
+			Enumerating objects: 5, done.
+			Counting objects: 100% (5/5), done.
+			Delta compression using up to 12 threads
+			Compressing objects: 100% (2/2), done.
+			Writing objects: 100% (3/3), 286 bytes | 143.00 KiB/s, done.
+			Total 3 (delta 0), reused 0 (delta 0)
+			remote: Powered by GITEE.COM [GNK-5.0]
+			To https://gitee.com/zhangsanatguigu/giteedemo
+			   403f48f..f0ef7c2  master -> master
+
+
+9.张三需要更新丽思远程库代码到本地库
+	git pull origin master
+
+
+
+
+
+
+
+
+
+
+
+
+
+
