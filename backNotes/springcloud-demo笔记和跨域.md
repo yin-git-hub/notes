@@ -20,7 +20,7 @@
    spring.cloud.gateway.routes[0].uri=http://127.0.0.1:7331 
    spring.cloud.gateway.routes[0].predicates[0]=Path=/water-sty/**
    
-   
+   npm i pinia-plugin-persistedstate
    spring.cloud.gateway.globalcors.cors-configurations.[/**].allowedOriginPatterns=*
    spring.cloud.gateway.globalcors.cors-configurations.[/**].allowedHeaders=*
    spring.cloud.gateway.globalcors.cors-configurations.[/**].allowedMethods=*
