@@ -1,0 +1,1098 @@
+<div class="ant-card-body"><h1 class="ant-typography" data-id="" style="font-size: 30px;">5. 制作工具优化</h1><div class="ant-space ant-space-horizontal ant-space-align-center" style="margin-bottom: 15px; gap: 8px;"><div class="ant-space-item" style=""><a class="text-gray-500" target="_blank" href="/user/1601072287388278786">程序员鱼皮</a></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item" style=""><span class="text-gray-500">2024-08-09 15:57</span></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item"><span class="text-gray-500">阅读 393</span></div></div><div style="margin-bottom: 16px;"></div><div class="course-container"><div class="md-viewer "><div class="markdown-body"><h2 data-id="heading-0">前情回顾</h2>
+<p>在上一期教程中，我们进入了项目的第二阶段 —— 开发代码生成器制作工具。</p>
+<p>我们又将本阶段的需求进行拆解，划分为了 3 大实现步骤：开发基础的代码生成器制作工具、配置文件增强、工具能力增强。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8076543949235371</span></p>
+<p>上期教程我们已经开发了基础的代码生成器制作工具，能够根据配置文件自动生成代码生成器项目、并自动生成 jar 包和脚本文件。</p>
+<p>但是目前的制作工具还存在很多不足，且不说功能不够丰富，项目本身的代码还有一定的问题和优化空间。</p>
+<p>本期教程，让我们先针对之前的制作工具项目进行多个角度的优化，希望能帮大家开拓一些项目优化的思路。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5255079652819368</span></p>
+<h2 data-id="heading-1">本节重点</h2>
+<p>本节教程属于项目的第二阶段 —— 优化代码生成器制作工具。</p>
+<p>重点内容：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.35565460626420076</span></p>
+<ol>
+<li>可移植性优化</li>
+<li>功能优化</li>
+<li>健壮性优化<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18812333682428695</span></li>
+<li>可扩展性优化</li>
+</ol>
+<h2 data-id="heading-2">一、可移植性优化</h2>
+<h3>什么是可移植性？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16927924772813352</span></h3>
+<p>现在的制作工具存在一个很严重的问题，由于生成代码所依赖的原始模板文件并没有打包到生成的代码生成器项目中，导致我们把代码生成器脚本分享给别人、或者换一个电脑就无法使用了。</p>
+<p>如下图，MainGenerator 生成代码时依赖的 inputRootPath（模板文件路径）是固定的：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/71201afd-bec4-45db-895c-077ec32110d1.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05192137799087071</span></p>
+<p>用一个专业术语总结，现在的程序不具备 <strong>可移植性</strong> 。</p>
+<p>一般来说，程序的可移植性是指程序在不同计算机、操作系统或编程语言环境下能够正确运行的能力。具有良好可移植性的程序能够在不同的环境中轻松运行，而不需要大量的修改或适应工作。</p>
+<p>对应到咱们的项目，可移植性是指能够让程序在不同的计算机上正常运行，而不需要再人工复制项目模板文件和调整路径。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3603254411022583</span></p>
+<p>实现可移植性是至关重要的，有利于代码生成器的分享，并且为了以后将平台线上化做好准备。</p>
+<h3 data-id="heading-4">实现方式</h3>
+<p>如何实现可移植性呢？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4647868522555074</span></p>
+<p>其实很简单，核心思路是“把绝对路径改为相对路径”。只需要把代码生成器依赖的模板文件移动到生成后的代码生成器目录下，比如 <code>.source/项目名</code>；然后在生成器中，就可以通过相对路径找到模板文件了。</p>
+<p>之前的元信息中，我们已经定义了 <code>fileConfig.inputRootPath</code>，用于控制实际生成时的模板文件路径。那么现在我们可以新增 <code>fileConfig.sourceRootPath</code> 字段，表示模板文件所在的原始路径（相当于之前的 <code>fileConfig.inputRootPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15864884963809667</span></code>）。然后将 <code>fileConfig.inputRootPath</code> 改为相对路径，这样就不用修改生成器的代码了。</p>
+<p>修改后的元信息文件如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9865595861019121</span></p>
+<pre><code class="language-json hljs" data-highlighted="yes"><span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4013313875822704</span></span>
+    <span class="hljs-attr">"inputRootPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">".source/acm-template-pro"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0520459306166583</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"outputRootPath"</span><span class="hljs-punctuation">:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7810107078969544</span></span> <span class="hljs-string">"/Users/yupi/Code/yuzi-generator/acm-template-pro"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"sourceRootPath"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10509870213975803</span></span><span class="hljs-punctuation">:</span> <span class="hljs-string">"/Users/yupi/Code/yuzi-generator/yuzi-generator-demo-projects/acm-template-pro"</span><span class="hljs-punctuation">,<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5563146264705865</span></span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"dir"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16418573191415997</span></span>
+<span class="hljs-punctuation">}</span>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5121848780866336</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.33545440526018266</span></pre>
+<p>需要同步修改 <code>Meta.java</code> 实体类，增加 <code>sourceRootPath</code> 字段：</p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@NoArgsConstructor</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6993036359328946</span></span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">FileConfig<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3850095815768726</span></span> {
+    <span class="hljs-keyword">private</span> String inputRootPath;
+    <span class="hljs-keyword">private</span> String outputRootPath;
+    <span class="hljs-keyword">private<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09182593507992176</span></span> String sourceRootPath;
+    <span class="hljs-keyword">private</span> String type;
+    <span class="hljs-keyword">private</span> List&lt;FileInfo&gt; files;
+
+    ...
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6456317352911227</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.021163896206620514</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7108382885187323</span></pre>
+<p>然后在 <code>MainGenerator</code> 中增加复制原始模板文件的逻辑，放到所有生成代码操作之前（即“读取 resources 目录”前面）。</p>
+<p>修改代码如下：</p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainGenerator<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7595471820534769</span></span> {
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8312350444204213</span></span> <span class="hljs-title function_">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.564545813126462</span></span> TemplateException, IOException, InterruptedException {
+    	...
+
+        <span class="hljs-comment">// 输出根路径</span>
+    	...
+
+        <span class="hljs-comment">// 复制原始文件</span>
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16068153708974497</span></span> <span class="hljs-variable">sourceRootPath</span> <span class="hljs-operator">=</span> meta.getFileConfig().getSourceRootPath();
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3982662988435428</span></span> <span class="hljs-variable">sourceCopyDestPath</span> <span class="hljs-operator">=</span> outputPath + File.separator + <span class="hljs-string">".source"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9660373607634112</span></span>;
+        FileUtil.copy(sourceRootPath, sourceCopyDestPath, <span class="hljs-literal">false</span>);
+
+        <span class="hljs-comment">// 读取 resources 目录</span>
+        ...
+    }
+}
+
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9031371953039746</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7035272225668137</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3508193248235061</span></pre>
+<p>然后执行测试，成功在生成的项目中复制了原始模板文件：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/3901861a-7a17-411a-83cb-dcf8b5186155.png" alt="image.png" class="medium-zoom-image"></p>
+<h2>二、功能优化<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.01664598787429039</span></h2>
+<p>先来优化一下制作工具的基本功能，目标是让我们生成的代码生成器项目更规范。</p>
+<h3 data-id="heading-6">1、增加项目介绍文件</h3>
+<p>标准规范的开源项目一般都会在根目录下编写一个 <code>README.md</code> 项目介绍文件，可以帮助用户快速了解整个项目的背景、价值、用法、参与方式等。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18927197809111962</span></p>
+<p>代码生成器作为一个工具，用法介绍是必不可少的，所以我们要让制作工具额外生成一个 README.md 文件。当然这个 README.md 文件还可以有其他的作用，比如加上制作工具作者的水印，为咱们自己的项目引流。</p>
+<p>实现方式和之前类似，读取元信息并使用 FreeMarker 动态生成即可。</p>
+<p>预期生成的 README.md 文件如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.796685337913476</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/da9cc29a-1a6f-4853-93e6-3634a7546cab.png" alt="image.png" class="medium-zoom-image"></p>
+<p>打开制作工具项目，在 <code>resources/templates</code> 目录下新建 <code>README.md.ftl</code> 模板文件，完整代码如下：</p>
+<pre><code class="language-markdown hljs" data-highlighted="yes"><span class="hljs-section"># ${name}</span>
+
+<span class="hljs-quote">&gt; ${description}</span>
+<span class="hljs-quote">&gt;
+&gt; 作者：${author}<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09346954048026856</span></span>
+<span class="hljs-quote">&gt;
+&gt; 基于 [<span class="hljs-string">程序员鱼皮</span>](<span class="hljs-link">https://yuyuanweb.feishu.cn/wiki/Abldw5WkjidySxkKxU2cQdAtnah</span>) 的 [<span class="hljs-string">鱼籽代码生成器项目<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2887894262457562</span></span>](<span class="hljs-link">https://github.com/liyupi/yuzi-generator</span>) 制作，感谢您的使用！<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08032980517799615</span></span>
+
+可以通过命令行交互式输入的方式动态生成想要的项目代码
+
+<span class="hljs-section">## 使用说明</span>
+
+执行项目根目录下的脚本文件：
+
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23603708010707525</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49324256450002113</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8766247914540004</span></pre>
+<p>generator &lt;命令&gt; &lt;选项参数&gt;</p>
+<pre><code data-highlighted="yes" class="hljs language-undefined">
+示例命令：
+
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.33893144095782834</span></pre>
+<p>generator generate &lt;#list modelConfig.models as modelInfo&gt;-${modelInfo.abbr} &lt;/#list&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13964957996727567</span></p>
+<pre><code data-highlighted="yes" class="hljs language-awk">
+<span class="hljs-comment">## 参数说明</span>
+
+&lt;<span class="hljs-comment">#list modelConfig.models as modelInfo&gt;</span>
+<span class="hljs-variable">${modelInfo?index + 1}<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2856826331779019</span></span>）<span class="hljs-variable">${modelInfo.fieldName}</span>
+
+类型：<span class="hljs-variable">${modelInfo.type}</span>
+
+描述：<span class="hljs-variable">${modelInfo.description}<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4098116497943669</span></span>
+
+默认值：<span class="hljs-variable">${modelInfo.defaultValue?c}</span>
+
+缩写： -<span class="hljs-variable">${modelInfo.abbr}</span>
+
+
+&lt;/<span class="hljs-comment">#list&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13887226687466603</span></span>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.41202508921227166</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7465219246661532</span></pre>
+<p>然后在 <code>MainGenerator</code> 生成流程的构建 jar 包代码前增加 README.md 文件的生成，追加代码如下：</p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainGenerator<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.26645002624818237</span></span> {
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8735274678293659</span></span> <span class="hljs-title function_">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0026950366331877085</span></span> TemplateException, IOException, InterruptedException {
+        ...
+        
+        <span class="hljs-comment">// README.md</span>
+        inputFilePath = inputResourcePath + File.separator + <span class="hljs-string">"templates/README.md.ftl"</span>;
+        outputFilePath = outputPath + File.separator + <span class="hljs-string">"README.md"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9636081650397297</span></span>;
+        DynamicFileGenerator.doGenerate(inputFilePath , outputFilePath, meta);
+
+        <span class="hljs-comment">// 构建 jar 包</span>
+        JarGenerator.doGenerate(outputPath);
+
+        ...
+    }
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10387131099494251</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.549829099163536</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5786954621917215</span></pre>
+<p>测试执行，在项目根目录下成功生成了项目介绍文件：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/2d083ebd-36ec-435f-9f9e-ce776c8879b5.png" alt="image.png" class="medium-zoom-image"></p>
+<p>当然，以上模板仅供参考，大家也可以根据自己的想法自定义 README.md 文件。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9308593928701108</span></p>
+<blockquote>
+<p>扩展：可以让 AI 在生成文档的最后，再额外补充一段生成的话术，比如说引导大家点 star</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6564736153945137</span></blockquote>
+<h3 data-id="heading-7">2、制作精简版代码生成器</h3>
+<p>观察制作工具生成的代码生成器，不仅包含了实际执行的 jar 包和脚本文件，还包含了生成器源码、target 目录中的编译代码等文件。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9058054246135394</span></p>
+<p>如下图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/c9e66499-d10e-4b42-8aa9-a79eabbd7bb0.png" alt="image.png" class="medium-zoom-image"></p>
+<p>但其实，对于使用代码生成器的人来说，ta 可能并不关注这些文件，只要能运行脚本就好了。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7714298416689205</span></p>
+<p>所以，我们可以生成更为精简的代码生成器，只需要保留 jar 包、脚本文件、原始模板文件，其他的都不用保留。</p>
+<p>由于项目还在开发阶段，我们不是修改原有的代码生成方式，而是额外生成一套精简版的代码生成器，放到 <code>dist</code> 目录下，便于后续调试、或者交给用户自己选择生成方式。</p>
+<p>实现方式并不难，在 <code>MainGenerator</code> 中新增生成精简版项目的逻辑，放到之前代码的末尾。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05488600422475143</span></p>
+<p>修改后的代码如下：</p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainGenerator<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3436984236289291</span></span> {
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.12493259655814204</span></span> <span class="hljs-title function_">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7717958155904405</span></span> TemplateException, IOException, InterruptedException {
+    	...
+        
+        <span class="hljs-comment">// 封装脚本</span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">shellOutputFilePath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1038647596605009</span></span> <span class="hljs-operator">=</span> outputPath + File.separator + <span class="hljs-string">"generator"</span>;
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9408346637363625</span></span> <span class="hljs-variable">jarName</span> <span class="hljs-operator">=</span> String.format(<span class="hljs-string">"%s-%s-jar-with-dependencies.jar"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3501875046240288</span></span>, meta.getName(), meta.getVersion());
+        <span class="hljs-type">String</span> <span class="hljs-variable">jarPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08531507693994134</span></span> <span class="hljs-string">"target/"</span> + jarName;
+        ScriptGenerator.doGenerate(shellOutputFilePath, jarPath);
+
+        <span class="hljs-comment">// 生成精简版的程序（产物包）</span>
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3376760408349513</span></span> <span class="hljs-variable">distOutputPath</span> <span class="hljs-operator">=</span> outputPath + <span class="hljs-string">"-dist"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5395370955356595</span></span>;
+        <span class="hljs-comment">// - 拷贝 jar 包</span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">targetAbsolutePath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1842398584209124</span></span> <span class="hljs-operator">=</span> distOutputPath + File.separator + <span class="hljs-string">"target"</span>;
+        FileUtil.mkdir(targetAbsolutePath);
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6610815581111285</span></span> <span class="hljs-variable">jarAbsolutePath</span> <span class="hljs-operator">=</span> outputPath + File.separator + jarPath;
+        FileUtil.copy(jarAbsolutePath, targetAbsolutePath, <span class="hljs-literal">true<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9049361207277407</span></span>);
+        <span class="hljs-comment">// - 拷贝脚本文件</span>
+        FileUtil.copy(shellOutputFilePath, distOutputPath, <span class="hljs-literal">true</span>);
+        FileUtil.copy(shellOutputFilePath + <span class="hljs-string">".bat"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3575190403848403</span></span>, distOutputPath, <span class="hljs-literal">true</span>);
+        <span class="hljs-comment">// - 拷贝源模板文件</span>
+        FileUtil.copy(sourceCopyDestPath, distOutputPath, <span class="hljs-literal">true<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9248004334810693</span></span>);
+    }
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8601489073622655</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8255617731066334</span></pre>
+<p>测试执行，看到这次生成的项目多了一个 <code>xxx-dist</code> 目录，里面的文件更少、更轻量：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8129103664020496</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/685fbb75-853f-495e-af7f-af4e72a27697.png" alt="image.png" class="medium-zoom-image"></p>
+<p>如果我们以后要用平台生成很多代码生成器，通过这种方式可以节约存储空间，从而降低成本。</p>
+<h3>其他扩展思路<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5995231447143059</span></h3>
+<h4 data-id="heading-9">支持 Git 托管项目</h4>
+<p>制作工具生成的代码生成器支持使用 Git 版本控制工具来托管，可以根据元信息配置让开发者选择是否开启该特性。</p>
+<p>实现思路：可以通过 Process 执行 <code>git init</code> 命令，并复制 Java 的 <code>.gitignore</code> 模板文件到代码生成器中。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.473054193183184</span></p>
+<h2 data-id="heading-10">三、健壮性优化</h2>
+<h3 data-id="heading-11">什么是健壮性？</h3>
+<p>健壮性是企业开发中至关重要的特性，通常是指程序在不同条件下能否稳定运行。一个健壮的程序能够在各种不同的用户输入和使用方式下，保持正常运行，并且正确处理异常情况，而不是整个程序崩溃或导致严重错误。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6179757706478737</span></p>
+<h3 data-id="heading-12">健壮性优化策略</h3>
+<p>常用的健壮性优化方式有：输入校验、异常处理、故障恢复（比如事务）、自动重试、降级等。</p>
+<p>对于咱们的制作工具项目，影响代码生成结果的、也是需要用户修改的核心内容是元信息配置文件，所以一定要对元信息进行校验、并且用默认值来填充空值，防止用户错误输入导致的异常，从而提高健壮性。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3633333119408231</span></p>
+<h3 data-id="heading-13">元信息校验和默认值填充</h3>
+<h4 data-id="heading-14">1、规则梳理</h4>
+<p>在写代码前，我们要先梳理元信息的每个字段的校验规则和默认值填充规则。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.47948452530522045</span></p>
+<p>注意，跟设计数据表字段一样，每个字段都要考虑！</p>
+<p>建议用表格的形式梳理，会更清晰一些。参考规则如下：</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>字段</th><th>默认值</th><th>校验规则<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.27281484122573474</span></th><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5009244531083317</span></tr><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.02974130465950009</span></thead><tbody><tr><td>name</td><td>my-generator</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10183934731908151</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6884702457215799</span></tr><tr><td>description</td><td>我的模板代码生成器</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3118094735389325</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14245457125435257</span></tr><tr><td>basePackage</td><td>com.yupi</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10243266570227227</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18539944515801698</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.72908360507145</span></tr><tr><td>version</td><td>1.0</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5218395028527514</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2205128189814951</span></tr><tr><td>author</td><td>yupi</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.43182250198355443</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.35458170209541695</span></tr><tr><td>createTime</td><td>当前日期</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.45752077118162693</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4885316236727988</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2843545977867652</span></tr><tr><td>fileConfig.sourceRootPath</td><td></td><td>必填<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1365326722876279</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.48094800438426066</span></tr><tr><td>fileConfig.inputRootPath</td><td>.source + sourceRootPath 的最后一个层级路径</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6612682105776004</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.27568782842706985</span></tr><tr><td>fileConfig.outputRootPath</td><td>当前路径下的 generated</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.012503629242154313</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6295962701386413</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.04493232519364776</span></tr><tr><td>fileConfig.type</td><td>dir</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6026397788641022</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.31043509011845716</span></tr><tr><td>fileConfig.files.inputPath</td><td></td><td>必填<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5411929184196831</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18147861738406212</span></tr><tr><td>fileConfig.files.outputPath</td><td>等于 inputPath</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6024467155109732</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2770372489854087</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07437739514000952</span></tr><tr><td>fileConfig.files.type</td><td>inputPath 有文件后缀（如 .java）为 file，否则为 dir</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.45966152942271465</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.01823086179698441</span></tr><tr><td>fileConfig.files.generateType</td><td>如果文件结尾不为 .ftl，generateType 默认为 static，否则为 dynamic</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09350336162041373</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.43114270239631103</span></tr><tr><td>modelConfig.models.fieldName</td><td></td><td>必填<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8971354724112452</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24728897539694428</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.27795870499698605</span></tr><tr><td>modelConfig.models.description</td><td></td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8954475017532839</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6942806333515237</span></tr><tr><td>modelConfig.models.type</td><td>String</td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23491462979248556</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.40321090245665014</span></tr><tr><td>modelConfig.models.defaultValue</td><td></td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9828069393987564</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8780212085082149</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.26211790380857347</span></tr><tr><td>modelConfig.models.abbr</td><td></td><td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6026716627039765</span></td><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5530996569809243</span></tr><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9657387970099671</span></tbody><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3449613451728568</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13775494164408553</span></table>
+<h4 data-id="heading-15">2、自定义异常类</h4>
+<p>由于元信息校验是一个很重要的操作，所以专门定义一个元信息异常类，便于后续集中处理由于元信息输入错误导致的异常。</p>
+<p>在 <code>maker.meta</code> 目录下新增 <code>MetaException.java</code> 文件，代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.624088663053513</span></p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MetaException<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9610990008332911</span></span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">RuntimeException</span> {
+
+    <span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06986477381560374</span></span> <span class="hljs-title function_">MetaException</span><span class="hljs-params">(String message)</span> {
+        <span class="hljs-built_in">super<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.40361076627464665</span></span>(message);
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-title function_">MetaException</span><span class="hljs-params">(String message, Throwable cause)<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2162502118985019</span></span> {
+        <span class="hljs-built_in">super</span>(message, cause);
+    }
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8310426257345684</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9016679298168919</span></pre>
+<h4 data-id="heading-16">3、编写校验类</h4>
+<p>由于要校验很多字段、有很多不同的规则，可以想象校验代码会比较复杂，所以我们新建一个独立的校验类，而不是把校验和填充默认值的代码混在初始化 Meta 对象的方法中。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6206300030145688</span></p>
+<blockquote>
+<p>由于校验和填充默认值操作都要遍历元信息，所以直接用一个类同时完成这两个操作，简化开发。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3208128193458184</span></blockquote>
+<p>在 <code>maker.meta</code> 目录下新增 <code>MetaValidator.java</code> 文件，编写校验逻辑，完整代码如下：</p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.maker.meta;
+
+<span class="hljs-keyword">import</span> cn.hutool.core.collection.CollectionUtil;
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6903970957550156</span></span> cn.hutool.core.date.DateUtil;
+<span class="hljs-keyword">import</span> cn.hutool.core.io.FileUtil;
+<span class="hljs-keyword">import</span> cn.hutool.core.util.StrUtil;
+
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3576919150542175</span></span> java.io.File;
+<span class="hljs-keyword">import</span> java.nio.file.Paths;
+<span class="hljs-keyword">import</span> java.util.List;
+
+<span class="hljs-comment">/**
+ * 元信息校验
+ */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.01499735237081179</span></span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MetaValidator<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7931487054093531</span></span> {
+    
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5880269251458405</span></span> <span class="hljs-title function_">doValidAndFill</span><span class="hljs-params">(Meta meta)</span> {
+        <span class="hljs-comment">// 基础信息校验和默认值<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9088953385041099</span></span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">name</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08252065396958241</span></span> meta.getName();
+        <span class="hljs-keyword">if</span> (StrUtil.isBlank(name)) {
+            name = <span class="hljs-string">"my-generator"</span>;
+            meta.setName(name);
+        }
+
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5074332339756147</span></span> <span class="hljs-variable">description</span> <span class="hljs-operator">=</span> meta.getDescription();
+        <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5995183055009963</span></span> (StrUtil.isEmpty(description)) {
+            description = <span class="hljs-string">"我的模板代码生成器"</span>;
+            meta.setDescription(description);
+        }
+
+        <span class="hljs-type">String</span> <span class="hljs-variable">author<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.28129021107362573</span></span> <span class="hljs-operator">=</span> meta.getAuthor();
+        <span class="hljs-keyword">if</span> (StrUtil.isEmpty(author)) {
+            author = <span class="hljs-string">"yupi"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3591063667966452</span></span>;
+            meta.setAuthor(author);
+        }
+
+        <span class="hljs-type">String</span> <span class="hljs-variable">basePackage</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.42403334350408284</span></span> meta.getBasePackage();
+        <span class="hljs-keyword">if</span> (StrUtil.isBlank(basePackage)) {
+            basePackage = <span class="hljs-string">"com.yupi"</span>;
+            meta.setBasePackage(basePackage);
+        }
+
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.769068354512723</span></span> <span class="hljs-variable">version</span> <span class="hljs-operator">=</span> meta.getVersion();
+        <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9081290066672778</span></span> (StrUtil.isEmpty(version)) {
+            version = <span class="hljs-string">"1.0"</span>;
+            meta.setVersion(version);
+        }
+
+        <span class="hljs-type">String</span> <span class="hljs-variable">createTime<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9995606930345864</span></span> <span class="hljs-operator">=</span> meta.getCreateTime();
+        <span class="hljs-keyword">if</span> (StrUtil.isEmpty(createTime)) {
+            createTime = DateUtil.now();
+            meta.setCreateTime(createTime);
+        }
+
+        <span class="hljs-comment">// fileConfig 校验和默认值<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08728098950830665</span></span>
+        Meta.<span class="hljs-type">FileConfig</span> <span class="hljs-variable">fileConfig</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.059736955419159354</span></span> meta.getFileConfig();
+        <span class="hljs-keyword">if</span> (fileConfig != <span class="hljs-literal">null</span>) {
+            <span class="hljs-comment">// sourceRootPath：必填<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6724447855808375</span></span>
+            <span class="hljs-type">String</span> <span class="hljs-variable">sourceRootPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4103176344169601</span></span> fileConfig.getSourceRootPath();
+            <span class="hljs-keyword">if</span> (StrUtil.isBlank(sourceRootPath)) {
+                <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.890429157233571</span></span> <span class="hljs-title class_">MetaException</span>(<span class="hljs-string">"未填写 sourceRootPath"</span>);
+            }
+            <span class="hljs-comment">// inputRootPath：.source + sourceRootPath 的最后一个层级路径<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.524121052042009</span></span>
+            <span class="hljs-type">String</span> <span class="hljs-variable">inputRootPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9769224672495769</span></span> fileConfig.getInputRootPath();
+            <span class="hljs-type">String</span> <span class="hljs-variable">defaultInputRootPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7359679640849244</span></span> <span class="hljs-string">".source"</span> + File.separator + FileUtil.getLastPathEle(Paths.get(sourceRootPath)).getFileName().toString();
+            <span class="hljs-keyword">if</span> (StrUtil.isEmpty(inputRootPath)) {
+                fileConfig.setInputRootPath(defaultInputRootPath);
+            }
+            <span class="hljs-comment">// outputRootPath：默认为当前路径下的 generated<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6297944669020437</span></span>
+            <span class="hljs-type">String</span> <span class="hljs-variable">outputRootPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7418603453421719</span></span> fileConfig.getOutputRootPath();
+            <span class="hljs-type">String</span> <span class="hljs-variable">defaultOutputRootPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3760740145059329</span></span> <span class="hljs-string">"generated"</span>;
+            <span class="hljs-keyword">if</span> (StrUtil.isEmpty(outputRootPath)) {
+                fileConfig.setOutputRootPath(defaultOutputRootPath);
+            }
+            <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3411954096301768</span></span> <span class="hljs-variable">fileConfigType</span> <span class="hljs-operator">=</span> fileConfig.getType();
+            <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7218152954411565</span></span> <span class="hljs-variable">defaultType</span> <span class="hljs-operator">=</span> <span class="hljs-string">"dir"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13905332052853536</span></span>;
+            <span class="hljs-keyword">if</span> (StrUtil.isEmpty(fileConfigType)) {
+                fileConfig.setType(defaultType);
+            }
+
+            <span class="hljs-comment">// fileInfo 默认值</span>
+            List&lt;Meta.FileConfig.FileInfo&gt; fileInfoList = fileConfig.getFiles();
+            <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5696786691080944</span></span> (CollectionUtil.isNotEmpty(fileInfoList)) {
+                <span class="hljs-keyword">for</span> (Meta.FileConfig.FileInfo fileInfo : fileInfoList) {
+                    <span class="hljs-comment">// inputPath: 必填</span>
+                    <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9653189505078501</span></span> <span class="hljs-variable">inputPath</span> <span class="hljs-operator">=</span> fileInfo.getInputPath();
+                    <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5525040532111665</span></span> (StrUtil.isBlank(inputPath)) {
+                        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">MetaException<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.028717218530777355</span></span>(<span class="hljs-string">"未填写 inputPath"</span>);
+                    }
+
+                    <span class="hljs-comment">// outputPath: 默认等于 inputPath</span>
+                    <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8587620640127269</span></span> <span class="hljs-variable">outputPath</span> <span class="hljs-operator">=</span> fileInfo.getOutputPath();
+                    <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6320496188777214</span></span> (StrUtil.isEmpty(outputPath)) {
+                        fileInfo.setOutputPath(inputPath);
+                    }
+                    <span class="hljs-comment">// type：默认 inputPath 有文件后缀（如 .java）为 file，否则为 dir</span>
+                    <span class="hljs-type">String</span> <span class="hljs-variable">type<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3152729471554718</span></span> <span class="hljs-operator">=</span> fileInfo.getType();
+                    <span class="hljs-keyword">if</span> (StrUtil.isBlank(type)) {
+                        <span class="hljs-comment">// 无文件后缀<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4086627484755154</span></span>
+                        <span class="hljs-keyword">if</span> (StrUtil.isBlank(FileUtil.getSuffix(inputPath))) {
+                            fileInfo.setType(<span class="hljs-string">"dir"</span>);
+                        } <span class="hljs-keyword">else<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3598012198642069</span></span> {
+                            fileInfo.setType(<span class="hljs-string">"file"</span>);
+                        }
+                    }
+                    <span class="hljs-comment">// generateType：如果文件结尾不为 Ftl，generateType 默认为 static，否则为 dynamic</span>
+                    <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5556749975173492</span></span> <span class="hljs-variable">generateType</span> <span class="hljs-operator">=</span> fileInfo.getGenerateType();
+                    <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2415124101261299</span></span> (StrUtil.isBlank(generateType)) {
+                        <span class="hljs-comment">// 为动态模板</span>
+                        <span class="hljs-keyword">if</span> (inputPath.endsWith(<span class="hljs-string">".ftl"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.30000507802116205</span></span>)) {
+                            fileInfo.setGenerateType(<span class="hljs-string">"dynamic"</span>);
+                        } <span class="hljs-keyword">else</span> {
+                            fileInfo.setGenerateType(<span class="hljs-string">"static"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4425456525431508</span></span>);
+                        }
+                    }
+                }
+            }
+        }
+
+        <span class="hljs-comment">// modelConfig 校验和默认值</span>
+        Meta.<span class="hljs-type">ModelConfig</span> <span class="hljs-variable">modelConfig<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2948639946910687</span></span> <span class="hljs-operator">=</span> meta.getModelConfig();
+        <span class="hljs-keyword">if</span> (modelConfig != <span class="hljs-literal">null<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6496988071088257</span></span>) {
+            List&lt;Meta.ModelConfig.ModelInfo&gt; modelInfoList = modelConfig.getModels();
+            <span class="hljs-keyword">if</span> (CollectionUtil.isNotEmpty(modelInfoList)) {
+                <span class="hljs-keyword">for</span> (Meta.ModelConfig.ModelInfo modelInfo : modelInfoList) {
+                    <span class="hljs-comment">// 输出路径默认值<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.22151468210316771</span></span>
+                    <span class="hljs-type">String</span> <span class="hljs-variable">fieldName</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3591918670940002</span></span> modelInfo.getFieldName();
+                    <span class="hljs-keyword">if</span> (StrUtil.isBlank(fieldName)) {
+                        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5690351663700457</span></span> <span class="hljs-title class_">MetaException</span>(<span class="hljs-string">"未填写 fieldName"</span>);
+                    }
+
+                    <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3882234884609814</span></span> <span class="hljs-variable">modelInfoType</span> <span class="hljs-operator">=</span> modelInfo.getType();
+                    <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8922411308872702</span></span> (StrUtil.isEmpty(modelInfoType)) {
+                        modelInfo.setType(<span class="hljs-string">"String"</span>);
+                    }
+                }
+            }
+        }
+
+    }
+
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6629282810606354</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.503095066196483</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8562307787265444</span></pre>
+<h4 data-id="heading-17">4、圈复杂度优化</h4>
+<p>上面的代码虽然能够运行，但是过于复杂了，所有的校验规则全写在一起，会导致圈复杂度过高。</p>
+<p>圈复杂度（Cyclomatic Complexity）是一种用于评估代码复杂性的软件度量方法。一般情况下，代码的分支判断越多，圈复杂度越高。一般情况下，代码圈复杂度建议 &lt;= 10，不建议超过 20！<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5109479118063862</span></p>
+<p>在 IDEA 中，可以通过 <code>MetricsReloaded</code> 插件来检测代码圈复杂度，如下图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/7fb42184-f471-40ff-a189-e59219a5208e.png" alt="image.png" class="medium-zoom-image"></p>
+<p>找到需要检测圈复杂度的类或方法（此处是 <code>MetaValidator</code>），点击右键 =&gt; 分析 =&gt; 计算圈复杂度：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8160737199188051</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/0b0c0c04-65e9-4357-bf40-c2a7af4de80c.png" alt="image.png" class="medium-zoom-image"></p>
+<p>发现圈复杂度过高：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/b61c0e59-235a-4a2c-ad04-1150d872a0ef.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2821406247625864</span></p>
+<p>在圈复杂度的计算中，通常使用的指标有（这段不用记）：</p>
+<ol>
+<li>COGC (Cyclomatic Complexity)：圈复杂度，是一种通过计算图中的节点、边和连接组件的数量来度量程序复杂性的指标。COGC 通常用于衡量程序中的决策点数量。</li>
+<li>VG (节点个数)：表示图中节点的数量。</li>
+<li>EDGES (边的数量)：表示图中边的数量。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9307909564094508</span></li>
+<li>EVG (Essential VG)：表示程序中的基本节点数，是计算中剔除掉虚拟节点后的节点数量。</li>
+<li>IVG (Inessential VG)：表示程序中的非基本节点数，是计算中保留的虚拟节点数量。</li>
+</ol>
+<p>如何优化圈复杂度呢？最简单的方式就是把一段代码拆分成多个方法。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6819449326392457</span></p>
+<p>下面演示一下，这段儿是体力活~</p>
+<p>1）抽取方法</p>
+<p>我们可以按照元信息配置的层级，将整段代码抽为 3 个方法：基础元信息校验、fileConfig 校验、modelConfig 校验。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1358159989999248</span></p>
+<p>在 IDEA 中可以使用 Refactor 重构能力快速抽取，如下图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/1a8678ab-f41e-45db-82c5-bd1c8ca1a60e.png" alt="image.png" class="medium-zoom-image"></p>
+<p>2）在抽取的方法中使用 <strong>卫语句</strong> ，尽早返回<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14669295114215863</span></p>
+<p>卫语句是在进入主要逻辑之前添加的条件检查语句，以确保程序在执行主要逻辑之前满足某些前提条件，这种技术有助于提高代码的可读性和可维护性。</p>
+<p>在 IDEA 中可以在 if 代码行上按 <code>Alt + Enter</code> 键，使用 Invert If  选项快速反转 if 条件，如下图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/bdfc2d07-f1c4-4e80-baca-9b025f7d79d8.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6475200217876269</span></p>
+<p>3）使用工具类减少判断代码</p>
+<p>比如基础元信息校验中，使用 Hutool 的 <code>StrUtil.blankToDefault</code> 代替 <code>if (StrUtil.isBlank(xxx))</code>，示例代码如下：</p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">String</span> <span class="hljs-variable">name</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09715185488754718</span></span> StrUtil.blankToDefault(meta.getName(), <span class="hljs-string">"my-generator"</span>);
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.46909480478494836</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7010251522157664</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9357262324840008</span></pre>
+<p>4）再次检测圈复杂度，发现平均圈复杂度降低了很多倍：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/40a0792b-a4a6-4666-83b3-3857e7b7a955.png" alt="image.png" class="medium-zoom-image"></p>
+<p>优化后的 <code>MetaValidator</code> 完整代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24659821784783786</span></p>
+<pre><code class="language-java hljs" data-highlighted="yes">vapackage com.yupi.maker.meta;
+
+<span class="hljs-keyword">import</span> cn.hutool.core.collection.CollectionUtil;
+<span class="hljs-keyword">import</span> cn.hutool.core.date.DateUtil;
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.04203922694253204</span></span> cn.hutool.core.io.FileUtil;
+<span class="hljs-keyword">import</span> cn.hutool.core.util.StrUtil;
+
+<span class="hljs-keyword">import</span> java.io.File;
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8092741768177725</span></span> java.nio.file.Paths;
+<span class="hljs-keyword">import</span> java.util.List;
+
+<span class="hljs-comment">/**
+ * 元信息校验
+ */</span>
+<span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.907815477595193</span></span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MetaValidator</span> {
+
+    <span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2393657090379857</span></span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">doValidAndFill<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7067037084114545</span></span><span class="hljs-params">(Meta meta)</span> {
+        validAndFillMetaRoot(meta);
+        validAndFillFileConfig(meta);
+        validAndFillModelConfig(meta);
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7361399186164901</span></span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">validAndFillModelConfig</span><span class="hljs-params">(Meta meta)<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5827024717343359</span></span> {
+        Meta.<span class="hljs-type">ModelConfig</span> <span class="hljs-variable">modelConfig</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9215758753492078</span></span> meta.getModelConfig();
+        <span class="hljs-keyword">if</span> (modelConfig == <span class="hljs-literal">null</span>) {
+            <span class="hljs-keyword">return<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9049787043678124</span></span>;
+        }
+        <span class="hljs-comment">// modelConfig 默认值</span>
+        List&lt;Meta.ModelConfig.ModelInfo&gt; modelInfoList = modelConfig.getModels();
+        <span class="hljs-keyword">if</span> (!CollectionUtil.isNotEmpty(modelInfoList)) {
+            <span class="hljs-keyword">return<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16608597653306045</span></span>;
+        }
+        <span class="hljs-keyword">for</span> (Meta.ModelConfig.ModelInfo modelInfo : modelInfoList) {
+            <span class="hljs-comment">// 输出路径默认值</span>
+            <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8459915023899198</span></span> <span class="hljs-variable">fieldName</span> <span class="hljs-operator">=</span> modelInfo.getFieldName();
+            <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8236490640786733</span></span> (StrUtil.isBlank(fieldName)) {
+                <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">MetaException<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2064566903610583</span></span>(<span class="hljs-string">"未填写 fieldName"</span>);
+            }
+
+            <span class="hljs-type">String</span> <span class="hljs-variable">modelInfoType<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.807945151271265</span></span> <span class="hljs-operator">=</span> modelInfo.getType();
+            <span class="hljs-keyword">if</span> (StrUtil.isEmpty(modelInfoType)) {
+                modelInfo.setType(<span class="hljs-string">"String"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6958444454604058</span></span>);
+            }
+        }
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.36033405400171725</span></span> <span class="hljs-title function_">validAndFillFileConfig</span><span class="hljs-params">(Meta meta)</span> {
+        <span class="hljs-comment">// fileConfig 默认值<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.11847459537995175</span></span>
+        Meta.<span class="hljs-type">FileConfig</span> <span class="hljs-variable">fileConfig</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5740606564195416</span></span> meta.getFileConfig();
+        <span class="hljs-keyword">if</span> (fileConfig == <span class="hljs-literal">null</span>) {
+            <span class="hljs-keyword">return<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5966174696119431</span></span>;
+        }
+        <span class="hljs-comment">// sourceRootPath：必填</span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">sourceRootPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10715509258590328</span></span> <span class="hljs-operator">=</span> fileConfig.getSourceRootPath();
+        <span class="hljs-keyword">if</span> (StrUtil.isBlank(sourceRootPath)) {
+            <span class="hljs-keyword">throw<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6816004727306202</span></span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">MetaException</span>(<span class="hljs-string">"未填写 sourceRootPath"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8725226420467893</span></span>);
+        }
+        <span class="hljs-comment">// inputRootPath：.source + sourceRootPath 的最后一个层级路径</span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">inputRootPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9934606028030912</span></span> <span class="hljs-operator">=</span> fileConfig.getInputRootPath();
+        <span class="hljs-type">String</span> <span class="hljs-variable">defaultInputRootPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6456357856636179</span></span> <span class="hljs-operator">=</span> <span class="hljs-string">".source/"</span> + FileUtil.getLastPathEle(Paths.get(sourceRootPath)).getFileName().toString();
+        <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2561581258354799</span></span> (StrUtil.isEmpty(inputRootPath)) {
+            fileConfig.setInputRootPath(defaultInputRootPath);
+        }
+        <span class="hljs-comment">// outputRootPath：默认为当前路径下的 generated</span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">outputRootPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9922968274271358</span></span> <span class="hljs-operator">=</span> fileConfig.getOutputRootPath();
+        <span class="hljs-type">String</span> <span class="hljs-variable">defaultOutputRootPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20456141782553683</span></span> <span class="hljs-operator">=</span> <span class="hljs-string">"generated"</span>;
+        <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2535861184340509</span></span> (StrUtil.isEmpty(outputRootPath)) {
+            fileConfig.setOutputRootPath(defaultOutputRootPath);
+        }
+        <span class="hljs-type">String</span> <span class="hljs-variable">fileConfigType</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.950764004054415</span></span> fileConfig.getType();
+        <span class="hljs-type">String</span> <span class="hljs-variable">defaultType</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0986743768673981</span></span> <span class="hljs-string">"dir"</span>;
+        <span class="hljs-keyword">if</span> (StrUtil.isEmpty(fileConfigType)) {
+            fileConfig.setType(defaultType);
+        }
+
+        <span class="hljs-comment">// fileInfo 默认值<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8305886082943998</span></span>
+        List&lt;Meta.FileConfig.FileInfo&gt; fileInfoList = fileConfig.getFiles();
+        <span class="hljs-keyword">if</span> (!CollectionUtil.isNotEmpty(fileInfoList)) {
+            <span class="hljs-keyword">return</span>;
+        }
+        <span class="hljs-keyword">for<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.19606995574218944</span></span> (Meta.FileConfig.FileInfo fileInfo : fileInfoList) {
+            <span class="hljs-comment">// inputPath: 必填</span>
+            <span class="hljs-type">String</span> <span class="hljs-variable">inputPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8910458099766227</span></span> <span class="hljs-operator">=</span> fileInfo.getInputPath();
+            <span class="hljs-keyword">if</span> (StrUtil.isBlank(inputPath)) {
+                <span class="hljs-keyword">throw<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2744123414554447</span></span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">MetaException</span>(<span class="hljs-string">"未填写 inputPath"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8032358212021433</span></span>);
+            }
+
+            <span class="hljs-comment">// outputPath: 默认等于 inputPath</span>
+            <span class="hljs-type">String</span> <span class="hljs-variable">outputPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7458403359344061</span></span> <span class="hljs-operator">=</span> fileInfo.getOutputPath();
+            <span class="hljs-keyword">if</span> (StrUtil.isEmpty(outputPath)) {
+                fileInfo.setOutputPath(inputPath);
+            }
+            <span class="hljs-comment">// type：默认 inputPath 有文件后缀（如 .java）为 file，否则为 dir<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.316997901728026</span></span>
+            <span class="hljs-type">String</span> <span class="hljs-variable">type</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24551985462987935</span></span> fileInfo.getType();
+            <span class="hljs-keyword">if</span> (StrUtil.isBlank(type)) {
+                <span class="hljs-comment">// 无文件后缀</span>
+                <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24192301280385697</span></span> (StrUtil.isBlank(FileUtil.getSuffix(inputPath))) {
+                    fileInfo.setType(<span class="hljs-string">"dir"</span>);
+                } <span class="hljs-keyword">else</span> {
+                    fileInfo.setType(<span class="hljs-string">"file"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8932413941361073</span></span>);
+                }
+            }
+            <span class="hljs-comment">// generateType：如果文件结尾不为 Ftl，generateType 默认为 static，否则为 dynamic</span>
+            <span class="hljs-type">String</span> <span class="hljs-variable">generateType<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7163298642932798</span></span> <span class="hljs-operator">=</span> fileInfo.getGenerateType();
+            <span class="hljs-keyword">if</span> (StrUtil.isBlank(generateType)) {
+                <span class="hljs-comment">// 为动态模板<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2418638980615242</span></span>
+                <span class="hljs-keyword">if</span> (inputPath.endsWith(<span class="hljs-string">".ftl"</span>)) {
+                    fileInfo.setGenerateType(<span class="hljs-string">"dynamic"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.27854189917967753</span></span>);
+                } <span class="hljs-keyword">else</span> {
+                    fileInfo.setGenerateType(<span class="hljs-string">"static"</span>);
+                }
+            }
+        }
+    }
+
+    <span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.805667723013012</span></span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">validAndFillMetaRoot<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.46575617706770145</span></span><span class="hljs-params">(Meta meta)</span> {
+        <span class="hljs-comment">// 校验并填充默认值</span>
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.753252443709334</span></span> <span class="hljs-variable">name</span> <span class="hljs-operator">=</span> StrUtil.blankToDefault(meta.getName(), <span class="hljs-string">"my-generator"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.03829356941274176</span></span>);
+        <span class="hljs-type">String</span> <span class="hljs-variable">description</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4051482298801996</span></span> StrUtil.emptyToDefault(meta.getDescription(), <span class="hljs-string">"我的模板代码生成器"</span>);
+        <span class="hljs-type">String</span> <span class="hljs-variable">author<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08471113249430529</span></span> <span class="hljs-operator">=</span> StrUtil.emptyToDefault(meta.getAuthor(), <span class="hljs-string">"yupi"</span>);
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5517671105204254</span></span> <span class="hljs-variable">basePackage</span> <span class="hljs-operator">=</span> StrUtil.blankToDefault(meta.getBasePackage(), <span class="hljs-string">"com.yupi"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3768881524825549</span></span>);
+        <span class="hljs-type">String</span> <span class="hljs-variable">version</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7891277257569325</span></span> StrUtil.emptyToDefault(meta.getVersion(), <span class="hljs-string">"1.0"</span>);
+        <span class="hljs-type">String</span> <span class="hljs-variable">createTime<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8901800260018158</span></span> <span class="hljs-operator">=</span> StrUtil.emptyToDefault(meta.getCreateTime(), DateUtil.now());
+        meta.setName(name);
+        meta.setDescription(description);
+        meta.setAuthor(author);
+        meta.setBasePackage(basePackage);
+        meta.setVersion(version);
+        meta.setCreateTime(createTime);
+    }
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06484135126276236</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5086239961083865</span></pre>
+<p>然后就可以在初始化 Meta 对象时，调用校验方法。修改后的 <code>MetaManager</code> 代码如下：</p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> Meta <span class="hljs-title function_">initMeta<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4610846766446355</span></span><span class="hljs-params">()</span> {
+    <span class="hljs-type">String</span> <span class="hljs-variable">metaJson<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.34460297559670794</span></span> <span class="hljs-operator">=</span> ResourceUtil.readUtf8Str(<span class="hljs-string">"meta.json"</span>);
+    <span class="hljs-type">Meta<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9233617495615021</span></span> <span class="hljs-variable">newMeta</span> <span class="hljs-operator">=</span> JSONUtil.toBean(metaJson, Meta.class);
+    <span class="hljs-comment">// 校验和处理默认值<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.511293794353985</span></span>
+    MetaValidator.doValidAndFill(newMeta);
+    <span class="hljs-keyword">return</span> newMeta;
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.41057069587253947</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5171349187712289</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09152358487228063</span></pre>
+<h2 data-id="heading-18">四、可扩展性优化</h2>
+<h3 data-id="heading-19">什么是可扩展性？</h3>
+<p>可扩展性通常是指程序在不修改结构或代码的情况下，能够灵活地添加新的功能，并适应新的需求和项目变化。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.597079402447493</span></p>
+<p>可扩展性又有很多细分，比如功能可扩展性、性能可扩展性、资源可扩展性等，通常我们作为开发人员，最常关注的还是功能可扩展性。</p>
+<h3 data-id="heading-20">1、枚举值定义</h3>
+<p>有的时候，一点点小的细节或代码写法的微调，就能提高代码的可扩展性。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5818023808631319</span></p>
+<p>比如为元信息中的字段定义枚举值，来替代程序中的硬编码，使得代码更规范、更好理解、更利于维护和扩展。</p>
+<p>新建 <code>meta.enums</code> 包，用于存放元信息相关的枚举类。</p>
+<p>1）文件类型枚举：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13674881270489614</span></p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">enum</span> <span class="hljs-title class_">FileTypeEnum<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6795271833169312</span></span> {
+
+    DIR(<span class="hljs-string">"目录"</span>, <span class="hljs-string">"dir"</span>),
+    FILE(<span class="hljs-string">"文件"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.22550777546697542</span></span>, <span class="hljs-string">"file"</span>);
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49516283467011846</span></span> String text;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> String value;
+
+    FileTypeEnum(String text, String value) {
+        <span class="hljs-built_in">this<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.01065948873777467</span></span>.text = text;
+        <span class="hljs-built_in">this</span>.value = value;
+    }
+
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">getText<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.425096400393679</span></span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return</span> text;
+    }
+
+    <span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.38540053961356757</span></span> String <span class="hljs-title function_">getValue</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5361343059823587</span></span> value;
+    }
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7500040105071324</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2792676615330725</span></pre>
+<p>2）文件生成类型枚举：</p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 文件生成类型枚举
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">enum<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9198528565315394</span></span> <span class="hljs-title class_">FileGenerateTypeEnum</span> {
+
+    DYNAMIC(<span class="hljs-string">"动态"</span>, <span class="hljs-string">"dynamic"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23854408278654216</span></span>),
+    STATIC(<span class="hljs-string">"静态"</span>, <span class="hljs-string">"static"</span>);
+
+    <span class="hljs-keyword">private<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.029654362233977105</span></span> <span class="hljs-keyword">final</span> String text;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.04097010986024752</span></span> String value;
+
+    FileGenerateTypeEnum(String text, String value) {
+        <span class="hljs-built_in">this</span>.text = text;
+        <span class="hljs-built_in">this</span>.value = value;
+    }
+
+    <span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4335066541391792</span></span> String <span class="hljs-title function_">getText</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.22438637817343654</span></span> text;
+    }
+
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">getValue</span><span class="hljs-params">()<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7455593242047653</span></span> {
+        <span class="hljs-keyword">return</span> value;
+    }
+}
+
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10727314921058873</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9686735999185812</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.25730178060506925</span></pre>
+<p>3）模型类型枚举：</p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 模型类型枚举
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">enum<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.38564702992317645</span></span> <span class="hljs-title class_">ModelTypeEnum</span> {
+
+    STRING(<span class="hljs-string">"字符串"</span>, <span class="hljs-string">"String"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.295816981525872</span></span>),
+    BOOLEAN(<span class="hljs-string">"布尔"</span>, <span class="hljs-string">"boolean"</span>);
+
+    <span class="hljs-keyword">private<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7702058461423722</span></span> <span class="hljs-keyword">final</span> String text;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8484727552337958</span></span> String value;
+
+    ModelTypeEnum(String text, String value) {
+        <span class="hljs-built_in">this</span>.text = text;
+        <span class="hljs-built_in">this</span>.value = value;
+    }
+
+    <span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.25252203491426384</span></span> String <span class="hljs-title function_">getText</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9444420823537178</span></span> text;
+    }
+
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">getValue</span><span class="hljs-params">()<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9438400571168897</span></span> {
+        <span class="hljs-keyword">return</span> value;
+    }
+}
+
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6079666473957486</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23319670776395363</span></pre>
+<p>有了枚举值后，就可以把 <code>MetaValidator</code> 中的默认值由硬编码字符串替换为读取枚举值的 value，要修改的代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14093412659205762</span></p>
+<pre><code class="language-java hljs" data-highlighted="yes">...
+
+<span class="hljs-type">String</span> <span class="hljs-variable">defaultType</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8121890285384104</span></span> FileTypeEnum.DIR.getValue();
+<span class="hljs-keyword">if</span> (StrUtil.isEmpty(fileConfigType)) {
+    fileConfig.setType(defaultType);
+}
+
+...
+
+<span class="hljs-comment">// type：默认 inputPath 有文件后缀（如 .java）为 file，否则为 dir</span>
+<span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9113852956728508</span></span> <span class="hljs-variable">type</span> <span class="hljs-operator">=</span> fileInfo.getType();
+<span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7342818515660625</span></span> (StrUtil.isBlank(type)) {
+    <span class="hljs-comment">// 无文件后缀</span>
+    <span class="hljs-keyword">if</span> (StrUtil.isBlank(FileUtil.getSuffix(inputPath))) {
+        fileInfo.setType(FileTypeEnum.DIR.getValue());
+    } <span class="hljs-keyword">else<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15740746021513452</span></span> {
+        fileInfo.setType(FileTypeEnum.FILE.getValue());
+    }
+}
+<span class="hljs-comment">// generateType：如果文件结尾不为 Ftl，generateType 默认为 static，否则为 dynamic</span>
+<span class="hljs-type">String</span> <span class="hljs-variable">generateType<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6641075879752123</span></span> <span class="hljs-operator">=</span> fileInfo.getGenerateType();
+<span class="hljs-keyword">if</span> (StrUtil.isBlank(generateType)) {
+    <span class="hljs-comment">// 为动态模板<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.520149949650456</span></span>
+    <span class="hljs-keyword">if</span> (inputPath.endsWith(<span class="hljs-string">".ftl"</span>)) {
+        fileInfo.setGenerateType(FileGenerateTypeEnum.DYNAMIC.getValue());
+    } <span class="hljs-keyword">else<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7671688698742549</span></span> {
+        fileInfo.setGenerateType(FileGenerateTypeEnum.STATIC.getValue());
+    }
+}
+
+...
+
+<span class="hljs-comment">// 模型配置</span>
+<span class="hljs-type">String</span> <span class="hljs-variable">modelInfoType<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.031178864983017363</span></span> <span class="hljs-operator">=</span> modelInfo.getType();
+<span class="hljs-keyword">if</span> (StrUtil.isEmpty(modelInfoType)) {
+    modelInfo.setType(ModelTypeEnum.STRING.getValue());
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8663207935763493</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.45294113758492416</span></pre>
+<h3 data-id="heading-21">2、模板方法模式</h3>
+<p>除了前面提到的校验类之外，项目中还有一个实现流程比较复杂的文件 —— MainGenerator。这个文件的作用是读取元信息，然后根据流程生成不同的代码或执行不同的操作。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6837502031491616</span></p>
+<p>之前我们是把所有的流程都写在了 main 方法里，大概 120 行代码。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a08ec179-8f71-4ed5-b80f-be3ade5e9bfb.png" alt="image.png" class="medium-zoom-image"></p>
+<p>对于不熟悉这个项目的开发者来说，这段代码读起来其实已经会很费力了。如果后续要新增新的流程或者根据元信息指定不同的生成方式，会比较麻烦。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5205234501923168</span></p>
+<p>有没有办法优化一下呢？</p>
+<p>当然有，对于有标准流程的代码优化，我们第一时间要想到的就是模板方法设计模式。</p>
+<h4>什么是模板方法模式？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.32283478646081276</span></h4>
+<p>之前在 <a href="https://yuyuanweb.feishu.cn/wiki/LhjxwgFjwiovTVk9w2vcJoj4nid">OJ 项目</a> 中详细讲过，模板方法模式通过父类定义了一套算法的标准执行流程，然后由子类具体实现每个流程的操作。使得子类在不改变执行流程结构的情况下，可以自主定义某些步骤的实现。</p>
+<p>举个例子，老师让所有的学生每天必须按顺序做 3 件事：</p>
+<ol>
+<li>吃饭</li>
+<li>睡觉</li>
+<li>支持鱼皮<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6710014921316207</span></li>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5477554152498845</span></ol>
+<p>这相当于定义了一套标准的执行流程，每位学生都必须遵循这个流程去行动，但是可以有不同的做法。</p>
+<p>比如小王：</p>
+<ol>
+<li>吃拉面</li>
+<li>站着睡觉</li>
+<li>给鱼皮三连<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7567181467441486</span></li>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.19047993293970333</span></ol>
+<p>而小李可以：</p>
+<ol>
+<li>吃米饭</li>
+<li>躺着睡觉</li>
+<li>给鱼皮点赞<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9775773339096614</span></li>
+</ol>
+<p>这样，不仅可以让子类的行为更加规范、复用父类现成的执行流程，也可以通过创建新的子类来自定义每一步的具体操作，提高了程序的可扩展性。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16524075008892902</span></p>
+<h4 data-id="heading-23">实现过程</h4>
+<p>1）流程梳理</p>
+<p>首先我们要对已有 <code>MainGenerator</code> 程序的流程进行梳理，包括：复制原始文件、代码生成、构建 jar 包、封装脚本、生成精简版的程序。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9487171335222058</span></p>
+<p>2）新建父类，定义生成器程序的流程</p>
+<p>在 <code>maker.generator.main</code> 包下新建 <code>GenerateTemplate</code> 抽象类。先把之前 <code>MainGenerator<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9541208952782629</span></code> 文件的 main 方法代码复制过来，改为 <code>doGenerate</code> 方法，之后就在这个方法内定义生成器程序的流程。</p>
+<p>示例代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16814174390527503</span></p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> <span class="hljs-keyword">class<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6275953752637462</span></span> <span class="hljs-title class_">GenerateTemplate</span> {
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2938451330523202</span></span> <span class="hljs-title function_">doGenerate</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9648531982609485</span></span> TemplateException, IOException, InterruptedException {
+        <span class="hljs-type">Meta</span> <span class="hljs-variable">meta</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6628619532730069</span></span> MetaManager.getMetaObject();
+        
+        <span class="hljs-comment">// 之前的代码</span>
+    	...
+    }
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7249150417364874</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5500251443664796</span></pre>
+<p>3）方法抽取</p>
+<p>从 <code>doGenerate</code> 方法的代码中，将每一个步骤都单独抽取为一个独立的方法。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6452046612353268</span></p>
+<p>可以使用前面分享过的 IDEA 抽取方法功能，自动提取方法和参数：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/4eb1782c-ab32-482a-b7f8-f64fda105375.png" alt="image.png" class="medium-zoom-image"></p>
+<p>注意要确保每个方法的作用域为 <code>protected</code>，而且不能为 <code>static</code>，使得这些方法能被子类重写。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.271127735246105</span></p>
+<p>抽取方法后的示例代码如下，可以看到 <code>doGenerate</code> 的代码已经大大简化了，主流程更加清晰：</p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> <span class="hljs-keyword">class<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06811791683452206</span></span> <span class="hljs-title class_">GenerateTemplate</span> {
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.37669835917729966</span></span> <span class="hljs-title function_">doGenerate</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09884302705653858</span></span> TemplateException, IOException, InterruptedException {
+        <span class="hljs-type">Meta</span> <span class="hljs-variable">meta</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9458411387169214</span></span> MetaManager.getMetaObject();
+
+        <span class="hljs-comment">// 0、输出根路径</span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">projectPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14002404022821113</span></span> <span class="hljs-operator">=</span> System.getProperty(<span class="hljs-string">"user.dir"</span>);
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.998722455620894</span></span> <span class="hljs-variable">outputPath</span> <span class="hljs-operator">=</span> projectPath + File.separator + <span class="hljs-string">"generated"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6668178396069431</span></span> + File.separator + meta.getName();
+        <span class="hljs-keyword">if</span> (!FileUtil.exist(outputPath)) {
+            FileUtil.mkdir(outputPath);
+        }
+
+        <span class="hljs-comment">// 1、复制原始文件</span>
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.039086862979094805</span></span> <span class="hljs-variable">sourceCopyDestPath</span> <span class="hljs-operator">=</span> copySource(meta, outputPath);
+
+        <span class="hljs-comment">// 2、代码生成<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6073404829074922</span></span>
+        generateCode(meta, outputPath);
+
+        <span class="hljs-comment">// 3、构建 jar 包</span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">jarPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1731937812530131</span></span> <span class="hljs-operator">=</span> buildJar(meta, outputPath);
+
+        <span class="hljs-comment">// 4、封装脚本</span>
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5676242291871094</span></span> <span class="hljs-variable">shellOutputFilePath</span> <span class="hljs-operator">=</span> buildScript(outputPath, jarPath);
+
+        <span class="hljs-comment">// 5、生成精简版的程序（产物包）<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.41939387762343605</span></span>
+        buildDist(outputPath, sourceCopyDestPath, jarPath, shellOutputFilePath);
+    }
+
+    <span class="hljs-comment">/**
+     * 复制原始文件
+     */</span>
+    <span class="hljs-keyword">protected</span> String <span class="hljs-title function_">copySource<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8199014868439081</span></span><span class="hljs-params">(Meta meta, String outputPath)</span> {
+        ...
+    }
+    
+    <span class="hljs-comment">/**
+     * 代码生成
+     */</span>
+    <span class="hljs-keyword">protected<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.860953378897366</span></span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">generateCode</span><span class="hljs-params">(Meta meta, String outputPath)<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7706614475618492</span></span> <span class="hljs-keyword">throws</span> IOException, TemplateException {
+    	...
+    }
+
+    <span class="hljs-comment">/**
+     * 构建 jar 包
+     */</span>
+    <span class="hljs-keyword">protected<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3329276200817288</span></span> String <span class="hljs-title function_">buildJar</span><span class="hljs-params">(Meta meta, String outputPath)</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20695288690736224</span></span> IOException, InterruptedException {
+        ...
+    }
+
+    <span class="hljs-comment">/**
+     * 生成精简版程序
+     */</span>
+    <span class="hljs-keyword">protected</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16360369703350597</span></span> <span class="hljs-title function_">buildDist</span><span class="hljs-params">(String outputPath, String sourceCopyDestPath, String jarPath, String shellOutputFilePath)</span> {
+        ...
+    }
+
+    <span class="hljs-comment">/**
+     * 封装脚本
+     */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.42773919580836917</span></span>
+    <span class="hljs-keyword">protected</span> String <span class="hljs-title function_">buildScript</span><span class="hljs-params">(String outputPath, String jarPath)<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20935540738319047</span></span> <span class="hljs-keyword">throws</span> IOException {
+        ...
+    }
+
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6858056581428331</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24379204128825127</span></pre>
+<p>4）编写模板方法的具体实现子类<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6328244181803195</span></p>
+<p>已经有了模板类，就可以让 MainGenerator 继承模板类，通过方法覆盖实现不同行为。比如覆写 <code>buildDist</code> 方法，不再生成精简版的程序。</p>
+<p>示例代码如下：</p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 生成代码生成器
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9340450788448897</span></span> <span class="hljs-title class_">MainGenerator</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">GenerateTemplate<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.41852810882822467</span></span> {
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">protected</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.04577822215174909</span></span> <span class="hljs-title function_">buildDist</span><span class="hljs-params">(String outputPath, String sourceCopyDestPath, String jarPath, String shellOutputFilePath)</span> {
+        System.out.println(<span class="hljs-string">"不要给我输出 dist 啦！"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.37695610528445767</span></span>);
+    }
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7259337046655943</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3265895564172998</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2672794085600909</span></pre>
+<p>5）调用生成器</p>
+<p>修改 <code>maker</code> 包下的 <code>Main</code> 类，在 main 方法中创建 MainGenerator 对象并调用生成方法。</p>
+<p>代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24504555498243996</span></p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Main<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.12387587442406844</span></span> {
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06488865989023718</span></span> <span class="hljs-title function_">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.39072244389667854</span></span> TemplateException, IOException, InterruptedException {
+        <span class="hljs-type">MainGenerator</span> <span class="hljs-variable">mainGenerator</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3365487021853668</span></span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">MainGenerator</span>();
+        mainGenerator.doGenerate();
+    }
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5279023683257393</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7427942477822604</span></pre>
+<h4 data-id="heading-24">完整代码</h4>
+<p>最后给出模板方法的核心代码文件 <code>GenerateTemplate.java</code> 的完整代码：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7877345064307688</span></p>
+<pre><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.maker.generator.main;
+
+<span class="hljs-keyword">import</span> cn.hutool.core.io.FileUtil;
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9710861529348169</span></span> cn.hutool.core.io.resource.ClassPathResource;
+<span class="hljs-keyword">import</span> cn.hutool.core.util.StrUtil;
+<span class="hljs-keyword">import</span> com.yupi.maker.generator.JarGenerator;
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8461872160731292</span></span> com.yupi.maker.generator.ScriptGenerator;
+<span class="hljs-keyword">import</span> com.yupi.maker.generator.file.DynamicFileGenerator;
+<span class="hljs-keyword">import</span> com.yupi.maker.generator.file.StaticFileGenerator;
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5681728950975522</span></span> com.yupi.maker.meta.Meta;
+<span class="hljs-keyword">import</span> com.yupi.maker.meta.MetaManager;
+<span class="hljs-keyword">import</span> freemarker.template.TemplateException;
+
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6151343381883099</span></span> java.io.File;
+<span class="hljs-keyword">import</span> java.io.IOException;
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9355695115151204</span></span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">GenerateTemplate</span> {
+
+    <span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.12872258669044023</span></span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">doGenerate</span><span class="hljs-params">()<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8306759725487955</span></span> <span class="hljs-keyword">throws</span> TemplateException, IOException, InterruptedException {
+        <span class="hljs-type">Meta</span> <span class="hljs-variable">meta<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49129325597055806</span></span> <span class="hljs-operator">=</span> MetaManager.getMetaObject();
+
+        <span class="hljs-comment">// 0、输出根路径</span>
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8710109552349463</span></span> <span class="hljs-variable">projectPath</span> <span class="hljs-operator">=</span> System.getProperty(<span class="hljs-string">"user.dir"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.33203386806336055</span></span>);
+        <span class="hljs-type">String</span> <span class="hljs-variable">outputPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.25160238685930003</span></span> projectPath + File.separator + <span class="hljs-string">"generated"</span> + File.separator + meta.getName();
+        <span class="hljs-keyword">if</span> (!FileUtil.exist(outputPath)) {
+            FileUtil.mkdir(outputPath);
+        }
+
+        <span class="hljs-comment">// 1、复制原始文件<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8579106101699754</span></span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">sourceCopyDestPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05586082745444498</span></span> copySource(meta, outputPath);
+
+        <span class="hljs-comment">// 2、代码生成</span>
+        generateCode(meta, outputPath);
+
+        <span class="hljs-comment">// 3、构建 jar 包</span>
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09331593013307149</span></span> <span class="hljs-variable">jarPath</span> <span class="hljs-operator">=</span> buildJar(meta, outputPath);
+
+        <span class="hljs-comment">// 4、封装脚本<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8081304837519938</span></span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">shellOutputFilePath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.652280032623028</span></span> buildScript(outputPath, jarPath);
+
+        <span class="hljs-comment">// 5、生成精简版的程序（产物包）</span>
+        buildDist(outputPath, sourceCopyDestPath, jarPath, shellOutputFilePath);
+    }
+
+    <span class="hljs-comment">/**
+     * 生成精简版程序
+     * <span class="hljs-doctag">@param</span> outputPath
+     * <span class="hljs-doctag">@param</span> sourceCopyDestPath
+     * <span class="hljs-doctag">@param<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9198931254507361</span></span> jarPath
+     * <span class="hljs-doctag">@param</span> shellOutputFilePath
+     */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5989679029729627</span></span>
+    <span class="hljs-keyword">protected<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.44827830833957716</span></span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">buildDist</span><span class="hljs-params">(String outputPath, String sourceCopyDestPath, String jarPath, String shellOutputFilePath)<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9520659883973779</span></span> {
+        <span class="hljs-type">String</span> <span class="hljs-variable">distOutputPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6794386341898828</span></span> outputPath + <span class="hljs-string">"-dist"</span>;
+        <span class="hljs-comment">// 拷贝 jar 包</span>
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09395650324688298</span></span> <span class="hljs-variable">targetAbsolutePath</span> <span class="hljs-operator">=</span> distOutputPath + File.separator + <span class="hljs-string">"target"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5374630971151413</span></span>;
+        FileUtil.mkdir(targetAbsolutePath);
+        <span class="hljs-type">String</span> <span class="hljs-variable">jarAbsolutePath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5329407574392928</span></span> outputPath + File.separator + jarPath;
+        FileUtil.copy(jarAbsolutePath, targetAbsolutePath, <span class="hljs-literal">true</span>);
+        <span class="hljs-comment">// 拷贝脚本文件</span>
+        FileUtil.copy(shellOutputFilePath, distOutputPath, <span class="hljs-literal">true<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3605604608097803</span></span>);
+        <span class="hljs-comment">// 拷贝源模板文件</span>
+        FileUtil.copy(sourceCopyDestPath, distOutputPath, <span class="hljs-literal">true</span>);
+    }
+
+    <span class="hljs-comment">/**
+     * 封装脚本
+     *
+     * <span class="hljs-doctag">@param</span> outputPath
+     * <span class="hljs-doctag">@param</span> jarPath
+     * <span class="hljs-doctag">@return<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.486378368220423</span></span>
+     * <span class="hljs-doctag">@throws</span> IOException
+     */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.34644228805590815</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7805838454068958</span></span>
+    <span class="hljs-keyword">protected</span> String <span class="hljs-title function_">buildScript</span><span class="hljs-params">(String outputPath, String jarPath)<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7036527467241078</span></span> <span class="hljs-keyword">throws</span> IOException {
+        <span class="hljs-type">String</span> <span class="hljs-variable">shellOutputFilePath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6956902453352536</span></span> <span class="hljs-operator">=</span> outputPath + File.separator + <span class="hljs-string">"generator"</span>;
+        ScriptGenerator.doGenerate(shellOutputFilePath, jarPath);
+        <span class="hljs-keyword">return<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.26850941894983404</span></span> shellOutputFilePath;
+    }
+
+    <span class="hljs-comment">/**
+     * 构建 jar 包
+     * <span class="hljs-doctag">@param</span> outputPath
+     * <span class="hljs-doctag">@return</span> 返回 jar 包的相对路径
+     * <span class="hljs-doctag">@throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1300049198527573</span></span> IOException
+     * <span class="hljs-doctag">@throws</span> InterruptedException
+     */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16598747524328394</span></span>
+    <span class="hljs-keyword">protected</span> String <span class="hljs-title function_">buildJar<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4937974761116972</span></span><span class="hljs-params">(Meta meta, String outputPath)</span> <span class="hljs-keyword">throws</span> IOException, InterruptedException {
+        JarGenerator.doGenerate(outputPath);
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6082398614748175</span></span> <span class="hljs-variable">jarName</span> <span class="hljs-operator">=</span> String.format(<span class="hljs-string">"%s-%s-jar-with-dependencies.jar"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9661047545065424</span></span>, meta.getName(), meta.getVersion());
+        <span class="hljs-type">String</span> <span class="hljs-variable">jarPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4296662812586609</span></span> <span class="hljs-string">"target/"</span> + jarName;
+        <span class="hljs-keyword">return</span> jarPath;
+    }
+
+    <span class="hljs-comment">/**
+     * 代码生成
+     * <span class="hljs-doctag">@param</span> meta
+     * <span class="hljs-doctag">@param</span> outputPath
+     * <span class="hljs-doctag">@throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8735854809957175</span></span> IOException
+     * <span class="hljs-doctag">@throws</span> TemplateException
+     */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5851463151053866</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6187732014962319</span></span>
+    <span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">generateCode<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4845254709022935</span></span><span class="hljs-params">(Meta meta, String outputPath)</span> <span class="hljs-keyword">throws</span> IOException, TemplateException {
+         <span class="hljs-comment">// 读取 resources 目录<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.989192738819801</span></span>
+        <span class="hljs-type">ClassPathResource</span> <span class="hljs-variable">classPathResource</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5651406131786327</span></span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ClassPathResource</span>(<span class="hljs-string">""<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6714027852131712</span></span>);
+        <span class="hljs-type">String</span> <span class="hljs-variable">inputResourcePath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2888689575471428</span></span> classPathResource.getAbsolutePath();
+
+        <span class="hljs-comment">// Java 包基础路径</span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">outputBasePackage<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.33767112548901745</span></span> <span class="hljs-operator">=</span> meta.getBasePackage();
+        <span class="hljs-type">String</span> <span class="hljs-variable">outputBasePackagePath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13684227901622226</span></span> <span class="hljs-operator">=</span> StrUtil.join(<span class="hljs-string">"/"</span>, StrUtil.split(outputBasePackage, <span class="hljs-string">"."<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.018947535019842476</span></span>));
+        <span class="hljs-type">String</span> <span class="hljs-variable">outputBaseJavaPackagePath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7049868794487133</span></span> outputPath + File.separator + <span class="hljs-string">"src/main/java/"</span> + outputBasePackagePath;
+
+        String inputFilePath;
+        String outputFilePath;
+
+        <span class="hljs-comment">// model.DataModel</span>
+        inputFilePath = inputResourcePath + File.separator + <span class="hljs-string">"templates/java/model/DataModel.java.ftl"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6586606615421682</span></span>;
+        outputFilePath = outputBaseJavaPackagePath + <span class="hljs-string">"/model/DataModel.java"</span>;
+        DynamicFileGenerator.doGenerate(inputFilePath , outputFilePath, meta);
+
+        <span class="hljs-comment">// cli.command.ConfigCommand</span>
+        inputFilePath = inputResourcePath + File.separator + <span class="hljs-string">"templates/java/cli/command/ConfigCommand.java.ftl"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.28268746506685627</span></span>;
+        outputFilePath = outputBaseJavaPackagePath + <span class="hljs-string">"/cli/command/ConfigCommand.java"</span>;
+        DynamicFileGenerator.doGenerate(inputFilePath , outputFilePath, meta);
+
+        <span class="hljs-comment">// cli.command.GenerateCommand</span>
+        inputFilePath = inputResourcePath + File.separator + <span class="hljs-string">"templates/java/cli/command/GenerateCommand.java.ftl"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6884551425412175</span></span>;
+        outputFilePath = outputBaseJavaPackagePath + <span class="hljs-string">"/cli/command/GenerateCommand.java"</span>;
+        DynamicFileGenerator.doGenerate(inputFilePath , outputFilePath, meta);
+
+        <span class="hljs-comment">// cli.command.ListCommand</span>
+        inputFilePath = inputResourcePath + File.separator + <span class="hljs-string">"templates/java/cli/command/ListCommand.java.ftl"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.201540326686807</span></span>;
+        outputFilePath = outputBaseJavaPackagePath + <span class="hljs-string">"/cli/command/ListCommand.java"</span>;
+        DynamicFileGenerator.doGenerate(inputFilePath , outputFilePath, meta);
+
+        <span class="hljs-comment">// cli.CommandExecutor</span>
+        inputFilePath = inputResourcePath + File.separator + <span class="hljs-string">"templates/java/cli/CommandExecutor.java.ftl"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4706130008506413</span></span>;
+        outputFilePath = outputBaseJavaPackagePath + <span class="hljs-string">"/cli/CommandExecutor.java"</span>;
+        DynamicFileGenerator.doGenerate(inputFilePath , outputFilePath, meta);
+
+        <span class="hljs-comment">// Main</span>
+        inputFilePath = inputResourcePath + File.separator + <span class="hljs-string">"templates/java/Main.java.ftl"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3359704156759995</span></span>;
+        outputFilePath = outputBaseJavaPackagePath + <span class="hljs-string">"/Main.java"</span>;
+        DynamicFileGenerator.doGenerate(inputFilePath , outputFilePath, meta);
+
+        <span class="hljs-comment">// generator.DynamicGenerator</span>
+        inputFilePath = inputResourcePath + File.separator + <span class="hljs-string">"templates/java/generator/DynamicGenerator.java.ftl"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2178192258491607</span></span>;
+        outputFilePath = outputBaseJavaPackagePath + <span class="hljs-string">"/generator/DynamicGenerator.java"</span>;
+        DynamicFileGenerator.doGenerate(inputFilePath , outputFilePath, meta);
+
+        <span class="hljs-comment">// generator.MainGenerator</span>
+        inputFilePath = inputResourcePath + File.separator + <span class="hljs-string">"templates/java/generator/MainGenerator.java.ftl"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09478133614639761</span></span>;
+        outputFilePath = outputBaseJavaPackagePath + <span class="hljs-string">"/generator/MainGenerator.java"</span>;
+        DynamicFileGenerator.doGenerate(inputFilePath , outputFilePath, meta);
+
+        <span class="hljs-comment">// generator.StaticGenerator</span>
+        inputFilePath = inputResourcePath + File.separator + <span class="hljs-string">"templates/java/generator/StaticGenerator.java.ftl"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4059803823162551</span></span>;
+        outputFilePath = outputBaseJavaPackagePath + <span class="hljs-string">"/generator/StaticGenerator.java"</span>;
+        DynamicFileGenerator.doGenerate(inputFilePath , outputFilePath, meta);
+
+        <span class="hljs-comment">// pom.xml</span>
+        inputFilePath = inputResourcePath + File.separator + <span class="hljs-string">"templates/pom.xml.ftl"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7320675574105318</span></span>;
+        outputFilePath = outputPath + File.separator + <span class="hljs-string">"pom.xml"</span>;
+        DynamicFileGenerator.doGenerate(inputFilePath , outputFilePath, meta);
+    }
+
+    <span class="hljs-comment">/**
+     * 复制原始文件
+     *
+     * <span class="hljs-doctag">@param</span> meta
+     * <span class="hljs-doctag">@param</span> outputPath
+     * <span class="hljs-doctag">@return<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9032130267180047</span></span>
+     */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3509802247266014</span></span>
+    <span class="hljs-keyword">protected<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8633431661391919</span></span> String <span class="hljs-title function_">copySource</span><span class="hljs-params">(Meta meta, String outputPath)</span> {
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24183965094175552</span></span> <span class="hljs-variable">sourceRootPath</span> <span class="hljs-operator">=</span> meta.getFileConfig().getSourceRootPath();
+        <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4908695953289135</span></span> <span class="hljs-variable">sourceCopyDestPath</span> <span class="hljs-operator">=</span> outputPath + File.separator + <span class="hljs-string">".source"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6407694687545895</span></span>;
+        FileUtil.copy(sourceRootPath, sourceCopyDestPath, <span class="hljs-literal">false</span>);
+        <span class="hljs-keyword">return</span> sourceCopyDestPath;
+    }
+}
+
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9753306075217123</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07440418589352293</span></pre>
+<p>之后，如果我们要根据元信息配置指定不同的生成规则，只需要覆写某个步骤的方法，或者新增具体实现子类，就可以在不修改模板类代码的基础上，实现灵活的扩展了。</p>
+<h2>最后<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4255561480850174</span></h2>
+<p>以上就是本节教程，我们从可移植性、功能完善、健壮性、可扩展性等多个角度对制作工具项目进行了优化。</p>
+<p>大家在做完项目需求后，可以多自主思考如何优化。尤其是在企业开发中，不能只是完成功能，而是要保证功能尽量不出问题、没有 Bug，才能让你的同事和上级更放心。</p>
+<p>下期让我们继续增强制作工具的能力，目标是能够快速生成出一个 Spring Boot 项目模板的代码生成器。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18055330531309033</span></p>
+<h2 data-id="heading-26">本期作业</h2>
+<p>1）掌握几种常见的项目优化方式，并尝试优化自己之前做过的项目</p>
+<p>2）掌握圈复杂度优化、模板方法模式等重要知识点<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.25460541429573724</span></p>
+<p>3）自己编写代码实现本节项目，并且在自己的代码仓库完成一次提交</p><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10186150322773657</span></div></div></div><div style="margin-bottom: 16px;"></div><div style="margin-bottom: 16px;"></div><div class="ant-row ant-row-space-between" style="margin-top: 40px;"><div class="ant-col"><div>上一节</div><a href="/course/1790980795074654209/section/1790995840378646530"><span role="img" aria-label="double-left" class="anticon anticon-double-left" style="margin-right: 3px; font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-left" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M272.9 512l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L186.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H532c6.7 0 10.4-7.7 6.3-12.9L272.9 512zm304 0l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L490.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H836c6.7 0 10.4-7.7 6.3-12.9L576.9 512z"></path></svg></span>4. 制作工具开发</a></div><div class="ant-col"><div>下一节</div><a href="/course/1790980795074654209/section/1790995923979513857">6. 配置能力增强<span role="img" aria-label="double-right" class="anticon anticon-double-right" style="margin-left: 3px; font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-right" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M533.2 492.3L277.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H188c-6.7 0-10.4 7.7-6.3 12.9L447.1 512 181.7 851.1A7.98 7.98 0 00188 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5zm304 0L581.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H492c-6.7 0-10.4 7.7-6.3 12.9L751.1 512 485.7 851.1A7.98 7.98 0 00492 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5z"></path></svg></span></a></div></div></div>

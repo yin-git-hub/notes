@@ -1545,6 +1545,50 @@ if((navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobil
  } else {
     window.location.href = "";     //电脑
  }
+
+
+
+
+<div  
+            class="choose-quick-select">
+          <div class="select-choose">
+            <el-button class="button-select">
+              请选择快捷查询
+            </el-button>
+          </div>
+          <div
+              v-if="selectContentBox"
+              class="select-content-box">
+            <el-card style="max-width: 380px">
+              <div v-if="selectContentItem===null">
+                <el-empty></el-empty>
+              </div>
+              <div v-else>
+                22222
+              </div>
+            </el-card>
+          </div>
+        </div>点击按钮button-select会显示selectContentBox元素，点击selectContentBox元素之外的任何位置，selectContentBox消失
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```
 
 ### 1.2.9 history对象
@@ -1554,7 +1598,7 @@ window对象给我们提供了一个 history对象，与浏览器历史记录进
 ~~~js
 back()     可以后退功能
 forward()  前进功能
-go(参数)   前进后退功能 参数如果是1 前进1个页面 如果是-1 后退1个页面 
+go(参数)   前进后退功能 参数如果是1 前进1个页面 如果是-1 后退1个页面
 ~~~
 
 history对象一般在实际开发中比较少用，但是会在一些 OA 办公系统中见到。

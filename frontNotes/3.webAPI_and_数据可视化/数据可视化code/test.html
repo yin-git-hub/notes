@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+
+<head>
+    <meta charset="UTF-8">
+    <title>3D Line Chart Example</title>
+    <!-- 引入 ECharts 核心库 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <!-- 引入 ECharts 3D 插件 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts-gl/dist/echarts-gl.min.js"></script>
+</head>
+
+<body style="height: 100%; margin: 0">
+    <!-- 为 ECharts 准备一个容器 -->
+    <div id="main" style="height: 100%"></div>
+    <script type="text/javascript">
+        // 基于准备好的dom，初始化echarts实例
+        var myChart = echarts.init(document.getElementById('main'));
+
+        // 数据
+        let a1 = [{
+            "time": "2024070111",
+            "count": 1
+        }, {
+            "time": "2024070211",
+            "count": 1
+        }, {
+            "time": "2024070511",
+            "count": 1
+        }, {
+            "time": "2024070611",
+            "count": 3
+        }, {
+            "time": "2024070711",
+            "count": 4
+        }];
+
+        let a2 = [{
+            "time": "2024070311",
+            "count": 1
+        }, {
+            "time": "2024070411",
+            "count": 1
+        }, {
+            "time": "2024070511",
+            "count": 1
+        }, {
+            "time": "2024070611",
+            "count": 3
+        }, {
+            "time": "2024070711",
+            "count": 4
+        }, {
+            "time": "2024070811",
+            "count": 4
+        }];
+
+        // 处理数据
+        function processData(rawData) {
+            var dates = [];
+            var times = [];
+            var data = [];
+
+            rawData.forEach(function(item) {
+                var date = item.time.slice(4, 6) + '月' + item.time.slice(6, 8) + '日';
+                var time = item.time.slice(8, 10) + '时';
+
+                if (dates.indexOf(date) === -1) {
+                    dates.push(date);
+                }
+                if (times.indexOf(time) === -1) {
+                    times.push(time);
+                }
+                data.push([dates.indexOf(date), times.indexOf(time), item.count]);
+            });
+
+            return {
+                dates,
+                times,
+                data
+            };
+        }
+
+        // 获取所有日期和时间
+        function getAllDatesAndTimes(dataSets) {
+            let allDates = new Set();
+            let allTimes = new Set();
+
+            dataSets.forEach(dataSet => {
+                dataSet.forEach(item => {
+                    allDates.add(item.time.slice(4, 6) + '月' + item.time.slice(6, 8) + '日');
+                    allTimes.add(item.time.slice(8, 10) + '时');
+                });
+            });
+
+            return {
+                dates: Array.from(allDates),
+                times: Array.from(allTimes)
+            };
+        }
+
+        // 处理数据
+        var processedData1 = processData(a1);
+        var processedData2 = processData(a2);
+
+        // 获取所有日期和时间
+        var allDatesAndTimes = getAllDatesAndTimes([a1, a2]);
+
+        function processDataWithAllDatesAndTimes(rawData, allDates, allTimes) {
+            var data = [];
+
+            rawData.forEach(function(item) {
+                var date = item.time.slice(4, 6) + '月' + item.time.slice(6, 8) + '日';
+                var time = item.time.slice(8, 10) + '时';
+
+                if (allDates.indexOf(date) !== -1 && allTimes.indexOf(time) !== -1) {
+                    data.push([allDates.indexOf(date), allTimes.indexOf(time), item.count]);
+                }
+            });
+
+            return data;
+        }
+
+        var data1 = processDataWithAllDatesAndTimes(a1, allDatesAndTimes.dates, allDatesAndTimes.times);
+        var data2 = processDataWithAllDatesAndTimes(a2, allDatesAndTimes.dates, allDatesAndTimes.times);
+
+        // 指定图表的配置项和数据
+        var option = {
+            title: {
+                text: '3D 折线图示例'
+            },
+            tooltip: {
+                formatter: function(params) {
+                    var dateIndex = params.value[0];
+                    var timeIndex = params.value[1];
+                    return allDatesAndTimes.dates[dateIndex] + ' ' + allDatesAndTimes.times[timeIndex] + '<br>值: ' + params.value[2];
+                }
+            },
+            xAxis3D: {
+                type: 'category',
+                data: allDatesAndTimes.dates.map(function(date, index) {
+                    return index;
+                }),
+                axisLabel: {
+                    formatter: function(value) {
+                        return allDatesAndTimes.dates[value];
+                    }
+                }
+            },
+            yAxis3D: {
+                type: 'category',
+                data: allDatesAndTimes.times.map(function(time, index) {
+                    return index;
+                }),
+                axisLabel: {
+                    formatter: function(value) {
+                        return allDatesAndTimes.times[value];
+                    }
+                }
+            },
+            zAxis3D: {
+                type: 'value'
+            },
+            grid3D: {
+                boxWidth: 200,
+                boxDepth: 80,
+                viewControl: {
+                    alpha: 30,
+                    beta: 30
+                },
+                light: {
+                    main: {
+                        intensity: 0
+                    },
+                    ambient: {
+                        intensity: 1.0
+                    }
+                }
+            },
+            series: [{
+                type: 'line3D',
+                data: data1,
+                lineStyle: {
+                    width: 4,
+                    color: '#ff0000' // 红色线条
+                },
+                itemStyle: {
+                    color: '#ff0000'
+                },
+                name: 'a1 数据'
+            }, {
+                type: 'line3D',
+                data: data2,
+                lineStyle: {
+                    width: 4,
+                    color: '#0000ff' // 蓝色线条
+                },
+                itemStyle: {
+                    color: '#0000ff'
+                },
+                name: 'a2 数据'
+            }]
+        };
+
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+    </script>
+</body>
+
+</html>

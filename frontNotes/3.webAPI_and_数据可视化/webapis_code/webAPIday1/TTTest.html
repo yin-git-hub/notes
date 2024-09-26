@@ -1,34 +1,19 @@
-<!DOCTYPE html>
-
-<html lang="en">
-  <head>
-    <title>TTTest</title>
-  </head>
-  <body>
-    <div
-      class="father"
-      style="background-color: rgb(64, 255, 0); width: 200px; height: 200px"
-    >
-      <div
-        class="son"
-        style="background-color: rebeccapurple; width: 150px; height: 150px"
-      >
-        <ul style="background-color: aqua; width: 100px; height: 100px">
-          <li>abc</li>
-          <li>abc</li>
-          <li>abc</li>
-        </ul>
-      </div>
-    </div>
-    <button>update</button>
-    <script>
-      document.addEventListener("contextmenu", function (event) {
-      
-      });
-
-      document.addEventListener("selectstart", function (event) {
-        event.preventDefault();
-      });
-    </script>
-  </body>
-</html>
+<button>点击</button>
+<div></div>
+<script>
+    var btn = document.querySelector('button');
+    var div = document.querySelector('div');
+    btn.addEventListener('click', function() {
+        // console.log(location.href);
+        location.href = 'www.baidu.com';
+    })
+    var timer = 5;
+    setInterval(function() {
+        if (timer == 0) {
+            location.href = 'http://www.itcast.cn';
+        } else {
+            div.innerHTML = '您将在' + timer + '秒钟之后跳转到首页';
+            timer--;
+        }
+    }, 1000);
+</script>

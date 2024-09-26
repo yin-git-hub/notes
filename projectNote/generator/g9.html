@@ -1,0 +1,1227 @@
+<div class="ant-card-body"><h1 class="ant-typography" style="font-size: 30px;" data-id="">9. 云平台开发</h1><div class="ant-space ant-space-horizontal ant-space-align-center" style="margin-bottom: 15px; gap: 8px;"><div class="ant-space-item" style=""><a class="text-gray-500" target="_blank" href="/user/1601072287388278786">程序员鱼皮</a></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item" style=""><span class="text-gray-500">2024-05-16 14:44</span></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item"><span class="text-gray-500">阅读 604</span></div></div><div style="margin-bottom: 16px;"></div><div class="course-container"><div class="md-viewer "><div class="markdown-body"><h2 data-id="heading-0">前情回顾</h2>
+<p>在之前的教程中，我们完成了本地的代码生成器、本地的代码生成器制作工具、以及本地的模板制作工具，并且使用工具快速制作了一个 Spring Boot 项目模板生成器。</p>
+<p>但是之前我们的代码生成器以及制作工具只能够在本地使用，如果想分享给别人使用，只能通过分享代码包或者制作工具文件的方式，并不方便。</p>
+<p>所以为了进一步提高代码生成器的使用和制作效率，从本节教程开始，我们将进行项目第三阶段：将本地项目线上化，开发一个在线代码生成器平台。</p>
+<h2 data-id="heading-1">本节重点</h2>
+<p>本节教程属于项目的第三阶段 —— 开发在线代码生成器平台。</p>
+<p>本节重点内容：</p>
+<ol>
+<li>需求分析</li>
+<li>线上化实现流程</li>
+<li>数据库表设计</li>
+<li>后端开发</li>
+<li>前端页面开发</li>
+</ol>
+<p><strong>注意：本节教程开发量较大，建议看视频教程！</strong></p>
+<h2 data-id="heading-2">一、需求分析</h2>
+<p>经过了前两个阶段本地项目的开发，其实绝大多数复杂的业务逻辑已经完成，接下来我们要实现项目的线上化就很简单了。</p>
+<p>首先思考，我们要对哪些内容进行线上化？要让用户线上使用哪些能力呢？</p>
+<p>主要分为 2 个方面：</p>
+<p>1）数据线上化</p>
+<p>包括：</p>
+<ul>
+<li>元信息线上化，即把元信息配置保存到数据库中。</li>
+<li>项目模板线上化，即把静态文件和模板文件保存到存储服务上</li>
+<li>代码生成器线上化，即把代码生成器产物包保存到存储服务上</li>
+</ul>
+<p>2）功能线上化</p>
+<p>包括：</p>
+<ul>
+<li>在线查看生成器的信息</li>
+<li>在线使用生成器</li>
+<li>在线使用生成器制作工具</li>
+</ul>
+<p>总结一下，我们本阶段要开发的在线代码生成平台，支持用户在线搜索、使用、制作和分享各类代码生成器，帮助开发者提高定制化开发效率。</p>
+<p>需要我们开发的功能如下：</p>
+<ul>
+<li>用户注册、登录</li>
+<li>管理员功能：用户管理、代码生成器管理（增删改查）</li>
+<li>代码生成器搜索</li>
+<li>代码生成器详情查看</li>
+<li>代码生成器创建</li>
+<li>代码生成器下载</li>
+<li>代码生成器在线使用</li>
+<li>代码生成器在线制作</li>
+</ul>
+<h2 data-id="heading-3">二、线上化实现流程</h2>
+<p>为了更快更好地完成本阶段项目，我们需要先整理下实现思路和流程。</p>
+<p>大致的流程如下：</p>
+<p>1）先完成库表设计，让数据库能支持存储代码生成器信息</p>
+<p>2）实现基本的用户注册登录、增删改查等功能，让用户能够浏览代码生成器信息</p>
+<p>3）实现文件上传下载功能，让用户能够上传和下载代码生成器产物包</p>
+<p>4）实现在线使用代码生成器功能，让用户直接在线生成代码</p>
+<p>5）实现在线制作代码生成器功能，提高用户制作生成器效率</p>
+<p>6）项目优化，包括性能优化、存储优化等</p>
+<p>本节教程我们先完成前 2 个步骤，从数据库表设计开始。</p>
+<h2 data-id="heading-4">三、数据库表设计</h2>
+<p>设计库表的 2 个关键：</p>
+<ol>
+<li>一定要结合业务，以自己的业务需求为主</li>
+<li>多去参考同类业务的库表设计，可以多在 GitHub 搜下</li>
+</ol>
+<p>也是基于这 2 个关键，我们可以直接参考鱼皮后端万用模板的用户表和帖子表，快速设计出本项目需要的用户表和代码生成器表。</p>
+<blockquote>
+<p>鱼皮：自己写的代码要留好，多参考自己也是提高效率的大杀器。</p>
+</blockquote>
+<h3 data-id="heading-5">用户表</h3>
+<p>直接复用后端万用模板的用户表，本项目我们选用最经典的账号密码登录，所以可以移除多余的公众号登录相关的字段 unionId 和 mpOpenId。</p>
+<p>用户表的建表 SQL 语句：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">sql</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-sql hljs" data-highlighted="yes"><span class="hljs-comment">-- 用户表</span>
+<span class="hljs-keyword">create</span> <span class="hljs-keyword">table</span> if <span class="hljs-keyword">not</span> <span class="hljs-keyword">exists</span> <span class="hljs-keyword">user</span>
+(
+    id           <span class="hljs-type">bigint</span> auto_increment comment <span class="hljs-string">'id'</span> <span class="hljs-keyword">primary</span> key,
+    userAccount  <span class="hljs-type">varchar</span>(<span class="hljs-number">256</span>)                           <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span> comment <span class="hljs-string">'账号'</span>,
+    userPassword <span class="hljs-type">varchar</span>(<span class="hljs-number">512</span>)                           <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span> comment <span class="hljs-string">'密码'</span>,
+    userName     <span class="hljs-type">varchar</span>(<span class="hljs-number">256</span>)                           <span class="hljs-keyword">null</span> comment <span class="hljs-string">'用户昵称'</span>,
+    userAvatar   <span class="hljs-type">varchar</span>(<span class="hljs-number">1024</span>)                          <span class="hljs-keyword">null</span> comment <span class="hljs-string">'用户头像'</span>,
+    userProfile  <span class="hljs-type">varchar</span>(<span class="hljs-number">512</span>)                           <span class="hljs-keyword">null</span> comment <span class="hljs-string">'用户简介'</span>,
+    userRole     <span class="hljs-type">varchar</span>(<span class="hljs-number">256</span>) <span class="hljs-keyword">default</span> <span class="hljs-string">'user'</span>            <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span> comment <span class="hljs-string">'用户角色：user/admin/ban'</span>,
+    createTime   datetime     <span class="hljs-keyword">default</span> <span class="hljs-built_in">CURRENT_TIMESTAMP</span> <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span> comment <span class="hljs-string">'创建时间'</span>,
+    updateTime   datetime     <span class="hljs-keyword">default</span> <span class="hljs-built_in">CURRENT_TIMESTAMP</span> <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span> <span class="hljs-keyword">on</span> <span class="hljs-keyword">update</span> <span class="hljs-built_in">CURRENT_TIMESTAMP</span> comment <span class="hljs-string">'更新时间'</span>,
+    isDelete     tinyint      <span class="hljs-keyword">default</span> <span class="hljs-number">0</span>                 <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span> comment <span class="hljs-string">'是否删除'</span>,
+    index idx_userAccount (userAccount)
+) comment <span class="hljs-string">'用户'</span> <span class="hljs-keyword">collate</span> <span class="hljs-operator">=</span> utf8mb4_unicode_ci;
+</code></pre>
+<h3 data-id="heading-6">代码生成器表</h3>
+<p>代码生成器表是整个系统的核心，主要存储以下几部分内容：</p>
+<ol>
+<li>代码生成器的元信息，包括基本信息、文件配置（fileConfig）、数据模型配置（modelConfig）等。</li>
+<li>便于吸引用户搜索和使用的信息，包括图片（picture）、标签列表（tags）。</li>
+<li>代码生成器文件信息，主要是生成器产物文件的存储根路径（distPath），从而支持用户下载生成器。</li>
+<li>代码生成器的状态（status），用于表示代码生成器的制作状态、是否可用等。默认是 0，后面会持续补充更多状态。</li>
+</ol>
+<p>这些只是目前需要的核心字段，后续可能会补充更多需要的字段。</p>
+<p>代码生成器表的建表 SQL 语句：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">sql</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-sql hljs" data-highlighted="yes"><span class="hljs-comment">-- 代码生成器表</span>
+<span class="hljs-keyword">create</span> <span class="hljs-keyword">table</span> if <span class="hljs-keyword">not</span> <span class="hljs-keyword">exists</span> generator
+(
+    id          <span class="hljs-type">bigint</span> auto_increment comment <span class="hljs-string">'id'</span> <span class="hljs-keyword">primary</span> key,
+    name        <span class="hljs-type">varchar</span>(<span class="hljs-number">128</span>)                       <span class="hljs-keyword">null</span> comment <span class="hljs-string">'名称'</span>,
+    description text                               <span class="hljs-keyword">null</span> comment <span class="hljs-string">'描述'</span>,
+    basePackage <span class="hljs-type">varchar</span>(<span class="hljs-number">128</span>)                       <span class="hljs-keyword">null</span> comment <span class="hljs-string">'基础包'</span>,
+    version     <span class="hljs-type">varchar</span>(<span class="hljs-number">128</span>)                       <span class="hljs-keyword">null</span> comment <span class="hljs-string">'版本'</span>,
+    author      <span class="hljs-type">varchar</span>(<span class="hljs-number">128</span>)                       <span class="hljs-keyword">null</span> comment <span class="hljs-string">'作者'</span>,
+    tags        <span class="hljs-type">varchar</span>(<span class="hljs-number">1024</span>)                      <span class="hljs-keyword">null</span> comment <span class="hljs-string">'标签列表（json 数组）'</span>,
+    picture     <span class="hljs-type">varchar</span>(<span class="hljs-number">256</span>)                       <span class="hljs-keyword">null</span> comment <span class="hljs-string">'图片'</span>,
+    fileConfig  text                               <span class="hljs-keyword">null</span> comment <span class="hljs-string">'文件配置（json字符串）'</span>,
+    modelConfig text                               <span class="hljs-keyword">null</span> comment <span class="hljs-string">'模型配置（json字符串）'</span>,
+    distPath    text                               <span class="hljs-keyword">null</span> comment <span class="hljs-string">'代码生成器产物路径'</span>,
+    status      <span class="hljs-type">int</span>      <span class="hljs-keyword">default</span> <span class="hljs-number">0</span>                 <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span> comment <span class="hljs-string">'状态'</span>,
+    userId      <span class="hljs-type">bigint</span>                             <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span> comment <span class="hljs-string">'创建用户 id'</span>,
+    createTime  datetime <span class="hljs-keyword">default</span> <span class="hljs-built_in">CURRENT_TIMESTAMP</span> <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span> comment <span class="hljs-string">'创建时间'</span>,
+    updateTime  datetime <span class="hljs-keyword">default</span> <span class="hljs-built_in">CURRENT_TIMESTAMP</span> <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span> <span class="hljs-keyword">on</span> <span class="hljs-keyword">update</span> <span class="hljs-built_in">CURRENT_TIMESTAMP</span> comment <span class="hljs-string">'更新时间'</span>,
+    isDelete    tinyint  <span class="hljs-keyword">default</span> <span class="hljs-number">0</span>                 <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span> comment <span class="hljs-string">'是否删除'</span>,
+    index idx_userId (userId)
+) comment <span class="hljs-string">'代码生成器'</span> <span class="hljs-keyword">collate</span> <span class="hljs-operator">=</span> utf8mb4_unicode_ci;
+</code></pre>
+<h3 data-id="heading-7">模拟数据</h3>
+<p>设计好库表后，我们可以自己造一些基本数据，为后面开发测试时做准备。</p>
+<p>用户表模拟数据：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">sql</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-sql hljs" data-highlighted="yes"><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> my_db.user (id, userAccount, userPassword, userName, userAvatar, userProfile, userRole) <span class="hljs-keyword">VALUES</span> (<span class="hljs-number">1</span>, <span class="hljs-string">'yupi'</span>, <span class="hljs-string">'b0dd3697a192885d7c055db46155b26a'</span>, <span class="hljs-string">'程序员鱼皮'</span>, <span class="hljs-string">'https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png'</span>, <span class="hljs-string">'我有一头小毛驴我从来也不骑'</span>, <span class="hljs-string">'admin'</span>);
+<span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> my_db.user (id, userAccount, userPassword, userName, userAvatar, userProfile, userRole) <span class="hljs-keyword">VALUES</span> (<span class="hljs-number">2</span>, <span class="hljs-string">'yupi2'</span>, <span class="hljs-string">'b0dd3697a192885d7c055db46155b26a'</span>, <span class="hljs-string">'普通鱼皮'</span>, <span class="hljs-string">'https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png'</span>, <span class="hljs-string">'我有一头小毛驴我从来也不骑'</span>, <span class="hljs-string">'user'</span>);
+</code></pre>
+<p>代码生成器表模拟数据：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">sql</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-sql hljs" data-highlighted="yes"><span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> my_db.generator (id, name, description, basePackage, version, author, tags, picture, fileConfig, modelConfig, distPath, status, userId) <span class="hljs-keyword">VALUES</span> (<span class="hljs-number">1</span>, <span class="hljs-string">'ACM 模板项目'</span>, <span class="hljs-string">'ACM 模板项目生成器'</span>, <span class="hljs-string">'com.yupi'</span>, <span class="hljs-string">'1.0'</span>, <span class="hljs-string">'程序员鱼皮'</span>, <span class="hljs-string">'["Java"]'</span>, <span class="hljs-string">'https://pic.yupi.icu/1/_r0_c1851-bf115939332e.jpg'</span>, <span class="hljs-string">'{}'</span>, <span class="hljs-string">'{}'</span>, <span class="hljs-keyword">null</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>);
+<span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> my_db.generator (id, name, description, basePackage, version, author, tags, picture, fileConfig, modelConfig, distPath, status, userId) <span class="hljs-keyword">VALUES</span> (<span class="hljs-number">2</span>, <span class="hljs-string">'Spring Boot 初始化模板'</span>, <span class="hljs-string">'Spring Boot 初始化模板项目生成器'</span>, <span class="hljs-string">'com.yupi'</span>, <span class="hljs-string">'1.0'</span>, <span class="hljs-string">'程序员鱼皮'</span>, <span class="hljs-string">'["Java"]'</span>, <span class="hljs-string">'https://pic.yupi.icu/1/_r0_c0726-7e30f8db802a.jpg'</span>, <span class="hljs-string">'{}'</span>, <span class="hljs-string">'{}'</span>, <span class="hljs-keyword">null</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>);
+<span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> my_db.generator (id, name, description, basePackage, version, author, tags, picture, fileConfig, modelConfig, distPath, status, userId) <span class="hljs-keyword">VALUES</span> (<span class="hljs-number">3</span>, <span class="hljs-string">'鱼皮外卖'</span>, <span class="hljs-string">'鱼皮外卖项目生成器'</span>, <span class="hljs-string">'com.yupi'</span>, <span class="hljs-string">'1.0'</span>, <span class="hljs-string">'程序员鱼皮'</span>, <span class="hljs-string">'["Java", "前端"]'</span>, <span class="hljs-string">'https://pic.yupi.icu/1/_r1_c0cf7-f8e4bd865b4b.jpg'</span>, <span class="hljs-string">'{}'</span>, <span class="hljs-string">'{}'</span>, <span class="hljs-keyword">null</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>);
+<span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> my_db.generator (id, name, description, basePackage, version, author, tags, picture, fileConfig, modelConfig, distPath, status, userId) <span class="hljs-keyword">VALUES</span> (<span class="hljs-number">4</span>, <span class="hljs-string">'鱼皮用户中心'</span>, <span class="hljs-string">'鱼皮用户中心项目生成器'</span>, <span class="hljs-string">'com.yupi'</span>, <span class="hljs-string">'1.0'</span>, <span class="hljs-string">'程序员鱼皮'</span>, <span class="hljs-string">'["Java", "前端"]'</span>, <span class="hljs-string">'https://pic.yupi.icu/1/_r1_c1c15-79cdecf24aed.jpg'</span>, <span class="hljs-string">'{}'</span>, <span class="hljs-string">'{}'</span>, <span class="hljs-keyword">null</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>);
+<span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> my_db.generator (id, name, description, basePackage, version, author, tags, picture, fileConfig, modelConfig, distPath, status, userId) <span class="hljs-keyword">VALUES</span> (<span class="hljs-number">5</span>, <span class="hljs-string">'鱼皮商城'</span>, <span class="hljs-string">'鱼皮商城项目生成器'</span>, <span class="hljs-string">'com.yupi'</span>, <span class="hljs-string">'1.0'</span>, <span class="hljs-string">'程序员鱼皮'</span>, <span class="hljs-string">'["Java", "前端"]'</span>, <span class="hljs-string">'https://pic.yupi.icu/1/_r1_c0709-8e80689ac1da.jpg'</span>, <span class="hljs-string">'{}'</span>, <span class="hljs-string">'{}'</span>, <span class="hljs-keyword">null</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>);
+</code></pre>
+<h2 data-id="heading-8">四、后端开发</h2>
+<p>为了提高开发效率，我们直接使用 <a href="https://www.code-nav.cn/course/1789200994552225793/section/1789201346202673154?type=#heading-0">编程导航的 Spring Boot 万用后端模板</a>，在此基础上进行开发。</p>
+<h3 data-id="heading-9">后端项目初始化</h3>
+<h4 data-id="heading-10">1、项目信息替换</h4>
+<p>下载 Spring Boot 万用后端模板，首先替换模板项目的基本信息为本项目的，包括替换项目名、包名等。</p>
+<p>1）替换项目名为 <code>yuzi-generator-web-backend</code>：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/3718765e-fdcf-4dee-9453-9af78dbdf922.png" alt="image.png" class="medium-zoom-image"></p>
+<p>2）替换包名，将 <code>springbootinit</code> 替换为 <code>web</code>。</p>
+<p>文件夹重命名：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/f64e8102-9be8-433e-b5cc-90983de9d626.png" alt="image.png" class="medium-zoom-image"></p>
+<p>全局替换包名：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/61d8da10-9864-4039-8db6-f0f75072692e.png" alt="image.png" class="medium-zoom-image"></p>
+<p>3）修改 <code>application.yml</code> 文件中，项目的启动端口号为 8120：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/6ae8bdbe-9264-41f6-b044-f2cc9a4f135c.png" alt="image.png" class="medium-zoom-image"></p>
+<h4 data-id="heading-11">2、项目瘦身</h4>
+<p>从模板项目中移除本项目中用不到的功能和代码，包括：</p>
+<ul>
+<li>微信公众号、公众号登录相关代码</li>
+<li>Elasticsearch 搜索</li>
+<li>Easy Excel 表格读写</li>
+<li>FreeMarker 模板引擎</li>
+<li>所有的单元测试代码</li>
+<li>帖子点赞和收藏功能</li>
+<li>其他无用的工具类代码</li>
+</ul>
+<p>初始化后的项目目录如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/0ed1fccb-ccee-4dcf-9c77-0db130d51f90.png" alt="image.png" class="medium-zoom-image"></p>
+<h4 data-id="heading-12">3、数据库初始化</h4>
+<p>在本地启动 MySQL，执行上述库表设计得到的 SQL 代码，创建库表。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/2712abdc-1edc-4933-9c57-2c4ad03aaa4a.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-13">用户功能</h3>
+<p>由于项目模板已经提供了现成的用户注册、用户登录、用户管理、权限校验功能，我们不需要额外开发，只要根据我们的库表设计，移除掉 unionId 和 mpOpenId 字段即可。</p>
+<p>注意使用全局搜索，把所有用到这些字段的代码均删除。</p>
+<h3 data-id="heading-14">代码生成器功能</h3>
+<h4 data-id="heading-15">1、代码生成</h4>
+<p>首先我们需要数据库实体、操作数据库的 MyBatis 增删改查代码。</p>
+<p>这些代码一般不用自己编写，可以安装 MyBatisX 插件，实现上述代码的自动生成：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/8d9ce915-6c20-4e70-9d71-a3278d425837.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后在 IDEA 自带的数据库管理界面中，右键 <code>generator</code> 表，使用 MyBatisX 插件：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/68ddcd59-1dad-47ce-94dc-f8dc34db644b.png" alt="image.png" class="medium-zoom-image"></p>
+<p>按照下图的配置生成代码：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/cdbf9fcd-1b78-4b61-8f04-6111c7645c41.png" alt="image.png" class="medium-zoom-image"></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/03d45e8b-65e8-4034-a50a-d551ed387a7d.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后在项目的 <code>generator</code> 包中，就能看到生成的代码了，我们需要将它们移动到对应的位置。</p>
+<p><strong>注意一定要修改 mapper.xml 文件中的实体类和 Mapper 包路径！</strong></p>
+<h4 data-id="heading-16">2、数据模型开发</h4>
+<p>1）我们需要修改生成的实体类代码 <code>Generator</code>，先为 <code>isDelete</code> 字段补充逻辑删除注解，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 是否删除
+ */</span>
+<span class="hljs-meta">@TableLogic</span>
+<span class="hljs-keyword">private</span> Integer isDelete;
+</code></pre>
+<p>2）然后根据实际需求，编写实体类对应的增删改查请求包装类、响应包装类：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/c27a6f8f-d300-49fa-8389-84342284ac8e.png" alt="image.png" class="medium-zoom-image"></p>
+<p>在包装类中，我们不仅需要控制有哪些属性，还需要将数据表中的 JSON 字段字符串转换为 Java 对象类型，便于前端接受和处理。需要转换的字段主要有 tags、fileConfig 和 modelConfig。</p>
+<p>fileConfig 和 modelConfig 配置较为复杂，对应制作工具的元信息配置，我们之前已经在 maker 项目中编写过 Meta 实体类了，可以直接复制到本后端项目中。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ff6f4a54-e82d-4b45-be71-050f674c3751.png" alt="image.png" class="medium-zoom-image"></p>
+<p>以包装类 <code>GeneratorVO</code> 为例，封装了代码生成器和创建用户的信息，并提供了 VO 对象和实体类相互转换的代码。完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">GeneratorVO</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Serializable</span> {
+
+    <span class="hljs-comment">/**
+     * id
+     */</span>
+    <span class="hljs-keyword">private</span> Long id;
+
+    <span class="hljs-comment">/**
+     * 名称
+     */</span>
+    <span class="hljs-keyword">private</span> String name;
+
+    <span class="hljs-comment">/**
+     * 描述
+     */</span>
+    <span class="hljs-keyword">private</span> String description;
+
+    <span class="hljs-comment">/**
+     * 基础包
+     */</span>
+    <span class="hljs-keyword">private</span> String basePackage;
+
+    <span class="hljs-comment">/**
+     * 版本
+     */</span>
+    <span class="hljs-keyword">private</span> String version;
+
+    <span class="hljs-comment">/**
+     * 作者
+     */</span>
+    <span class="hljs-keyword">private</span> String author;
+
+    <span class="hljs-comment">/**
+     * 图片
+     */</span>
+    <span class="hljs-keyword">private</span> String picture;
+
+    <span class="hljs-comment">/**
+     * 标签列表
+     */</span>
+    <span class="hljs-keyword">private</span> List&lt;String&gt; tags;
+
+    <span class="hljs-comment">/**
+     * 文件配置（json字符串）
+     */</span>
+    <span class="hljs-keyword">private</span> Meta.FileConfig fileConfig;
+
+    <span class="hljs-comment">/**
+     * 模型配置（json字符串）
+     */</span>
+    <span class="hljs-keyword">private</span> Meta.ModelConfig modelConfig;
+
+    <span class="hljs-comment">/**
+     * 代码生成器产物路径
+     */</span>
+    <span class="hljs-keyword">private</span> String distPath;
+
+    <span class="hljs-comment">/**
+     * 状态
+     */</span>
+    <span class="hljs-keyword">private</span> Integer status;
+
+    <span class="hljs-comment">/**
+     * 创建用户 id
+     */</span>
+    <span class="hljs-keyword">private</span> Long userId;
+
+    <span class="hljs-comment">/**
+     * 创建时间
+     */</span>
+    <span class="hljs-keyword">private</span> Date createTime;
+
+    <span class="hljs-comment">/**
+     * 更新时间
+     */</span>
+    <span class="hljs-keyword">private</span> Date updateTime;
+
+    <span class="hljs-comment">/**
+     * 用户
+     */</span>
+    <span class="hljs-keyword">private</span> UserVO user;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> <span class="hljs-type">long</span> <span class="hljs-variable">serialVersionUID</span> <span class="hljs-operator">=</span> <span class="hljs-number">1L</span>;
+
+    <span class="hljs-comment">/**
+     * 包装类转对象
+     *
+     * <span class="hljs-doctag">@param</span> generatorVO
+     * <span class="hljs-doctag">@return</span>
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Generator <span class="hljs-title function_">voToObj</span><span class="hljs-params">(GeneratorVO generatorVO)</span> {
+        <span class="hljs-keyword">if</span> (generatorVO == <span class="hljs-literal">null</span>) {
+            <span class="hljs-keyword">return</span> <span class="hljs-literal">null</span>;
+        }
+        <span class="hljs-type">Generator</span> <span class="hljs-variable">generator</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Generator</span>();
+        BeanUtils.copyProperties(generatorVO, generator);
+        List&lt;String&gt; tagList = generatorVO.getTags();
+        generator.setTags(JSONUtil.toJsonStr(tagList));
+        Meta.<span class="hljs-type">ModelConfig</span> <span class="hljs-variable">modelConfig</span> <span class="hljs-operator">=</span> generatorVO.getModelConfig();
+        generator.setModelConfig(JSONUtil.toJsonStr(modelConfig));
+        Meta.<span class="hljs-type">FileConfig</span> <span class="hljs-variable">fileConfig</span> <span class="hljs-operator">=</span> generatorVO.getFileConfig();
+        generator.setFileConfig(JSONUtil.toJsonStr(fileConfig));
+        <span class="hljs-keyword">return</span> generator;
+    }
+
+    <span class="hljs-comment">/**
+     * 对象转包装类
+     *
+     * <span class="hljs-doctag">@param</span> generator
+     * <span class="hljs-doctag">@return</span>
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> GeneratorVO <span class="hljs-title function_">objToVo</span><span class="hljs-params">(Generator generator)</span> {
+        <span class="hljs-keyword">if</span> (generator == <span class="hljs-literal">null</span>) {
+            <span class="hljs-keyword">return</span> <span class="hljs-literal">null</span>;
+        }
+        <span class="hljs-type">GeneratorVO</span> <span class="hljs-variable">generatorVO</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">GeneratorVO</span>();
+        BeanUtils.copyProperties(generator, generatorVO);
+        generatorVO.setTags(JSONUtil.toList(generator.getTags(), String.class));
+        generatorVO.setFileConfig(JSONUtil.toBean(generator.getFileConfig(), Meta.FileConfig.class));
+        generatorVO.setModelConfig(JSONUtil.toBean(generator.getModelConfig(), Meta.ModelConfig.class));
+        <span class="hljs-keyword">return</span> generatorVO;
+    }
+}
+</code></pre>
+<blockquote>
+<p>想要更高效的实现对象转换、属性复制，还可以考虑 MapStruct 等库。</p>
+</blockquote>
+<h4 data-id="heading-17">3、业务逻辑开发</h4>
+<p>开发好数据模型后，就要根据业务需求编写 Service 和 Controller 代码。</p>
+<p>1）可以直接复制模板中的 PostService 和 PostController，通过全局替换名称，快速完成基本的增删改查、搜索、返回包装类等功能。</p>
+<p>注意全局替换时，要严格指定大小写，并且不要把 PostMapping 请求类型注解也替换掉了。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/7260646d-2ddf-4d8e-9a59-0e06f557ec8f.png" alt="image.png" class="medium-zoom-image"></p>
+<p>2）替换后，需要根据数据库字段去调整数据校验、数据查询的逻辑。</p>
+<p>数据校验代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Override</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">validGenerator</span><span class="hljs-params">(Generator generator, <span class="hljs-type">boolean</span> add)</span> {
+    <span class="hljs-keyword">if</span> (generator == <span class="hljs-literal">null</span>) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.PARAMS_ERROR);
+    }
+    <span class="hljs-type">String</span> <span class="hljs-variable">name</span> <span class="hljs-operator">=</span> generator.getName();
+    <span class="hljs-type">String</span> <span class="hljs-variable">description</span> <span class="hljs-operator">=</span> generator.getDescription();
+
+    <span class="hljs-comment">// 创建时，参数不能为空</span>
+    <span class="hljs-keyword">if</span> (add) {
+        ThrowUtils.throwIf(StringUtils.isAnyBlank(name, description), ErrorCode.PARAMS_ERROR);
+    }
+    <span class="hljs-comment">// 有参数则校验</span>
+    <span class="hljs-keyword">if</span> (StringUtils.isNotBlank(name) &amp;&amp; name.length() &gt; <span class="hljs-number">80</span>) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.PARAMS_ERROR, <span class="hljs-string">"名称过长"</span>);
+    }
+    <span class="hljs-keyword">if</span> (StringUtils.isNotBlank(description) &amp;&amp; description.length() &gt; <span class="hljs-number">256</span>) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.PARAMS_ERROR, <span class="hljs-string">"描述过长"</span>);
+    }
+}
+</code></pre>
+<p>数据查询代码如下，作用是将前端请求包装类转换为 MyBatis Plus 接受的 QueryWrapper 条件查询对象：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Override</span>
+<span class="hljs-keyword">public</span> QueryWrapper&lt;Generator&gt; <span class="hljs-title function_">getQueryWrapper</span><span class="hljs-params">(GeneratorQueryRequest generatorQueryRequest)</span> {
+    QueryWrapper&lt;Generator&gt; queryWrapper = <span class="hljs-keyword">new</span> <span class="hljs-title class_">QueryWrapper</span>&lt;&gt;();
+    <span class="hljs-keyword">if</span> (generatorQueryRequest == <span class="hljs-literal">null</span>) {
+        <span class="hljs-keyword">return</span> queryWrapper;
+    }
+    <span class="hljs-type">String</span> <span class="hljs-variable">searchText</span> <span class="hljs-operator">=</span> generatorQueryRequest.getSearchText();
+    <span class="hljs-type">String</span> <span class="hljs-variable">sortField</span> <span class="hljs-operator">=</span> generatorQueryRequest.getSortField();
+    <span class="hljs-type">String</span> <span class="hljs-variable">sortOrder</span> <span class="hljs-operator">=</span> generatorQueryRequest.getSortOrder();
+    <span class="hljs-type">Long</span> <span class="hljs-variable">id</span> <span class="hljs-operator">=</span> generatorQueryRequest.getId();
+
+    <span class="hljs-type">String</span> <span class="hljs-variable">name</span> <span class="hljs-operator">=</span> generatorQueryRequest.getName();
+    <span class="hljs-type">String</span> <span class="hljs-variable">description</span> <span class="hljs-operator">=</span> generatorQueryRequest.getDescription();
+    List&lt;String&gt; tagList = generatorQueryRequest.getTags();
+    <span class="hljs-type">Integer</span> <span class="hljs-variable">status</span> <span class="hljs-operator">=</span> generatorQueryRequest.getStatus();
+
+    <span class="hljs-type">Long</span> <span class="hljs-variable">userId</span> <span class="hljs-operator">=</span> generatorQueryRequest.getUserId();
+    <span class="hljs-type">Long</span> <span class="hljs-variable">notId</span> <span class="hljs-operator">=</span> generatorQueryRequest.getNotId();
+    <span class="hljs-comment">// 拼接查询条件</span>
+    <span class="hljs-keyword">if</span> (StringUtils.isNotBlank(searchText)) {
+        queryWrapper.like(<span class="hljs-string">"name"</span>, searchText).or().like(<span class="hljs-string">"description"</span>, searchText);
+    }
+    queryWrapper.like(StringUtils.isNotBlank(name), <span class="hljs-string">"name"</span>, name);
+    queryWrapper.like(StringUtils.isNotBlank(description), <span class="hljs-string">"description"</span>, description);
+    <span class="hljs-keyword">if</span> (CollUtil.isNotEmpty(tagList)) {
+        <span class="hljs-keyword">for</span> (String tag : tagList) {
+            queryWrapper.like(<span class="hljs-string">"tags"</span>, <span class="hljs-string">"\""</span> + tag + <span class="hljs-string">"\""</span>);
+        }
+    }
+    queryWrapper.eq(ObjectUtils.isNotEmpty(status), <span class="hljs-string">"status"</span>, status);
+    queryWrapper.ne(ObjectUtils.isNotEmpty(notId), <span class="hljs-string">"id"</span>, notId);
+    queryWrapper.eq(ObjectUtils.isNotEmpty(id), <span class="hljs-string">"id"</span>, id);
+    queryWrapper.eq(ObjectUtils.isNotEmpty(userId), <span class="hljs-string">"userId"</span>, userId);
+    queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
+            sortField);
+    <span class="hljs-keyword">return</span> queryWrapper;
+}
+</code></pre>
+<p>3）最后移除一些无用代码，比如把模板中多余的帖子（Post）相关代码删除。</p>
+<h4 data-id="heading-18">4、测试</h4>
+<p>运行后端项目，打开本地的接口文档地址（<a href="http://localhost:8120/api/doc.html#/home">http://localhost:8120/api/doc.html</a>），测试用户注册、用户登录、代码生成器的增删改查等功能。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/22408114-c168-412f-8e62-e58e7ca6eb45.png" alt="image.png" class="medium-zoom-image"></p>
+<h2 data-id="heading-19">五、前端页面开发</h2>
+<p>为了提高开发效率，我们直接使用 <a href="https://www.code-nav.cn/course/1789200994552225793/section/1789201831080992770?type=#heading-0">编程导航的万用前端模板</a>（React + Ant Design 实现），在此基础上进行开发。</p>
+<h3 data-id="heading-20">前端项目初始化</h3>
+<p>下载万用前端模板，执行 <code>npm install</code> 命令来安装依赖，首先修改模板项目的基本信息为本项目的。</p>
+<h4 data-id="heading-21">1、项目信息修改</h4>
+<p>1）利用 Ant Design Pro 浏览页面中的主题设置器来切换主题，对导航栏位置、主题色、内容宽度进行修改。</p>
+<p>页面地址：<a href="https://preview.pro.ant.design/">https://preview.pro.ant.design/</a></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/d69ffd8d-ae17-4a66-91e7-7a93a688e7cd.png" alt="image.png" class="medium-zoom-image"></p>
+<p>编辑好主题后，拷贝设置到项目的 <code>config/defaultSettings</code> 配置中。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/3191efbf-0f0b-48f0-ab1d-646acb848d4e.png" alt="image.png" class="medium-zoom-image"></p>
+<p>2）使用全局替换，对标题和描述进行修改。</p>
+<p>标题改为：鱼籽代码生成</p>
+<p>描述改为：代码生成器在线制作共享，大幅提升开发效率</p>
+<p>3）替换网站图标</p>
+<p>将准备好的 Logo 文件放到 <code>public</code> 和 <code>src/assets</code> 目录下，文件名为 <code>logo.png</code>。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/2ac86522-08a1-49e9-8151-19af6558b462.png" alt="image.png" class="medium-zoom-image"></p>
+<blockquote>
+<p>Logo 是鱼聪明 AI 绘画制作的：<a href="https://www.yucongming.com/app/draw">https://www.yucongming.com/app/draw</a></p>
+</blockquote>
+<p>然后可以在 <code>app.tsx</code> 的 layout 配置中引入 Logo 文件，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> logo <span class="hljs-keyword">from</span> <span class="hljs-string">'@/assets/logo.png'</span>;
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> <span class="hljs-attr">layout</span>: <span class="hljs-title class_">RunTimeLayoutConfig</span> = <span class="hljs-function">(<span class="hljs-params">{ initialState }</span>) =&gt;</span> {
+  <span class="hljs-keyword">return</span> {
+    logo,
+    ...
+  };
+};
+</code></pre>
+<p>可以用在线工具将 PNG 格式的 Logo 转换为 ico 文件，替换 public 目录下的 <code>favicon.ico</code>。</p>
+<blockquote>
+<p>在线 ICO 制作工具：<a href="https://www.bitbug.net/">https://www.bitbug.net/</a></p>
+</blockquote>
+<h4 data-id="heading-22">2、请求处理</h4>
+<p>1）修改 <code>constant/index.ts</code> 中的网站后端地址，本地改为和后端一致：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 本地后端地址
+ */</span>
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> <span class="hljs-variable constant_">BACKEND_HOST_LOCAL</span> = <span class="hljs-string">"http://localhost:8120/api"</span>;
+</code></pre>
+<p>2）根据后端接口文档生成前端请求和 TypeScript 类型代码。</p>
+<p>修改 <code>config.ts</code> 的 <code>openAPI</code> 配置，将 schemaPath 改为后端接口文档数据地址：</p>
+<blockquote>
+<p>注意，这里建议使用 OpenAPI 2 版本的接口文档，生成的接口更准确。
+虽然鱼皮在本集教程中使用的是 OpenAPI 3，但在后面的教程中会做修改。</p>
+</blockquote>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes"><span class="hljs-attr">openAPI</span>: [
+  {
+    <span class="hljs-attr">requestLibPath</span>: <span class="hljs-string">"import { request } from '@umijs/max'"</span>,
+    <span class="hljs-attr">schemaPath</span>: <span class="hljs-string">'http://localhost:8120/api/v2/api-docs'</span>,
+    <span class="hljs-attr">projectName</span>: <span class="hljs-string">'backend'</span>,
+  },
+]
+</code></pre>
+<p>初始化完成后，我们就可以愉快地开发页面了。</p>
+<h3 data-id="heading-23">用户注册页面</h3>
+<p>1）先增加注册页的路由：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">typescript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-typescript hljs" data-highlighted="yes">{
+  <span class="hljs-attr">path</span>: <span class="hljs-string">'/user'</span>,
+  <span class="hljs-attr">layout</span>: <span class="hljs-literal">false</span>,
+  <span class="hljs-attr">routes</span>: [
+    { <span class="hljs-attr">path</span>: <span class="hljs-string">'/user/login'</span>, <span class="hljs-attr">component</span>: <span class="hljs-string">'./User/Login'</span> },
+    { <span class="hljs-attr">path</span>: <span class="hljs-string">'/user/register'</span>, <span class="hljs-attr">component</span>: <span class="hljs-string">'./User/Register'</span> },
+  ],
+}
+</code></pre>
+<p>2）直接复制模板内置的登录页面，然后修改下表单项（增加确认密码）基本就能满足需求了。</p>
+<p>需要注意登录页和注册页的相互跳转。</p>
+<p>用户注册页面的完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> <span class="hljs-title class_">Footer</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/components/Footer'</span>;
+<span class="hljs-keyword">import</span> { userRegister } <span class="hljs-keyword">from</span> <span class="hljs-string">'@/services/backend/userController'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">LockOutlined</span>, <span class="hljs-title class_">UserOutlined</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/icons'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">LoginForm</span>, <span class="hljs-title class_">ProFormText</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> { useEmotionCss } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/use-emotion-css'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Helmet</span>, history } <span class="hljs-keyword">from</span> <span class="hljs-string">'@umijs/max'</span>;
+<span class="hljs-keyword">import</span> { message, <span class="hljs-title class_">Tabs</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span>, { useState } <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Link</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'umi'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">Settings</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'../../../../config/defaultSettings'</span>;
+
+<span class="hljs-comment">/**
+ * 用户注册页面
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">UserRegisterPage</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span> = <span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-keyword">const</span> [<span class="hljs-keyword">type</span>, setType] = useState&lt;<span class="hljs-built_in">string</span>&gt;(<span class="hljs-string">'account'</span>);
+  <span class="hljs-keyword">const</span> containerClassName = <span class="hljs-title function_">useEmotionCss</span>(<span class="hljs-function">() =&gt;</span> {
+    <span class="hljs-keyword">return</span> {
+      <span class="hljs-attr">display</span>: <span class="hljs-string">'flex'</span>,
+      <span class="hljs-attr">flexDirection</span>: <span class="hljs-string">'column'</span>,
+      <span class="hljs-attr">height</span>: <span class="hljs-string">'100vh'</span>,
+      <span class="hljs-attr">overflow</span>: <span class="hljs-string">'auto'</span>,
+      <span class="hljs-attr">backgroundImage</span>:
+        <span class="hljs-string">"url('https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/V-_oS6r-i7wAAAAAAAAAAAAAFl94AQBr')"</span>,
+      <span class="hljs-attr">backgroundSize</span>: <span class="hljs-string">'100% 100%'</span>,
+    };
+  });
+
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">handleSubmit</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">values: API.UserRegisterRequest</span>) =&gt; {
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-comment">// 注册</span>
+      <span class="hljs-keyword">await</span> <span class="hljs-title function_">userRegister</span>({
+        ...values,
+      });
+
+      <span class="hljs-keyword">const</span> defaultLoginSuccessMessage = <span class="hljs-string">'注册成功！'</span>;
+      message.<span class="hljs-title function_">success</span>(defaultLoginSuccessMessage);
+      history.<span class="hljs-title function_">push</span>(<span class="hljs-string">'/user/login'</span>);
+      <span class="hljs-keyword">return</span>;
+    } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+      <span class="hljs-keyword">const</span> defaultLoginFailureMessage = <span class="hljs-string">`注册失败，<span class="hljs-subst">${error.message}</span>`</span>;
+      message.<span class="hljs-title function_">error</span>(defaultLoginFailureMessage);
+    }
+  };
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">className</span>=<span class="hljs-string">{containerClassName}</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Helmet</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>
+          {'注册'}- {Settings.title}
+        <span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Helmet</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">div</span>
+        <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span>
+          <span class="hljs-attr">flex:</span> '<span class="hljs-attr">1</span>',
+          <span class="hljs-attr">padding:</span> '<span class="hljs-attr">32px</span> <span class="hljs-attr">0</span>',
+        }}
+      &gt;</span>
+        &lt;LoginForm<span class="hljs-tag">&lt;<span class="hljs-name">API.UserRegisterRequest</span>&gt;</span>
+          contentStyle={{
+            minWidth: 280,
+            maxWidth: '75vw',
+          }}
+          logo={<span class="hljs-tag">&lt;<span class="hljs-name">img</span> <span class="hljs-attr">alt</span>=<span class="hljs-string">"logo"</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">height:</span> '<span class="hljs-attr">100</span>%' }} <span class="hljs-attr">src</span>=<span class="hljs-string">"/logo.png"</span> /&gt;</span>}
+          title="鱼籽代码生成"
+          subTitle={'代码生成器在线制作共享，大幅提升开发效率'}
+          initialValues={{
+            autoLogin: true,
+          }}
+          submitter={{
+            searchConfig: {
+              submitText: '注册',
+            },
+          }}
+          onFinish={async (values) =&gt; {
+            await handleSubmit(values);
+          }}
+        &gt;
+          <span class="hljs-tag">&lt;<span class="hljs-name">Tabs</span>
+            <span class="hljs-attr">activeKey</span>=<span class="hljs-string">{type}</span>
+            <span class="hljs-attr">onChange</span>=<span class="hljs-string">{setType}</span>
+            <span class="hljs-attr">centered</span>
+            <span class="hljs-attr">items</span>=<span class="hljs-string">{[</span>
+              {
+                <span class="hljs-attr">key:</span> '<span class="hljs-attr">account</span>',
+                <span class="hljs-attr">label:</span> '<span class="hljs-attr">新用户注册</span>',
+              },
+            ]}
+          /&gt;</span>
+          {type === 'account' &amp;&amp; (
+            <span class="hljs-tag">&lt;&gt;</span>
+              <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span>
+                <span class="hljs-attr">name</span>=<span class="hljs-string">"userAccount"</span>
+                <span class="hljs-attr">fieldProps</span>=<span class="hljs-string">{{</span>
+                  <span class="hljs-attr">size:</span> '<span class="hljs-attr">large</span>',
+                  <span class="hljs-attr">prefix:</span> &lt;<span class="hljs-attr">UserOutlined</span> /&gt;</span>,
+                }}
+                placeholder={'请输入账号'}
+                rules={[
+                  {
+                    required: true,
+                    message: '账号是必填项！',
+                  },
+                ]}
+              /&gt;
+              <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText.Password</span>
+                <span class="hljs-attr">name</span>=<span class="hljs-string">"userPassword"</span>
+                <span class="hljs-attr">fieldProps</span>=<span class="hljs-string">{{</span>
+                  <span class="hljs-attr">size:</span> '<span class="hljs-attr">large</span>',
+                  <span class="hljs-attr">prefix:</span> &lt;<span class="hljs-attr">LockOutlined</span> /&gt;</span>,
+                }}
+                placeholder={'请输入密码'}
+                rules={[
+                  {
+                    required: true,
+                    message: '密码是必填项！',
+                  },
+                ]}
+              /&gt;
+              <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText.Password</span>
+                <span class="hljs-attr">name</span>=<span class="hljs-string">"checkPassword"</span>
+                <span class="hljs-attr">fieldProps</span>=<span class="hljs-string">{{</span>
+                  <span class="hljs-attr">size:</span> '<span class="hljs-attr">large</span>',
+                  <span class="hljs-attr">prefix:</span> &lt;<span class="hljs-attr">LockOutlined</span> /&gt;</span>,
+                }}
+                placeholder={'请再次确认密码'}
+                rules={[
+                  {
+                    required: true,
+                    message: '确认密码是必填项！',
+                  },
+                ]}
+              /&gt;
+            <span class="hljs-tag">&lt;/&gt;</span>
+          )}
+
+          <span class="hljs-tag">&lt;<span class="hljs-name">div</span>
+            <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span>
+              <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">24</span>,
+              <span class="hljs-attr">textAlign:</span> '<span class="hljs-attr">right</span>',
+            }}
+          &gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">Link</span> <span class="hljs-attr">to</span>=<span class="hljs-string">"/user/login"</span>&gt;</span>老用户登录<span class="hljs-tag">&lt;/<span class="hljs-name">Link</span>&gt;</span>
+          <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">LoginForm</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Footer</span> /&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span>
+  );
+};
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">UserRegisterPage</span>;
+</code></pre>
+<p>界面效果：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/1e761e7a-5380-4411-851b-0407ab25a93f.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-24">管理页面</h3>
+<p>模板已经内置了用户管理页面，我们只需要开发代码生成器管理页面即可。</p>
+<p>1）先增加页面路由：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">typescript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-typescript hljs" data-highlighted="yes">{
+  <span class="hljs-attr">path</span>: <span class="hljs-string">'/admin'</span>,
+  <span class="hljs-attr">icon</span>: <span class="hljs-string">'crown'</span>,
+  <span class="hljs-attr">name</span>: <span class="hljs-string">'管理页'</span>,
+  <span class="hljs-attr">access</span>: <span class="hljs-string">'canAdmin'</span>,
+  <span class="hljs-attr">routes</span>: [
+    { <span class="hljs-attr">path</span>: <span class="hljs-string">'/admin'</span>, <span class="hljs-attr">redirect</span>: <span class="hljs-string">'/admin/user'</span> },
+    { <span class="hljs-attr">icon</span>: <span class="hljs-string">'user'</span>, <span class="hljs-attr">path</span>: <span class="hljs-string">'/admin/user'</span>, <span class="hljs-attr">component</span>: <span class="hljs-string">'./Admin/User'</span>, <span class="hljs-attr">name</span>: <span class="hljs-string">'用户管理'</span> },
+    {
+      <span class="hljs-attr">icon</span>: <span class="hljs-string">'tools'</span>,
+      <span class="hljs-attr">path</span>: <span class="hljs-string">'/admin/generator'</span>,
+      <span class="hljs-attr">component</span>: <span class="hljs-string">'./Admin/Generator'</span>,
+      <span class="hljs-attr">name</span>: <span class="hljs-string">'生成器管理'</span>,
+    },
+  ],
+}
+</code></pre>
+<p>2）直接复制用户管理页面，然后替换 <code>User</code> 为 <code>Generator</code>，注意大小写、中文都要替换。</p>
+<p>3）根据生成器表的字段修改表格列 columns 配置，需要尤其注意标签的渲染。</p>
+<p>标签列的配置代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">{
+  <span class="hljs-attr">title</span>: <span class="hljs-string">'标签'</span>,
+  <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'tags'</span>,
+  <span class="hljs-attr">valueType</span>: <span class="hljs-string">'text'</span>,
+  <span class="hljs-attr">renderFormItem</span>: <span class="hljs-function">(<span class="hljs-params">schema</span>) =&gt;</span> {
+    <span class="hljs-keyword">const</span> { fieldProps } = schema;
+    <span class="hljs-comment">// @ts-ignore</span>
+    <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Select</span> {<span class="hljs-attr">...fieldProps</span>} <span class="hljs-attr">mode</span>=<span class="hljs-string">"tags"</span> /&gt;</span></span>;
+  },
+  <span class="hljs-title function_">render</span>(<span class="hljs-params">_, record</span>) {
+    <span class="hljs-keyword">if</span> (!record.<span class="hljs-property">tags</span>) {
+      <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span></span>;
+    }
+    <span class="hljs-keyword">return</span> <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>(record.<span class="hljs-property">tags</span>).<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">tag: <span class="hljs-built_in">string</span></span>) =&gt;</span> {
+      <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Tag</span> <span class="hljs-attr">key</span>=<span class="hljs-string">{tag}</span>&gt;</span>{tag}<span class="hljs-tag">&lt;/<span class="hljs-name">Tag</span>&gt;</span></span>;
+    });
+  },
+}
+</code></pre>
+<p>4）分别测试查询搜索、删除、新建、修改操作，针对有异常的代码进行修复。</p>
+<p>比如创建函数中，需要将 JSON 字符串转换为 JS 对象，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 添加节点
+ * <span class="hljs-doctag">@param</span> <span class="hljs-variable">fields</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">handleAdd</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">fields: API.GeneratorAddRequest</span>) =&gt; {
+  fields.<span class="hljs-property">fileConfig</span> = <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>((fields.<span class="hljs-property">fileConfig</span> || <span class="hljs-string">'{}'</span>) <span class="hljs-keyword">as</span> string);
+  fields.<span class="hljs-property">modelConfig</span> = <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>((fields.<span class="hljs-property">modelConfig</span> || <span class="hljs-string">'{}'</span>) <span class="hljs-keyword">as</span> string);
+  <span class="hljs-keyword">const</span> hide = message.<span class="hljs-title function_">loading</span>(<span class="hljs-string">'正在添加'</span>);
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">addGenerator</span>(fields);
+    <span class="hljs-title function_">hide</span>();
+    message.<span class="hljs-title function_">success</span>(<span class="hljs-string">'创建成功'</span>);
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
+  } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: any) {
+    <span class="hljs-title function_">hide</span>();
+    message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'创建失败，'</span> + error.<span class="hljs-property">message</span>);
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
+  }
+};
+</code></pre>
+<p>修改操作中，需要注意给 tags 添加默认值：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes">form={{
+  <span class="hljs-attr">initialValues</span>: {
+    ...oldData,
+    <span class="hljs-attr">tags</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>(oldData.<span class="hljs-property">tags</span> || <span class="hljs-string">'[]'</span>),
+  },
+}}
+</code></pre>
+<p>5）功能完成后，可以对页面进行优化。</p>
+<p>比如代码生成器管理页面的表格可以更宽，以展示多列数据。</p>
+<p>Ant Design Pro 默认是使用 <code>PageContainer</code> 组件来控制页面整体布局的（包括宽度、标题、面包屑等），只要把该组件替换为 <code>div</code>，就不会受到定宽的约束了。</p>
+<p>修改的页面代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">&lt;div className=<span class="hljs-string">"generator-admin-page"</span>&gt;
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Typography.Title</span> <span class="hljs-attr">level</span>=<span class="hljs-string">{4}</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">16</span> }}&gt;</span>生成器管理<span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Title</span>&gt;</span></span>
+  ...
+&lt;/div&gt;
+</code></pre>
+<p>页面效果如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/e9034703-e622-4328-9184-b38c5e5b2bb9.png" alt="image.png" class="medium-zoom-image"></p>
+<p>生成器管理页面的完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> <span class="hljs-title class_">CreateModal</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/pages/Admin/Generator/components/CreateModal'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">UpdateModal</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/pages/Admin/Generator/components/UpdateModal'</span>;
+<span class="hljs-keyword">import</span> { deleteGenerator, listGeneratorByPage } <span class="hljs-keyword">from</span> <span class="hljs-string">'@/services/backend/generatorController'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">PlusOutlined</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/icons'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-keyword">type</span> { <span class="hljs-title class_">ActionType</span>, <span class="hljs-title class_">ProColumns</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">ProTable</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-string">'@umijs/max'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Button</span>, message, <span class="hljs-title class_">Select</span>, <span class="hljs-title class_">Space</span>, <span class="hljs-title class_">Tag</span>, <span class="hljs-title class_">Typography</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span>, { useRef, useState } <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-comment">/**
+ * 生成器管理页面
+ *
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">GeneratorAdminPage</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span> = <span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-comment">// 是否显示新建窗口</span>
+  <span class="hljs-keyword">const</span> [createModalVisible, setCreateModalVisible] = useState&lt;<span class="hljs-built_in">boolean</span>&gt;(<span class="hljs-literal">false</span>);
+  <span class="hljs-comment">// 是否显示更新窗口</span>
+  <span class="hljs-keyword">const</span> [updateModalVisible, setUpdateModalVisible] = useState&lt;<span class="hljs-built_in">boolean</span>&gt;(<span class="hljs-literal">false</span>);
+  <span class="hljs-keyword">const</span> actionRef = useRef&lt;<span class="hljs-title class_">ActionType</span>&gt;();
+  <span class="hljs-comment">// 当前用户点击的数据</span>
+  <span class="hljs-keyword">const</span> [currentRow, setCurrentRow] = useState&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">Generator</span>&gt;();
+
+  <span class="hljs-comment">/**
+   * 删除节点
+   *
+   * <span class="hljs-doctag">@param</span> <span class="hljs-variable">row</span>
+   */</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">handleDelete</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">row: API.<span class="hljs-built_in">Generator</span></span>) =&gt; {
+    <span class="hljs-keyword">const</span> hide = message.<span class="hljs-title function_">loading</span>(<span class="hljs-string">'正在删除'</span>);
+    <span class="hljs-keyword">if</span> (!row) <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">await</span> <span class="hljs-title function_">deleteGenerator</span>({
+        <span class="hljs-attr">id</span>: row.<span class="hljs-property">id</span> <span class="hljs-keyword">as</span> <span class="hljs-built_in">any</span>,
+      });
+      <span class="hljs-title function_">hide</span>();
+      message.<span class="hljs-title function_">success</span>(<span class="hljs-string">'删除成功'</span>);
+      actionRef?.<span class="hljs-property">current</span>?.<span class="hljs-title function_">reload</span>();
+      <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
+    } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+      <span class="hljs-title function_">hide</span>();
+      message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'删除失败，'</span> + error.<span class="hljs-property">message</span>);
+      <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
+    }
+  };
+
+  <span class="hljs-comment">/**
+   * 表格列配置
+   */</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-attr">columns</span>: <span class="hljs-title class_">ProColumns</span>&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">Generator</span>&gt;[] = [
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'id'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'id'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'text'</span>,
+      <span class="hljs-attr">hideInForm</span>: <span class="hljs-literal">true</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'名称'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'name'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'text'</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'描述'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'description'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'textarea'</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'基础包'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'basePackage'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'text'</span>,
+      <span class="hljs-attr">hideInSearch</span>: <span class="hljs-literal">true</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'版本'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'version'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'text'</span>,
+      <span class="hljs-attr">hideInSearch</span>: <span class="hljs-literal">true</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'作者'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'author'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'text'</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'标签'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'tags'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'text'</span>,
+      <span class="hljs-attr">renderFormItem</span>: <span class="hljs-function">(<span class="hljs-params">schema</span>) =&gt;</span> {
+        <span class="hljs-keyword">const</span> { fieldProps } = schema;
+        <span class="hljs-comment">// @ts-ignore</span>
+        <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Select</span> {<span class="hljs-attr">...fieldProps</span>} <span class="hljs-attr">mode</span>=<span class="hljs-string">"tags"</span> /&gt;</span></span>;
+      },
+      <span class="hljs-title function_">render</span>(<span class="hljs-params">_, record</span>) {
+        <span class="hljs-keyword">if</span> (!record.<span class="hljs-property">tags</span>) {
+          <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span></span>;
+        }
+        <span class="hljs-keyword">return</span> <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>(record.<span class="hljs-property">tags</span>).<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">tag: <span class="hljs-built_in">string</span></span>) =&gt;</span> {
+          <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Tag</span> <span class="hljs-attr">key</span>=<span class="hljs-string">{tag}</span>&gt;</span>{tag}<span class="hljs-tag">&lt;/<span class="hljs-name">Tag</span>&gt;</span></span>;
+        });
+      },
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'文件配置'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'fileConfig'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'jsonCode'</span>,
+      <span class="hljs-attr">hideInSearch</span>: <span class="hljs-literal">true</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'模型配置'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'modelConfig'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'jsonCode'</span>,
+      <span class="hljs-attr">hideInSearch</span>: <span class="hljs-literal">true</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'产物路径'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'distPath'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'text'</span>,
+      <span class="hljs-attr">hideInSearch</span>: <span class="hljs-literal">true</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'图片'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'picture'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'image'</span>,
+      <span class="hljs-attr">fieldProps</span>: {
+        <span class="hljs-attr">width</span>: <span class="hljs-number">64</span>,
+      },
+      <span class="hljs-attr">hideInSearch</span>: <span class="hljs-literal">true</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'状态'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'status'</span>,
+      <span class="hljs-attr">valueEnum</span>: {
+        <span class="hljs-number">0</span>: {
+          <span class="hljs-attr">text</span>: <span class="hljs-string">'默认'</span>,
+        },
+      },
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'创建用户'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'userId'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'text'</span>,
+      <span class="hljs-attr">hideInForm</span>: <span class="hljs-literal">true</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'创建时间'</span>,
+      <span class="hljs-attr">sorter</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'createTime'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'dateTime'</span>,
+      <span class="hljs-attr">hideInSearch</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">hideInForm</span>: <span class="hljs-literal">true</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'更新时间'</span>,
+      <span class="hljs-attr">sorter</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'updateTime'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'dateTime'</span>,
+      <span class="hljs-attr">hideInSearch</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">hideInForm</span>: <span class="hljs-literal">true</span>,
+    },
+    {
+      <span class="hljs-attr">title</span>: <span class="hljs-string">'操作'</span>,
+      <span class="hljs-attr">dataIndex</span>: <span class="hljs-string">'option'</span>,
+      <span class="hljs-attr">valueType</span>: <span class="hljs-string">'option'</span>,
+      <span class="hljs-attr">render</span>: <span class="hljs-function">(<span class="hljs-params">_, record</span>) =&gt;</span> (
+        <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Space</span> <span class="hljs-attr">size</span>=<span class="hljs-string">"middle"</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Link</span>
+            <span class="hljs-attr">onClick</span>=<span class="hljs-string">{()</span> =&gt;</span> {
+              setCurrentRow(record);
+              setUpdateModalVisible(true);
+            }}
+          &gt;
+            修改
+          <span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Link</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Link</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"danger"</span> <span class="hljs-attr">onClick</span>=<span class="hljs-string">{()</span> =&gt;</span> handleDelete(record)}&gt;
+            删除
+          <span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Link</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">Space</span>&gt;</span></span>
+      ),
+    },
+  ];
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">className</span>=<span class="hljs-string">"generator-admin-page"</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Title</span> <span class="hljs-attr">level</span>=<span class="hljs-string">{4}</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">16</span> }}&gt;</span>
+        生成器管理
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Title</span>&gt;</span>
+      &lt;ProTable<span class="hljs-tag">&lt;<span class="hljs-name">API.Generator</span>&gt;</span>
+        headerTitle={'查询表格'}
+        actionRef={actionRef}
+        rowKey="key"
+        search={{
+          labelWidth: 120,
+        }}
+        toolBarRender={() =&gt; [
+          <span class="hljs-tag">&lt;<span class="hljs-name">Button</span>
+            <span class="hljs-attr">type</span>=<span class="hljs-string">"primary"</span>
+            <span class="hljs-attr">key</span>=<span class="hljs-string">"primary"</span>
+            <span class="hljs-attr">onClick</span>=<span class="hljs-string">{()</span> =&gt;</span> {
+              setCreateModalVisible(true);
+            }}
+          &gt;
+            <span class="hljs-tag">&lt;<span class="hljs-name">PlusOutlined</span> /&gt;</span> 新建
+          <span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;</span>,
+        ]}
+        request={async (params, sort, filter) =&gt; {
+          const sortField = Object.keys(sort)?.[0];
+          const sortOrder = sort?.[sortField] ?? undefined;
+
+          const { data, code } = await listGeneratorByPage({
+            ...params,
+            sortField,
+            sortOrder,
+            ...filter,
+          } as API.GeneratorQueryRequest);
+
+          return {
+            success: code === 0,
+            data: data?.records || [],
+            total: Number(data?.total) || 0,
+          };
+        }}
+        columns={columns}
+      /&gt;
+      <span class="hljs-tag">&lt;<span class="hljs-name">CreateModal</span>
+        <span class="hljs-attr">visible</span>=<span class="hljs-string">{createModalVisible}</span>
+        <span class="hljs-attr">columns</span>=<span class="hljs-string">{columns}</span>
+        <span class="hljs-attr">onSubmit</span>=<span class="hljs-string">{()</span> =&gt;</span> {
+          setCreateModalVisible(false);
+          actionRef.current?.reload();
+        }}
+        onCancel={() =&gt; {
+          setCreateModalVisible(false);
+        }}
+      /&gt;
+      <span class="hljs-tag">&lt;<span class="hljs-name">UpdateModal</span>
+        <span class="hljs-attr">visible</span>=<span class="hljs-string">{updateModalVisible}</span>
+        <span class="hljs-attr">columns</span>=<span class="hljs-string">{columns}</span>
+        <span class="hljs-attr">oldData</span>=<span class="hljs-string">{currentRow}</span>
+        <span class="hljs-attr">onSubmit</span>=<span class="hljs-string">{()</span> =&gt;</span> {
+          setUpdateModalVisible(false);
+          setCurrentRow(undefined);
+          actionRef.current?.reload();
+        }}
+        onCancel={() =&gt; {
+          setUpdateModalVisible(false);
+        }}
+      /&gt;
+    <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+  );
+};
+export default GeneratorAdminPage;
+</span></code></pre>
+<h3 data-id="heading-25">主页（搜索列表页）</h3>
+<p>如果没有设计资源，推荐仿照页面进行开发。比如 Ant Design Pro 官方预览页的项目搜索列表页，和我们的需求非常匹配。</p>
+<p>地址：<a href="https://preview.pro.ant.design/list/search/projects">https://preview.pro.ant.design/list/search/projects</a></p>
+<p>1）将主页放到 <code>pages/Index</code> 目录下，修改主页路由：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes">{ <span class="hljs-attr">path</span>: <span class="hljs-string">'/'</span>, <span class="hljs-attr">icon</span>: <span class="hljs-string">'home'</span>, <span class="hljs-attr">component</span>: <span class="hljs-string">'./Index'</span>, <span class="hljs-attr">name</span>: <span class="hljs-string">'主页'</span> }
+</code></pre>
+<p>2）先将页面清理干净：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">PageContainer</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-comment">/**
+ * 主页
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">IndexPage</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span> = <span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">PageContainer</span>&gt;</span>
+
+  <span class="hljs-tag">&lt;/<span class="hljs-name">PageContainer</span>&gt;</span></span>;
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">IndexPage</span>;
+</code></pre>
+<p>3）然后请求后端获取代码生成器列表数据</p>
+<blockquote>
+<p>先获取数据可以便于后续页面调试</p>
+</blockquote>
+<p>获取数据相关代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-comment">/**
+ * 默认分页参数
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-attr">DEFAULT_PAGE_PARAMS</span>: <span class="hljs-title class_">PageRequest</span> = {
+  <span class="hljs-attr">current</span>: <span class="hljs-number">1</span>,
+  <span class="hljs-attr">pageSize</span>: <span class="hljs-number">4</span>,
+  <span class="hljs-attr">sortField</span>: <span class="hljs-string">'createTime'</span>,
+  <span class="hljs-attr">sortOrder</span>: <span class="hljs-string">'descend'</span>,
+};
+
+<span class="hljs-keyword">const</span> [loading, setLoading] = useState&lt;<span class="hljs-built_in">boolean</span>&gt;(<span class="hljs-literal">false</span>);
+<span class="hljs-keyword">const</span> [dataList, setDataList] = useState&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorVO</span>[]&gt;([]);
+<span class="hljs-keyword">const</span> [total, setTotal] = useState&lt;<span class="hljs-built_in">number</span>&gt;(<span class="hljs-number">0</span>);
+<span class="hljs-keyword">const</span> [searchParams, setSearchParams] = useState&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorQueryRequest</span>&gt;({
+  ...<span class="hljs-variable constant_">DEFAULT_PAGE_PARAMS</span>,
+});
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">doSearch</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params"></span>) =&gt; {
+  <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">true</span>);
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">listGeneratorVoByPage</span>(searchParams);
+    <span class="hljs-title function_">setDataList</span>(res.<span class="hljs-property">data</span>?.<span class="hljs-property">records</span> ?? []);
+    <span class="hljs-title function_">setTotal</span>(<span class="hljs-title class_">Number</span>(res.<span class="hljs-property">data</span>?.<span class="hljs-property">total</span>) ?? <span class="hljs-number">0</span>);
+  } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+    message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'获取数据失败，'</span> + error.<span class="hljs-property">message</span>);
+  }
+  <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">false</span>);
+};
+
+<span class="hljs-title function_">useEffect</span>(<span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-title function_">doSearch</span>();
+}, [searchParams]);
+</code></pre>
+<p>上述代码中，通过 <code>useEffect</code> 钩子监听 <code>searchParams</code> 搜索条件变量，只要搜索条件发生改变（或者首次执行），就会立刻出发重新搜索。</p>
+<p>4）开发基本页面</p>
+<p>在开发页面时，建议大家多利用现有的组件或代码，而不是从 0 开始编写。</p>
+<p>比如使用 Ant Design Procomponents 的 QueryFilter 组件，就能快速开发搜索表单。</p>
+<p>地址：<a href="https://procomponents.ant.design/components/query-filter#queryfilterlightfilter-demo-search-filter">https://procomponents.ant.design/components/query-filter#queryfilterlightfilter-demo-search-filter</a></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/97c73702-e2d9-426b-b674-15795b8bd421.png" alt="image.png" class="medium-zoom-image"></p>
+<p>还可以直接通过 Ant Design Pro 脚手架（选择 umi@3）生成官方预览页的现成代码，作为参考。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/8ccb65fc-fd74-4e7e-a778-bc51880456a0.png" alt="image.png" class="medium-zoom-image"></p>
+<p>5）完善分页和搜索</p>
+<p>使用 Ant Design 的 List 组件自带的分页功能，当用户切换分页时，会触发 onChange 事件，然后修改 searchParams，就能重新触发搜索。</p>
+<p>示例代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">jsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-jsx hljs language-javascript" data-highlighted="yes">&lt;<span class="hljs-title class_">List</span>&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorVO</span>&gt;
+  pagination={{
+    <span class="hljs-attr">current</span>: searchParams.<span class="hljs-property">current</span>,
+    <span class="hljs-attr">pageSize</span>: searchParams.<span class="hljs-property">pageSize</span>,
+    total,
+    <span class="hljs-title function_">onChange</span>(<span class="hljs-params">current, pageSize</span>) {
+      <span class="hljs-title function_">setSearchParams</span>({
+        ...searchParams,
+        current,
+        pageSize,
+      });
+    },
+	}}
+/&gt;
+</code></pre>
+<p>6）最后再调整下页面的细节，比如元素间距、宽高等，最终得到的页面效果如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/4e8d3e47-8d96-4499-b91e-f19213709d80.png" alt="image.png" class="medium-zoom-image"></p>
+<p>主页的完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> { listGeneratorVoByPage } <span class="hljs-keyword">from</span> <span class="hljs-string">'@/services/backend/generatorController'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">UserOutlined</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/icons'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">PageContainer</span>, <span class="hljs-title class_">ProFormSelect</span>, <span class="hljs-title class_">ProFormText</span>, <span class="hljs-title class_">QueryFilter</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Avatar</span>, <span class="hljs-title class_">Card</span>, <span class="hljs-title class_">Flex</span>, <span class="hljs-title class_">Image</span>, <span class="hljs-title class_">Input</span>, <span class="hljs-title class_">List</span>, message, <span class="hljs-title class_">Tabs</span>, <span class="hljs-title class_">Tag</span>, <span class="hljs-title class_">Typography</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> moment <span class="hljs-keyword">from</span> <span class="hljs-string">'moment'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span>, { useEffect, useState } <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-comment">/**
+ * 默认分页参数
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-attr">DEFAULT_PAGE_PARAMS</span>: <span class="hljs-title class_">PageRequest</span> = {
+  <span class="hljs-attr">current</span>: <span class="hljs-number">1</span>,
+  <span class="hljs-attr">pageSize</span>: <span class="hljs-number">4</span>,
+  <span class="hljs-attr">sortField</span>: <span class="hljs-string">'createTime'</span>,
+  <span class="hljs-attr">sortOrder</span>: <span class="hljs-string">'descend'</span>,
+};
+
+<span class="hljs-comment">/**
+ * 主页
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">IndexPage</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span> = <span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-keyword">const</span> [loading, setLoading] = useState&lt;<span class="hljs-built_in">boolean</span>&gt;(<span class="hljs-literal">true</span>);
+  <span class="hljs-keyword">const</span> [dataList, setDataList] = useState&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorVO</span>[]&gt;([]);
+  <span class="hljs-keyword">const</span> [total, setTotal] = useState&lt;<span class="hljs-built_in">number</span>&gt;(<span class="hljs-number">0</span>);
+  <span class="hljs-comment">// 搜索条件</span>
+  <span class="hljs-keyword">const</span> [searchParams, setSearchParams] = useState&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorQueryRequest</span>&gt;({
+    ...<span class="hljs-variable constant_">DEFAULT_PAGE_PARAMS</span>,
+  });
+
+  <span class="hljs-comment">/**
+   * 搜索
+   */</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">doSearch</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params"></span>) =&gt; {
+    <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">true</span>);
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">listGeneratorVoByPage</span>(searchParams);
+      <span class="hljs-title function_">setDataList</span>(res.<span class="hljs-property">data</span>?.<span class="hljs-property">records</span> ?? []);
+      <span class="hljs-title function_">setTotal</span>(<span class="hljs-title class_">Number</span>(res.<span class="hljs-property">data</span>?.<span class="hljs-property">total</span>) ?? <span class="hljs-number">0</span>);
+    } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+      message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'获取数据失败，'</span> + error.<span class="hljs-property">message</span>);
+    }
+    <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">false</span>);
+  };
+
+  <span class="hljs-title function_">useEffect</span>(<span class="hljs-function">() =&gt;</span> {
+    <span class="hljs-title function_">doSearch</span>();
+  }, [searchParams]);
+
+  <span class="hljs-comment">/**
+   * 标签列表
+   * <span class="hljs-doctag">@param</span> <span class="hljs-variable">tags</span>
+   */</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">tagListView</span> = (<span class="hljs-params">tags?: <span class="hljs-built_in">string</span>[]</span>) =&gt; {
+    <span class="hljs-keyword">if</span> (!tags) {
+      <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span></span>;
+    }
+
+    <span class="hljs-keyword">return</span> (
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">8</span> }}&gt;</span>
+        {tags.map((tag) =&gt; (
+          <span class="hljs-tag">&lt;<span class="hljs-name">Tag</span> <span class="hljs-attr">key</span>=<span class="hljs-string">{tag}</span>&gt;</span>{tag}<span class="hljs-tag">&lt;/<span class="hljs-name">Tag</span>&gt;</span>
+        ))}
+      <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span>
+    );
+  };
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">PageContainer</span> <span class="hljs-attr">title</span>=<span class="hljs-string">{</span>&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span></span>}&gt;
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Flex</span> <span class="hljs-attr">justify</span>=<span class="hljs-string">"center"</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Input.Search</span>
+          <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span>
+            <span class="hljs-attr">width:</span> '<span class="hljs-attr">40vw</span>',
+            <span class="hljs-attr">minWidth:</span> <span class="hljs-attr">320</span>,
+          }}
+          <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"搜索代码生成器"</span>
+          <span class="hljs-attr">allowClear</span>
+          <span class="hljs-attr">enterButton</span>=<span class="hljs-string">"搜索"</span>
+          <span class="hljs-attr">size</span>=<span class="hljs-string">"large"</span>
+          <span class="hljs-attr">onChange</span>=<span class="hljs-string">{(e)</span> =&gt;</span> {
+            searchParams.searchText = e.target.value;
+          }}
+          onSearch={(value: string) =&gt; {
+            setSearchParams({
+              ...DEFAULT_PAGE_PARAMS,
+              searchText: value,
+            });
+          }}
+        /&gt;
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Flex</span>&gt;</span></span>
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">16</span> }} /&gt;</span></span>
+
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Tabs</span>
+        <span class="hljs-attr">size</span>=<span class="hljs-string">"large"</span>
+        <span class="hljs-attr">defaultActiveKey</span>=<span class="hljs-string">"newest"</span>
+        <span class="hljs-attr">items</span>=<span class="hljs-string">{[</span>
+          {
+            <span class="hljs-attr">key:</span> '<span class="hljs-attr">newest</span>',
+            <span class="hljs-attr">label:</span> '<span class="hljs-attr">最新</span>',
+          },
+          {
+            <span class="hljs-attr">key:</span> '<span class="hljs-attr">recommend</span>',
+            <span class="hljs-attr">label:</span> '<span class="hljs-attr">推荐</span>',
+          },
+        ]}
+        <span class="hljs-attr">onChange</span>=<span class="hljs-string">{()</span> =&gt;</span> {}}
+      /&gt;</span>
+
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">QueryFilter</span>
+        <span class="hljs-attr">span</span>=<span class="hljs-string">{12}</span>
+        <span class="hljs-attr">labelWidth</span>=<span class="hljs-string">"auto"</span>
+        <span class="hljs-attr">labelAlign</span>=<span class="hljs-string">"left"</span>
+        <span class="hljs-attr">defaultCollapsed</span>=<span class="hljs-string">{false}</span>
+        <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">padding:</span> '<span class="hljs-attr">16px</span> <span class="hljs-attr">0</span>' }}
+        <span class="hljs-attr">onFinish</span>=<span class="hljs-string">{async</span> (<span class="hljs-attr">values:</span> <span class="hljs-attr">API.GeneratorQueryRequest</span>) =&gt;</span> {
+          setSearchParams({
+            ...DEFAULT_PAGE_PARAMS,
+            // @ts-ignore
+            ...values,
+            searchText: searchParams.searchText,
+          });
+        }}
+      &gt;
+        <span class="hljs-tag">&lt;<span class="hljs-name">ProFormSelect</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"标签"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"tags"</span> <span class="hljs-attr">mode</span>=<span class="hljs-string">"tags"</span> /&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"名称"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"name"</span> /&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"描述"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"description"</span> /&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">QueryFilter</span>&gt;</span></span>
+
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">24</span> }} /&gt;</span></span>
+
+      &lt;<span class="hljs-title class_">List</span>&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorVO</span>&gt;
+        rowKey=<span class="hljs-string">"id"</span>
+        loading={loading}
+        grid={{
+          <span class="hljs-attr">gutter</span>: <span class="hljs-number">16</span>,
+          <span class="hljs-attr">xs</span>: <span class="hljs-number">1</span>,
+          <span class="hljs-attr">sm</span>: <span class="hljs-number">2</span>,
+          <span class="hljs-attr">md</span>: <span class="hljs-number">3</span>,
+          <span class="hljs-attr">lg</span>: <span class="hljs-number">3</span>,
+          <span class="hljs-attr">xl</span>: <span class="hljs-number">4</span>,
+          <span class="hljs-attr">xxl</span>: <span class="hljs-number">4</span>,
+        }}
+        dataSource={dataList}
+        pagination={{
+          <span class="hljs-attr">current</span>: searchParams.<span class="hljs-property">current</span>,
+          <span class="hljs-attr">pageSize</span>: searchParams.<span class="hljs-property">pageSize</span>,
+          total,
+          <span class="hljs-title function_">onChange</span>(<span class="hljs-params">current: <span class="hljs-built_in">number</span>, pageSize: <span class="hljs-built_in">number</span></span>) {
+            <span class="hljs-title function_">setSearchParams</span>({
+              ...searchParams,
+              current,
+              pageSize,
+            });
+          },
+        }}
+        renderItem={<span class="hljs-function">(<span class="hljs-params">data</span>) =&gt;</span> (
+          <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">List.Item</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">Card</span> <span class="hljs-attr">hoverable</span> <span class="hljs-attr">cover</span>=<span class="hljs-string">{</span>&lt;<span class="hljs-attr">Image</span> <span class="hljs-attr">alt</span>=<span class="hljs-string">{data.name}</span> <span class="hljs-attr">src</span>=<span class="hljs-string">{data.picture}</span> /&gt;</span>}&gt;
+              <span class="hljs-tag">&lt;<span class="hljs-name">Card.Meta</span>
+                <span class="hljs-attr">title</span>=<span class="hljs-string">{</span>&lt;<span class="hljs-attr">a</span>&gt;</span>{data.name}<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span>}
+                description={
+                  <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Paragraph</span> <span class="hljs-attr">ellipsis</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">rows:</span> <span class="hljs-attr">2</span> }} <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">height:</span> <span class="hljs-attr">44</span> }}&gt;</span>
+                    {data.description}
+                  <span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Paragraph</span>&gt;</span>
+                }
+              /&gt;
+              {tagListView(data.tags)}
+              <span class="hljs-tag">&lt;<span class="hljs-name">Flex</span> <span class="hljs-attr">justify</span>=<span class="hljs-string">"space-between"</span> <span class="hljs-attr">align</span>=<span class="hljs-string">"center"</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Text</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"secondary"</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">fontSize:</span> <span class="hljs-attr">12</span> }}&gt;</span>
+                  {moment(data.createTime).fromNow()}
+                <span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Text</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">div</span>&gt;</span>
+                  <span class="hljs-tag">&lt;<span class="hljs-name">Avatar</span> <span class="hljs-attr">src</span>=<span class="hljs-string">{data.user?.userAvatar</span> ?? &lt;<span class="hljs-attr">UserOutlined</span> /&gt;</span>} /&gt;
+                <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+              <span class="hljs-tag">&lt;/<span class="hljs-name">Flex</span>&gt;</span>
+            <span class="hljs-tag">&lt;/<span class="hljs-name">Card</span>&gt;</span>
+          <span class="hljs-tag">&lt;/<span class="hljs-name">List.Item</span>&gt;</span></span>
+        )}
+      /&gt;
+    &lt;/<span class="hljs-title class_">PageContainer</span>&gt;
+  );
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">IndexPage</span>;
+</code></pre>
+<h2 data-id="heading-26">最后</h2>
+<p>以上就是本节教程，我们已经开发完成了在线代码生成器平台的管理页面和主页搜索列表。下期教程中，我们将继续开发在线平台的更多功能。</p>
+<h2 data-id="heading-27">本期作业</h2>
+<p>1）熟悉万用后端和前端模板。</p>
+<p>2）掌握前端页面开发的流程和组件复用的技巧。</p>
+<p>3）自己编写代码实现本节项目，并且在自己的代码仓库完成一次提交。</p></div></div></div><div style="margin-bottom: 16px;"></div><div style="margin-bottom: 16px;"></div><div id="toggleArea" class="ant-row ant-row-no-wrap ant-row-space-between" style="margin-left: -10px; margin-right: -10px; margin-top: 40px; row-gap: 20px;"><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>上一节</div><a href="/course/1790980795074654209/section/1790996017009176577"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><span role="img" aria-label="double-left" class="anticon anticon-double-left" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-left" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M272.9 512l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L186.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H532c6.7 0 10.4-7.7 6.3-12.9L272.9 512zm304 0l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L490.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H836c6.7 0 10.4-7.7 6.3-12.9L576.9 512z"></path></svg></span></div><div class="ant-space-item"><div class="text-ellipsis">8. 模板项目生成</div></div></div></a></div><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>下一节</div><a href="/course/1790980795074654209/section/1790996685145026561"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><div class="text-ellipsis">10. 生成器共享</div></div><div class="ant-space-item"><span role="img" aria-label="double-right" class="anticon anticon-double-right" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-right" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M533.2 492.3L277.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H188c-6.7 0-10.4 7.7-6.3 12.9L447.1 512 181.7 851.1A7.98 7.98 0 00188 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5zm304 0L581.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H492c-6.7 0-10.4 7.7-6.3 12.9L751.1 512 485.7 851.1A7.98 7.98 0 00492 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5z"></path></svg></span></div></div></a></div></div></div>

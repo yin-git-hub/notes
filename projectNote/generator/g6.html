@@ -1,0 +1,1311 @@
+<div class="ant-card-body"><h1 class="ant-typography" style="font-size: 30px;">6. 配置能力增强</h1><div class="ant-space ant-space-horizontal ant-space-align-center" style="margin-bottom: 15px; gap: 8px;"><div class="ant-space-item" style=""><a class="text-gray-500" target="_blank" href="/user/1601072287388278786">程序员鱼皮</a></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item" style=""><span class="text-gray-500">2024-05-16 14:41</span></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item"><span class="text-gray-500">阅读 676</span></div></div><div style="margin-bottom: 16px;"></div><div class="course-container"><div class="md-viewer "><div class="markdown-body"><h2 data-id="heading-0">前情回顾</h2>
+<p>前两节教程中，我们开发和优化了基本的代码生成器制作工具。但目前工具的能力比较有限，虽然能够生成基本的 ACM 示例代码生成器，但对于复杂的、真实的项目生成器，其实是无法满足制作需求的。</p>
+<p>所以本期教程，我们的目标是增强制作工具的配置能力，能够让元信息支持更多更灵活的配置，从而制作更复杂的代码生成器。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4783460293744417</span></p>
+<h2 data-id="heading-1">本节重点</h2>
+<p>本节教程属于项目的第二阶段 —— 开发代码生成器制作工具。</p>
+<p>重点内容：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3748332160459764</span></p>
+<ol>
+<li>生成目标 - Spring Boot 模板项目介绍</li>
+<li>工具通用能力分析</li>
+<li>配置能力增强开发<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6153661869634763</span></li>
+</ol>
+<h2 data-id="heading-2">一、需求分析</h2>
+<p>还记得我们第二阶段的目标么？通过制作工具得到一个 Spring Boot 项目模板代码生成器，能够让开发者快速定制生成自己的 Spring Boot 项目。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6194643214856015</span></p>
+<p>接下来，先给大家介绍一下预期生成的 Spring Boot 项目模板代码。</p>
+<h3 data-id="heading-3">Spring Boot 项目模板介绍</h3>
+<p>将鱼皮准备好的 Spring Boot 项目模板代码解压，放到 <code>yuzi-generator-demo-projects</code> 目录下。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.636013821604771</span></p>
+<p>该模板是由编程导航知识星球的 Spring Boot 万用项目模板精简而成，代码压缩包：<a href="https://www.code-nav.cn/course/1789200994552225793/section/1789201346202673154?type=#heading-1">https://www.code-nav.cn/course/1789200994552225793/section/1789201346202673154?type=#heading-1</a></p>
+<p>注意，本项目仅供参考。目的是辅助代码生成器制作工具的开发，并不保证能够完全正常运行。</p>
+<h4>模板能力<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07161500215029304</span></h4>
+<p>在该项目的 README.md 文件中，可以看到关于该项目的介绍，比如运用的技术、业务特性、业务功能等。</p>
+<p>模板拥有的能力如下：</p>
+<p>1）实现了用户登录、注册、注销、更新、检索、权限管理<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7164394892395003</span></p>
+<p>2）帖子创建、删除、编辑、更新、数据库检索、ES 灵活检索</p>
+<p>3）使用了 MySQL、Redis、Elasticsearch 数据存储</p>
+<p>4）使用 Swagger + Knife4j 实现接口文档生成<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9579289332165093</span></p>
+<p>5）支持全局跨域处理</p>
+<h4 data-id="heading-5">项目文件</h4>
+<p>使用 <code>tree</code> 之类的工具打印出整个项目目录的树形结构：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.17076151533802464</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">text</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code data-highlighted="yes" class="hljs language-stylus">.
+├── Dockerfile
+├── README<span class="hljs-selector-class">.md</span>
+├── mvnw
+├── mvnw<span class="hljs-selector-class">.cmd</span>
+├── pom<span class="hljs-selector-class">.xml</span>
+└── <span class="hljs-attribute">src</span>
+    ├── <span class="hljs-selector-tag">main</span>
+    │   ├── java
+    │   │   └── com
+    │   │       └── yupi
+    │   │           └── springbootinit
+    │   │               ├── MainApplication<span class="hljs-selector-class">.java</span>
+    │   │               ├── common
+    │   │               │   ├── BaseResponse<span class="hljs-selector-class">.java</span>
+    │   │               │   ├── DeleteRequest<span class="hljs-selector-class">.java</span>
+    │   │               │   ├── ErrorCode<span class="hljs-selector-class">.java</span>
+    │   │               │   ├── PageRequest<span class="hljs-selector-class">.java</span>
+    │   │               │   └── ResultUtils<span class="hljs-selector-class">.java</span>
+    │   │               ├── config
+    │   │               │   ├── CorsConfig<span class="hljs-selector-class">.java</span>
+    │   │               │   ├── JsonConfig<span class="hljs-selector-class">.java</span>
+    │   │               │   ├── Knife4jConfig<span class="hljs-selector-class">.java</span>
+    │   │               │   └── MyBatisPlusConfig<span class="hljs-selector-class">.java</span>
+    │   │               ├── constant
+    │   │               │   └── UserConstant<span class="hljs-selector-class">.java</span>
+    │   │               ├── controller
+    │   │               │   ├── PostController<span class="hljs-selector-class">.java</span>
+    │   │               │   └── UserController<span class="hljs-selector-class">.java</span>
+    │   │               ├── exception
+    │   │               │   ├── BusinessException<span class="hljs-selector-class">.java</span>
+    │   │               │   ├── GlobalExceptionHandler<span class="hljs-selector-class">.java</span>
+    │   │               │   └── ThrowUtils<span class="hljs-selector-class">.java</span>
+    │   │               ├── mapper
+    │   │               │   ├── PostMapper<span class="hljs-selector-class">.java</span>
+    │   │               │   └── UserMapper<span class="hljs-selector-class">.java</span>
+    │   │               ├── model
+    │   │               │   ├── dto
+    │   │               │   │   ├── post
+    │   │               │   │   │   ├── PostAddRequest<span class="hljs-selector-class">.java</span>
+    │   │               │   │   │   ├── PostEsDTO<span class="hljs-selector-class">.java</span>
+    │   │               │   │   │   ├── PostQueryRequest<span class="hljs-selector-class">.java</span>
+    │   │               │   │   │   └── PostUpdateRequest<span class="hljs-selector-class">.java</span>
+    │   │               │   │   └── user
+    │   │               │   │       ├── UserAddRequest<span class="hljs-selector-class">.java</span>
+    │   │               │   │       ├── UserLoginRequest<span class="hljs-selector-class">.java</span>
+    │   │               │   │       ├── UserQueryRequest<span class="hljs-selector-class">.java</span>
+    │   │               │   │       ├── UserRegisterRequest<span class="hljs-selector-class">.java</span>
+    │   │               │   │       └── UserUpdateRequest<span class="hljs-selector-class">.java</span>
+    │   │               │   ├── entity
+    │   │               │   │   ├── Post<span class="hljs-selector-class">.java</span>
+    │   │               │   │   └── User<span class="hljs-selector-class">.java</span>
+    │   │               │   ├── enums
+    │   │               │   │   └── UserRoleEnum<span class="hljs-selector-class">.java</span>
+    │   │               │   └── vo
+    │   │               │       └── LoginUserVO<span class="hljs-selector-class">.java</span>
+    │   │               └── service
+    │   │                   ├── PostService<span class="hljs-selector-class">.java</span>
+    │   │                   ├── UserService<span class="hljs-selector-class">.java</span>
+    │   │                   └── impl
+    │   │                       ├── PostServiceImpl<span class="hljs-selector-class">.java</span>
+    │   │                       └── UserServiceImpl<span class="hljs-selector-class">.java</span>
+    │   └── resources
+    │       ├── application<span class="hljs-selector-class">.yml</span>
+    │       └── mapper
+    │           ├── PostMapper<span class="hljs-selector-class">.xml</span>
+    │           └── UserMapper<span class="hljs-selector-class">.xml</span>
+    └── test
+        └── java
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2770306581638098</span></pre>
+<h3 data-id="heading-6">生成器应具备的功能</h3>
+<p>基于模板具有的基本能力，我们可以分析用户可能会有哪些定制化的代码生成需求，并明确代码生成器应该具备的功能。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3152896454168479</span></p>
+<p>比如：</p>
+<p>1）替换生成的代码包名</p>
+<p>2）控制是否生成帖子相关功能<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6315838955103537</span></p>
+<p>3）控制是否需要开启跨域</p>
+<p>4）自定义 Knife4jConfig 接口文档配置</p>
+<p>5）自定义 MySQL 配置信息<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.583630727809602</span></p>
+<p>6）控制是否开启 Redis</p>
+<p>7）控制是否开启 Elasticsearch</p>
+<h2>二、实现思路<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9186637252173024</span></h2>
+<p>以上 Spring Boot 模板项目只是一个例子，我们的目标是通过这个示例，从特定需求中抽象出制作工具应具备的通用能力。</p>
+<p>让我们依次分析上述功能的 <strong>实现思路</strong> ，并挖掘出 <strong>通用能力</strong> 。</p>
+<h3>依次分析<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5346026376916022</span></h3>
+<p>1）需求：替换生成的代码包名</p>
+<p>实现思路：和之前替换包名的实现方式类似，可以将代码中所有出现包名的地方 “挖坑”，指定类似 <code>basePackage</code> 的模型参数，让用户自己输入。</p>
+<p>通用能力：由于用到包名的代码非常多，如果都要自己 “挖坑” 并制作 FTL 动态模板，不仅成本高、而且也容易出现遗漏（比如 @MapperScan 注解里也有包名）。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3043165421436087</span></p>
+<p>所以我们需要利用制作工具来自动 “挖坑” 并生成模板文件。</p>
+<p>2）需求：控制是否生成帖子相关功能</p>
+<p>实现思路：允许用户输入一个开关参数来控制帖子功能相关的文件是否生成，比如 PostController、PostService、PostMapper、PostMapper.xml、Post 实体类等。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9947119036679999</span></p>
+<p>通用能力：用一个参数同时控制多个文件是否生成，而不是仅仅是某段代码是否生成。</p>
+<p>3）需求：控制是否需要开启跨域</p>
+<p>实现思路：允许用户输入一个开关参数来控制跨域相关的文件是否生成，比如 CorsConfig.java 文件。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6176711532119434</span></p>
+<p>通用能力：用一个参数控制某个文件是否生成，而不是仅能控制代码是否生成。</p>
+<p>4）需求：自定义 Knife4jConfig 接口文档配置</p>
+<p>实现思路：修改 Knife4jConfig 文件中的配置，比如 title、description、version、apis 扫描包路径等。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8219289420287423</span></p>
+<p>通用能力：由于要支持用户输入的参数较多，可以用一个参数控制是否要开启接口文档配置。如果开启，再让用户输入 <strong>一组</strong> 配置参数。</p>
+<p>5）需求：自定义 MySQL 配置信息</p>
+<p>实现思路：修改 application.yml 配置文件中 MySQL 的 url、username、password 参数。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3586309066618518</span></p>
+<p>通用能力：由于要支持用户输入的参数较多，可以定义一组隔离的配置参数。</p>
+<p>6）需求：控制是否开启 Redis</p>
+<p>实现思路：修改和开启 Redis 相关的代码，比如 application.yml、pom.xml、MainApplication.java 等多个文件的部分代码<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.46869718951733175</span></p>
+<p>通用能力：用一个参数同时控制多个文件的代码修改（已满足）</p>
+<p>7）需求：控制是否开启 Elasticsearch</p>
+<p>实现思路：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07439222895662323</span></p>
+<ul>
+<li>修改和 Elasticsearch 相关的代码，比如 PostController、PostService、PostServiceImpl、application.yml 等多个文件的部分代码</li>
+<li>用参数控制 PostEsDTO 整个文件是否生成</li>
+</ul>
+<p>通用能力：用一个参数同时控制多个文件的代码、以及某文件是否生成</p>
+<h3>实现流程<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18150821817237817</span></h3>
+<p>通过上面的分析，我们会发现每个功能的实现所需要的通用能力各不相同，那我们应该先做什么、后做什么、怎么安排实现流程最合理呢？</p>
+<p>这里我们一定要综合考虑所有的需求，顾全大局；并且通过需求间的依赖关系、或者实现难易度去综合排序，一步步实现。</p>
+<p>现在的制作工具已经具有的能力是：根据某个模型参数同时控制多处代码的修改。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5288909348191109</span></p>
+<p>而根据排序，制作工具需要增强的能力有：</p>
+<ol>
+<li>一个模型参数对应某个文件是否生成</li>
+<li>一个模型参数对应多个文件是否生成</li>
+<li>一个模型参数同时控制多处代码修改以及文件是否生成<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.25296579758331883</span></li>
+<li>定义一组相关的模型参数，控制代码修改或文件生成</li>
+<li>定义一组相关的模型参数，并能够通过其他的模型参数控制是否需要输入该组参数</li>
+</ol>
+<p>我们会发现，这些能力基本都和制作工具的 <strong>元信息配置文件</strong> 有关，即我们需要增强它的能力，允许开发者通过修改元信息文件，得到能让用户更灵活生成代码的代码生成器。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9422989145930034</span></p>
+<p>如果实现了上述增强能力，我们就能依次实现下列需求：</p>
+<ol>
+<li>控制是否开启 Redis</li>
+<li>控制是否需要开启跨域</li>
+<li>控制是否生成帖子相关功能<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07516379783449323</span></li>
+<li>控制是否开启 Elasticsearch</li>
+<li>自定义 MySQL 配置信息</li>
+<li>自定义 Knife4jConfig 接口文档配置<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.40067059015068995</span></li>
+</ol>
+<p>到时候，想制作一个 Spring Boot 项目模板代码生成器，就很简单了。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.44895232061576373</span></p>
+<p>至于 “替换生成的代码包名” 的需求，实现方式和上述其他能力有较大的区别，我们放到后续教程的其他章节中实现。</p>
+<h2 data-id="heading-10">三、开发实现</h2>
+<p>下面就让我们依次实现上面提到的通用能力。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3615837436738736</span></p>
+<ol>
+<li>模型参数控制单个文件生成</li>
+<li>同一模型参数控制多个文件生成</li>
+<li>一个模型参数同时控制多处代码修改以及文件是否生成<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5415453486437725</span></li>
+<li>定义一组相关的模型参数，控制代码修改或文件生成</li>
+<li>定义一组相关的模型参数，并能够通过其他的模型参数控制是否需要输入该组参数</li>
+</ol>
+<h3 data-id="heading-11">实现原则</h3>
+<p>在开发实现的过程中，我们会持续增强元信息配置文件的能力，为了防止随着能力增多出现的逻辑冲突，我们要明确 2 点原则。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05679331380836539</span></p>
+<p>1）配置文件中的 fileConfig 应专注于文件生成相关的逻辑。</p>
+<p>2）配置文件中的 modelConfig 应专注于数据模型的定义。只是定义有某个参数，但该参数具体的作用是什么，不应该放在 modelConfig 中来控制。比如 model 可以用作配置开关、替换代码内容、控制文件是否生成等。</p>
+<h3>1、参数控制文件生成<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8622355873586425</span></h3>
+<p>还是以 ACM 模板项目为例，我们的需求是：用一个模型参数 <code>needGit</code> 来控制是否生成 <code>.gitignore</code> 静态文件。</p>
+<h4 data-id="heading-13">元信息修改</h4>
+<p>修改元信息配置文件，在 <code>modelConfig.models</code> 下新增 <code>needGit</code> 模型参数：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.213476525895131</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+	...
+  <span class="hljs-attr">"modelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needGit"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"boolean"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"是否生成 .gitignore 文件"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span>
+      <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      ...
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.21087287361782892</span></pre>
+<h4 data-id="heading-14">代码生成器实现</h4>
+<p>怎么用 <code>needGit</code> 参数控制文件的生成呢？让我们先不考虑制作工具的能力，先手动修改代码生成器去实现上述需求。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.41726617959707113</span></p>
+<p>我们可以先使用制作工具生成一个代码生成器 <code>acm-template-pro-generator</code> 项目：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5111b808-286e-4765-b471-6c345f3b6e83.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后用 IDEA 打开生成的项目，在该项目中编写能够实现需求的 <code>MainGenerator</code> 代码。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.43489684932773187</span></p>
+<p>修改的代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainGenerator</span> {
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">doGenerate</span><span class="hljs-params">(DataModel model)</span> <span class="hljs-keyword">throws</span> TemplateException, IOException {
+        ...
+
+        <span class="hljs-type">boolean</span> <span class="hljs-variable">needGit</span> <span class="hljs-operator">=</span> model.isNeedGit();
+        <span class="hljs-keyword">if</span>(needGit) {
+            inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">".gitignore"</span>).getAbsolutePath();
+            outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">".gitignore"</span>).getAbsolutePath();
+            StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+        }
+
+        ...
+    }
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8562400186021635</span></pre>
+<p>在上述代码中，我们做了 2 点改动：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.34767471877877654</span></p>
+<ol>
+<li>将 <code>doGenerate</code> 方法的入参类型修改为 <code>DataModel</code>，便于后续获取对象的属性</li>
+<li>通过模型的 <code>needGit</code> 作为 if 条件，来判断是否生成 <code>.gitignore</code> 文件</li>
+</ol>
+<p>然后修改 Main 方法代码，命令行参数指定 <code>--needGit=false</code> 并运行，发现这次没有生成 <code>.gitignore</code> 文件，符合预期。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5761a413-2ce0-42b0-aecd-55d5eace337d.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5113350156846466</span></p>
+<h4 data-id="heading-15">制作工具实现</h4>
+<p>接下来我们的目标就是，增强制作工具的能力，让它能够生成上述代码。</p>
+<p>1）首先修改 <code>MainGenerator.java.ftl</code> 模板文件，将方法参数类型改为 <code>DataModel</code>。修改的代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7888715351382285</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">doGenerate</span><span class="hljs-params">(DataModel model)</span> <span class="hljs-keyword">throws</span> TemplateException, IOException {
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2611970947042688</span></pre>
+<p>2）然后我们怎么将模型参数和文件生成进行关联呢？</p>
+<p>在上面的代码中，我们先获取了模型对象的 <code>needGit</code> 属性值，然后将其作为 <strong>if 条件</strong> ，来判断是否生成 <code>.gitignore<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5477343830693522</span></code> 文件。那么只需要在文件配置中增加一个条件字段 <code>condition</code>，作为 if 代码块中的内容，就可以生成同样的代码了：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8455669985031689</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">boolean</span> <span class="hljs-variable">needGit</span> <span class="hljs-operator">=</span> model.isNeedGit();
+<span class="hljs-keyword">if</span>(needGit) {
+    inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">".gitignore"</span>).getAbsolutePath();
+    outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">".gitignore"</span>).getAbsolutePath();
+    StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20404104909429277</span></pre>
+<p>修改元信息配置文件，给 <code>fileConfig.files</code> 对象新增 <code>condition</code> 字段。它的值可以是某个模型参数的名称，甚至还可以是表达式。</p>
+<p>比如指定值为 <code>needGit</code>，配置如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3916062750125051</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+	...
+  <span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">".gitignore"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">".gitignore"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"static"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needGit"</span>
+      <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+	...
+<span class="hljs-punctuation">}</span>
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20285956727995247</span></pre>
+<p>同步修改 <code>Meta</code> 类，给 <code>FileInfo</code> 新增 String 类型的 <code>condition<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10025016126565278</span></code> 属性：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@NoArgsConstructor</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">FileInfo</span> {
+    <span class="hljs-keyword">private</span> String inputPath;
+    <span class="hljs-keyword">private</span> String outputPath;
+    <span class="hljs-keyword">private</span> String type;
+    <span class="hljs-keyword">private</span> String generateType;
+    <span class="hljs-keyword">private</span> String condition;
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07263165502210778</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2510770935734161</span></pre>
+<p>3）想要在 if 中直接使用模型参数的名称，我们可以先通过 get / set 方法获取到 DataModel 的所有属性值，并使用模型参数的名称作为变量名，比如：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">boolean</span> <span class="hljs-variable">needGit</span> <span class="hljs-operator">=</span> model.isNeedGit();
+<span class="hljs-type">boolean</span> <span class="hljs-variable">loop</span> <span class="hljs-operator">=</span> model.isLoop();
+<span class="hljs-type">String</span> <span class="hljs-variable">author</span> <span class="hljs-operator">=</span> model.getAuthor();
+<span class="hljs-type">String</span> <span class="hljs-variable">outputText</span> <span class="hljs-operator">=</span> model.getOutputText();
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4945293871136971</span></pre>
+<p>但是发现了一个问题，对于 boolean 类型的变量，获取对象属性的 get 方法是以 <code>is</code> 作为前缀的，而不是 <code>get</code>，这会给我们生成代码的过程带来一定的麻烦。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9123774577426653</span></p>
+<p>解决方案很简单，直接把 <code>DataModel</code> 类的所有字段作用域调整为 <code>public</code>，就可以直接使用属性名称获取到值了，从而保证统一。</p>
+<blockquote>
+<p>还有一种方式，使用 Lombok 插件的 <code>@Accessors</code> 注解来自定义 get / set 方法代码的生成规则。可以将 <code>fluent</code> 设置为 <code>true<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5559879994871708</span></code> 表示所有的 get / set 方法名称都等同于属性名称，从而保证统一。
+参考官方文档：<a href="https://projectlombok.org/features/experimental/Accessors">https://projectlombok.org/features/experimental/Accessors</a>
+但这种方式的缺点是会影响 FreeMarker 模板获取对象的值（默认是通过 getXXX 方法获取的），所以不推荐。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.025983520635203705</span></blockquote>
+<p>然后通过属性名称就能获取到对象属性了：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8670435347689041</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">boolean</span> <span class="hljs-variable">needGit</span> <span class="hljs-operator">=</span> model.needGit;
+<span class="hljs-keyword">if</span>(needGit) {
+	...
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1954613186722105</span></pre>
+<p>4）确定了预期生成的 <code>DataModel</code> 代码后，修改 maker 项目的 <code>DataModel.java.ftl</code> 模板文件，修改属性的作用域为 <code>public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.28707976942161517</span></code>。完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> ${basePackage}.model;
+
+<span class="hljs-keyword">import</span> lombok.Data;
+
+<span class="hljs-comment">/**
+ * 数据模型
+ */</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">DataModel</span> {
+&lt;#list modelConfig.models as modelInfo&gt;
+
+    &lt;#<span class="hljs-keyword">if</span> modelInfo.description??&gt;
+    <span class="hljs-comment">/**
+     * ${modelInfo.description}
+     */</span>
+    &lt;/#<span class="hljs-keyword">if</span>&gt;
+    <span class="hljs-keyword">public</span> ${modelInfo.type} ${modelInfo.fieldName}&lt;#<span class="hljs-keyword">if</span> modelInfo.defaultValue??&gt; = ${modelInfo.defaultValue?c}&lt;/#<span class="hljs-keyword">if</span>&gt;;
+&lt;/#list&gt;
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6851016078528824</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6418273757779023</span></pre>
+<p>5）最后，修改 <code>MainGenerator.java.ftl</code> 模板文件，补充 DataModel 参数的获取、以及条件判断的逻辑。</p>
+<p>完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> ${basePackage}.generator;
+
+<span class="hljs-keyword">import</span> com.yupi.model.DataModel;
+<span class="hljs-keyword">import</span> freemarker.template.TemplateException;
+
+<span class="hljs-keyword">import</span> java.io.File;
+<span class="hljs-keyword">import</span> java.io.IOException;
+
+<span class="hljs-comment">/**
+ * 核心生成器
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainGenerator</span> {
+
+    <span class="hljs-comment">/**
+     * 生成
+     *
+     * <span class="hljs-doctag">@param</span> model 数据模型
+     * <span class="hljs-doctag">@throws</span> TemplateException
+     * <span class="hljs-doctag">@throws</span> IOException
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">doGenerate</span><span class="hljs-params">(DataModel model)</span> <span class="hljs-keyword">throws</span> TemplateException, IOException {
+        <span class="hljs-type">String</span> <span class="hljs-variable">inputRootPath</span> <span class="hljs-operator">=</span> <span class="hljs-string">"${fileConfig.inputRootPath}"</span>;
+        <span class="hljs-type">String</span> <span class="hljs-variable">outputRootPath</span> <span class="hljs-operator">=</span> <span class="hljs-string">"${fileConfig.outputRootPath}"</span>;
+
+        String inputPath;
+        String outputPath;
+
+    &lt;#list modelConfig.models as modelInfo&gt;
+        ${modelInfo.type} ${modelInfo.fieldName} = model.${modelInfo.fieldName};
+    &lt;/#list&gt;
+
+    &lt;#list fileConfig.files as fileInfo&gt;
+        &lt;#<span class="hljs-keyword">if</span> fileInfo.condition??&gt;
+        <span class="hljs-keyword">if</span>(${fileInfo.condition}) {
+            inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">"${fileInfo.inputPath}"</span>).getAbsolutePath();
+            outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">"${fileInfo.outputPath}"</span>).getAbsolutePath();
+            &lt;#<span class="hljs-keyword">if</span> fileInfo.generateType == <span class="hljs-string">"static"</span>&gt;
+            StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+            &lt;#<span class="hljs-keyword">else</span>&gt;
+            DynamicGenerator.doGenerate(inputPath, outputPath, model);
+            &lt;/#<span class="hljs-keyword">if</span>&gt;
+        }
+        &lt;#<span class="hljs-keyword">else</span>&gt;
+        inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">"${fileInfo.inputPath}"</span>).getAbsolutePath();
+        outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">"${fileInfo.outputPath}"</span>).getAbsolutePath();
+        &lt;#<span class="hljs-keyword">if</span> fileInfo.generateType == <span class="hljs-string">"static"</span>&gt;
+        StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+        &lt;#<span class="hljs-keyword">else</span>&gt;
+        DynamicGenerator.doGenerate(inputPath, outputPath, model);
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+    &lt;/#list&gt;
+    }
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6149506076499145</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.42939774170865297</span></pre>
+<p>然后再次制作代码生成器并运行，发现符合预期行为：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/25d7af9a-25f0-4040-9509-020f19603969.png" alt="image.png" class="medium-zoom-image"></p>
+<h3>2、同参数控制多个文件生成<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9863205016583674</span></h3>
+<p>想要用同一个参数来控制多个文件是否生成，最简单的方式是直接给多个文件配置指定相同参数的 condition 就好了，比如：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+  <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/com/yupi/acm/MainTemplate.java.ftl"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/com/yupi/acm/MainTemplate.java"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"dynamic"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needGit"</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">".gitignore"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">".gitignore"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"static"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needGit"</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">]</span>
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.28229163300154836</span></pre>
+<p>但如果之后我想统一更改这些字段的 condition 条件，或者查看某个 condition（或者模型参数）同时控制的多个文件怎么办？文件越多，会不会越难维护和管理？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9576976602260538</span></p>
+<p>为了解决这个问题，我们可以根据生成条件，来对文件进行 <strong>分组</strong> 。</p>
+<p>这里有 2 种方案：</p>
+<h4>方案一<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6334051039473785</span></h4>
+<p>给元信息的 fileInfo 增加 group 字段，指定每个文件所属的组。</p>
+<p>参考代码：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+  <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/com/yupi/acm/MainTemplate.java.ftl"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/com/yupi/acm/MainTemplate.java"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"dynamic"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"group"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"post"</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">]</span>
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7453554765139412</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4700117580286294</span></pre>
+<p>然后可以在 fileConfig 增加 groupConfig 组配置，包括组名、生成条件等。</p>
+<p>参考代码：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+  ...
+  <span class="hljs-attr">"groupConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"groups"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"name"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"post"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needCors"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.46933671773010976</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8380871820120477</span></pre>
+<p>这种方式很像设计库表，把组、文件分别定义，再通过文件指定所属组实现关联。</p>
+<p>优点是结构清晰，可以通过读取 <code>groupConfig</code> 直接获取到所有组的信息。</p>
+<p>但这种方式的缺点是，不好通过配置文件直接获取到同组下的所有文件。还可能会导致文件生成的代码不够优雅、会有很多重复的 if 块判断，比如：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8827349316855984</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">boolean</span> <span class="hljs-variable">needGit</span> <span class="hljs-operator">=</span> model.needGit;
+
+<span class="hljs-keyword">if</span> (needGit) {
+    inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">".gitignore"</span>).getAbsolutePath();
+    outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">".gitignore"</span>).getAbsolutePath();
+    StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+}
+
+<span class="hljs-keyword">if</span> (needGit) {
+    inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">"README.md"</span>).getAbsolutePath();
+    outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">"README.md"</span>).getAbsolutePath();
+    StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2966220959087613</span></pre>
+<h4 data-id="heading-18">方案二（推荐）</h4>
+<p>直接把文件组当成一个特殊的文件夹，可以把同组文件都放到该组配置下。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6002074720797814</span></p>
+<p>元信息部分代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+  <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"groupKey"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"git"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"groupName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"开源"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"group"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needGit"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+        <span class="hljs-punctuation">{</span>
+          <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">".gitignore"</span><span class="hljs-punctuation">,</span>
+          <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">".gitignore"</span><span class="hljs-punctuation">,</span>
+          <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+          <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"static"</span>
+        <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-punctuation">{</span>
+          <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"README.md"</span><span class="hljs-punctuation">,</span>
+          <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"README.md"</span><span class="hljs-punctuation">,</span>
+          <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+          <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"static"</span>
+        <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/com/yupi/acm/MainTemplate.java.ftl"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/com/yupi/acm/MainTemplate.java"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"dynamic"</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">]</span>
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08769867021212052</span></pre>
+<p>上述代码中新增字段：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6303147294244151</span></p>
+<ul>
+<li>groupKey：表示组的唯一表示</li>
+<li>groupName：组的名称</li>
+<li>type：值为 group 代表是分组<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07274444666131163</span></li>
+<li>condition：该分组共享的生成条件，同时控制组内多个文件的生成</li>
+</ul>
+<p>这种方式的优点显而易见，可以直接从 fileConfig 配置中看出文件的层级关系，便于理解；且更容易获取同组文件信息、控制同组文件的生成。</p>
+<p>但缺点是：生成代码的时候，如果 fileInfo 的 type 为 group 组类别，就要多遍历一层 files 了。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05266818344693669</span></p>
+<p>不过还是建议选择这种方式，多遍历一层 files 的开发成本并不大，应当为长期的可维护、可扩展性考虑。</p>
+<p>采用这种方式后，MainGenerator 生成代码的逻辑会更清晰，同组文件可以放到同一个 if 块里。示例代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">boolean</span> <span class="hljs-variable">needGit</span> <span class="hljs-operator">=</span> model.needGit;
+
+<span class="hljs-comment">// groupKey = git</span>
+<span class="hljs-keyword">if</span> (needGit) {
+    inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">".gitignore"</span>).getAbsolutePath();
+    outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">".gitignore"</span>).getAbsolutePath();
+    StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+    
+    inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">"README.md"</span>).getAbsolutePath();
+    outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">"README.md"</span>).getAbsolutePath();
+    StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.850788327940821</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7617085083799444</span></pre>
+<blockquote>
+<p>扩展：采用这种方案后，可以将同一个文件放在多个不同的组下，从而实现有任一组的条件满足，即可生成该文件。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05839360773274027</span></blockquote>
+<h4 data-id="heading-19">方案实现</h4>
+<p>1）首先修改 <code>Meta</code> 实体类的 <code>FileInfo</code> 文件信息配置，新增分组相关属性：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9314327400637712</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@NoArgsConstructor</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">FileInfo</span> {
+    <span class="hljs-keyword">private</span> String inputPath;
+    <span class="hljs-keyword">private</span> String outputPath;
+    <span class="hljs-keyword">private</span> String type;
+    <span class="hljs-keyword">private</span> String generateType;
+    <span class="hljs-keyword">private</span> String condition;
+    <span class="hljs-keyword">private</span> String groupKey;
+    <span class="hljs-keyword">private</span> String groupName;
+    <span class="hljs-keyword">private</span> List&lt;FileInfo&gt; files;
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3116447549673558</span></pre>
+<p>2）修改 <code>FileTypeEnum</code> 枚举类，增加 <code>GROUP</code> 分组枚举：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.maker.meta.enums;
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">enum</span> <span class="hljs-title class_">FileTypeEnum</span> {
+
+    DIR(<span class="hljs-string">"目录"</span>, <span class="hljs-string">"dir"</span>),
+    FILE(<span class="hljs-string">"文件"</span>, <span class="hljs-string">"file"</span>),
+    GROUP(<span class="hljs-string">"文件组"</span>, <span class="hljs-string">"group"</span>);
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> String text;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> String value;
+
+    FileTypeEnum(String text, String value) {
+        <span class="hljs-built_in">this</span>.text = text;
+        <span class="hljs-built_in">this</span>.value = value;
+    }
+
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">getText</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return</span> text;
+    }
+
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">getValue</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return</span> value;
+    }
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5921206726361257</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4534371701426094</span></pre>
+<p>3）由于新增了分组类别，当文件类别为 group 时可以不填写文件输入输出路径等信息。所以需要修改 <code>MetaValidator</code> 校验逻辑，类型为 group 时不做后续校验。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"> <span class="hljs-keyword">for</span> (Meta.FileConfig.FileInfo fileInfo : fileInfoList) {
+    <span class="hljs-type">String</span> <span class="hljs-variable">type</span> <span class="hljs-operator">=</span> fileInfo.getType();
+    <span class="hljs-comment">// 类型为 group，不校验</span>
+    <span class="hljs-keyword">if</span> (FileTypeEnum.GROUP.getValue().equals(type)) {
+        <span class="hljs-keyword">continue</span>;
+    }
+    <span class="hljs-comment">// inputPath: 必填</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">inputPath</span> <span class="hljs-operator">=</span> fileInfo.getInputPath();
+    <span class="hljs-keyword">if</span> (StrUtil.isBlank(inputPath)) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">MetaException</span>(<span class="hljs-string">"未填写 inputPath"</span>);
+    }
+    ...
+ }
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.01829730308620814</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.875018425624787</span></pre>
+<p>4）修改 <code>MainGenerator.java.ftl</code> 模板文件</p>
+<p>多了文件分组信息后，生成文件的逻辑就变得复杂了：</p>
+<ol>
+<li>先判断 fileInfo 是否有 groupKey，有的话表示分组。如果分组有 condition，那么根据 condition 生成 if 代码块，然后将该分组下的所有文件生成逻辑都放在 if 块中。</li>
+<li>如果 fileInfo 没有 groupKey，复用之前的生成逻辑。</li>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.577600773168814</span></ol>
+<p>修改后的 <code>MainGenerator.java.ftl</code> 完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> ${basePackage}.generator;
+
+<span class="hljs-keyword">import</span> com.yupi.model.DataModel;
+<span class="hljs-keyword">import</span> freemarker.template.TemplateException;
+
+<span class="hljs-keyword">import</span> java.io.File;
+<span class="hljs-keyword">import</span> java.io.IOException;
+
+<span class="hljs-comment">/**
+ * 核心生成器
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainGenerator</span> {
+
+    <span class="hljs-comment">/**
+     * 生成
+     *
+     * <span class="hljs-doctag">@param</span> model 数据模型
+     * <span class="hljs-doctag">@throws</span> TemplateException
+     * <span class="hljs-doctag">@throws</span> IOException
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">doGenerate</span><span class="hljs-params">(DataModel model)</span> <span class="hljs-keyword">throws</span> TemplateException, IOException {
+        <span class="hljs-type">String</span> <span class="hljs-variable">inputRootPath</span> <span class="hljs-operator">=</span> <span class="hljs-string">"${fileConfig.inputRootPath}"</span>;
+        <span class="hljs-type">String</span> <span class="hljs-variable">outputRootPath</span> <span class="hljs-operator">=</span> <span class="hljs-string">"${fileConfig.outputRootPath}"</span>;
+
+        String inputPath;
+        String outputPath;
+
+    &lt;#list modelConfig.models as modelInfo&gt;
+        ${modelInfo.type} ${modelInfo.fieldName} = model.${modelInfo.fieldName};
+    &lt;/#list&gt;
+
+    &lt;#list fileConfig.files as fileInfo&gt;
+        &lt;#<span class="hljs-keyword">if</span> fileInfo.groupKey??&gt;
+        <span class="hljs-comment">// groupKey = ${fileInfo.groupKey}</span>
+        &lt;#<span class="hljs-keyword">if</span> fileInfo.condition??&gt;
+        <span class="hljs-keyword">if</span>(${fileInfo.condition}) {
+            &lt;#list fileInfo.files as fileInfo&gt;
+            inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">"${fileInfo.inputPath}"</span>).getAbsolutePath();
+            outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">"${fileInfo.outputPath}"</span>).getAbsolutePath();
+            &lt;#<span class="hljs-keyword">if</span> fileInfo.generateType == <span class="hljs-string">"static"</span>&gt;
+            StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+            &lt;#<span class="hljs-keyword">else</span>&gt;
+            DynamicGenerator.doGenerate(inputPath, outputPath, model);
+            &lt;/#<span class="hljs-keyword">if</span>&gt;
+            &lt;/#list&gt;
+        }
+        &lt;#<span class="hljs-keyword">else</span>&gt;
+        &lt;#list fileInfo.files as fileInfo&gt;
+        inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">"${fileInfo.inputPath}"</span>).getAbsolutePath();
+        outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">"${fileInfo.outputPath}"</span>).getAbsolutePath();
+        &lt;#<span class="hljs-keyword">if</span> fileInfo.generateType == <span class="hljs-string">"static"</span>&gt;
+        StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+        &lt;#<span class="hljs-keyword">else</span>&gt;
+        DynamicGenerator.doGenerate(inputPath, outputPath, model);
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+        &lt;/#list&gt;
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+        &lt;#<span class="hljs-keyword">else</span>&gt;
+        &lt;#<span class="hljs-keyword">if</span> fileInfo.condition??&gt;
+        <span class="hljs-keyword">if</span>(${fileInfo.condition}) {
+            inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">"${fileInfo.inputPath}"</span>).getAbsolutePath();
+            outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">"${fileInfo.outputPath}"</span>).getAbsolutePath();
+            &lt;#<span class="hljs-keyword">if</span> fileInfo.generateType == <span class="hljs-string">"static"</span>&gt;
+            StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+            &lt;#<span class="hljs-keyword">else</span>&gt;
+            DynamicGenerator.doGenerate(inputPath, outputPath, model);
+            &lt;/#<span class="hljs-keyword">if</span>&gt;
+        }
+        &lt;#<span class="hljs-keyword">else</span>&gt;
+        inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">"${fileInfo.inputPath}"</span>).getAbsolutePath();
+        outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">"${fileInfo.outputPath}"</span>).getAbsolutePath();
+        &lt;#<span class="hljs-keyword">if</span> fileInfo.generateType == <span class="hljs-string">"static"</span>&gt;
+        StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+        &lt;#<span class="hljs-keyword">else</span>&gt;
+        DynamicGenerator.doGenerate(inputPath, outputPath, model);
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+    &lt;/#list&gt;
+    }
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3564914654119655</span></pre>
+<p>编写过程中，我们发现重复的代码太多了，不利于维护，怎么办呢？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05731889894142772</span></p>
+<p>可以采用 FreeMarker 的宏定义，将重复的代码定义成一个 “组件”，支持传递不同的参数，可以在其他地方引用。</p>
+<blockquote>
+<p>FreeMarker 宏定义文档：<a href="http://www.kerneler.com/freemarker2.3.23/ref_directive_macro.html">http://www.kerneler.com/freemarker2.3.23/ref_directive_macro.html</a></p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.30201722343621706</span></blockquote>
+<p>比如将文件生成逻辑定义为宏，将 fileInfo 和 indent（缩进）作为参数传递：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3011672566137682</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">&lt;#macro generateFile indent fileInfo&gt;
+${indent}inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">"${fileInfo.inputPath}"</span>).getAbsolutePath();
+${indent}outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">"${fileInfo.outputPath}"</span>).getAbsolutePath();
+&lt;#<span class="hljs-keyword">if</span> fileInfo.generateType == <span class="hljs-string">"static"</span>&gt;
+${indent}StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+&lt;#<span class="hljs-keyword">else</span>&gt;
+${indent}DynamicGenerator.doGenerate(inputPath, outputPath, model);
+&lt;/#<span class="hljs-keyword">if</span>&gt;
+&lt;/#macro&gt;
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.11087621569855433</span></pre>
+<p>可以用下列代码引用宏：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">&lt;<span class="hljs-meta">@generateFile</span> fileInfo=fileInfo indent=<span class="hljs-string">"           "</span> /&gt;
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9174402633913978</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5649042605124697</span></pre>
+<p>使用宏修改后的 <code>MainGenerator.java.ftl</code> 代码更简洁、更好维护，完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> ${basePackage}.generator;
+
+<span class="hljs-keyword">import</span> com.yupi.model.DataModel;
+<span class="hljs-keyword">import</span> freemarker.template.TemplateException;
+
+<span class="hljs-keyword">import</span> java.io.File;
+<span class="hljs-keyword">import</span> java.io.IOException;
+
+&lt;#macro generateFile indent fileInfo&gt;
+${indent}inputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputRootPath, <span class="hljs-string">"${fileInfo.inputPath}"</span>).getAbsolutePath();
+${indent}outputPath = <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(outputRootPath, <span class="hljs-string">"${fileInfo.outputPath}"</span>).getAbsolutePath();
+&lt;#<span class="hljs-keyword">if</span> fileInfo.generateType == <span class="hljs-string">"static"</span>&gt;
+${indent}StaticGenerator.copyFilesByHutool(inputPath, outputPath);
+&lt;#<span class="hljs-keyword">else</span>&gt;
+${indent}DynamicGenerator.doGenerate(inputPath, outputPath, model);
+&lt;/#<span class="hljs-keyword">if</span>&gt;
+&lt;/#macro&gt;
+
+<span class="hljs-comment">/**
+ * 核心生成器
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainGenerator</span> {
+
+    <span class="hljs-comment">/**
+     * 生成
+     *
+     * <span class="hljs-doctag">@param</span> model 数据模型
+     * <span class="hljs-doctag">@throws</span> TemplateException
+     * <span class="hljs-doctag">@throws</span> IOException
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">doGenerate</span><span class="hljs-params">(DataModel model)</span> <span class="hljs-keyword">throws</span> TemplateException, IOException {
+        <span class="hljs-type">String</span> <span class="hljs-variable">inputRootPath</span> <span class="hljs-operator">=</span> <span class="hljs-string">"${fileConfig.inputRootPath}"</span>;
+        <span class="hljs-type">String</span> <span class="hljs-variable">outputRootPath</span> <span class="hljs-operator">=</span> <span class="hljs-string">"${fileConfig.outputRootPath}"</span>;
+
+        String inputPath;
+        String outputPath;
+
+    &lt;#list modelConfig.models as modelInfo&gt;
+        ${modelInfo.type} ${modelInfo.fieldName} = model.${modelInfo.fieldName};
+    &lt;/#list&gt;
+
+    &lt;#list fileConfig.files as fileInfo&gt;
+        &lt;#<span class="hljs-keyword">if</span> fileInfo.groupKey??&gt;
+        <span class="hljs-comment">// groupKey = ${fileInfo.groupKey}</span>
+        &lt;#<span class="hljs-keyword">if</span> fileInfo.condition??&gt;
+        <span class="hljs-keyword">if</span>(${fileInfo.condition}) {
+            &lt;#list fileInfo.files as fileInfo&gt;
+            &lt;<span class="hljs-meta">@generateFile</span> fileInfo=fileInfo indent=<span class="hljs-string">"           "</span> /&gt;
+            &lt;/#list&gt;
+        }
+        &lt;#<span class="hljs-keyword">else</span>&gt;
+        &lt;#list fileInfo.files as fileInfo&gt;
+        &lt;<span class="hljs-meta">@generateFile</span> fileInfo=fileInfo indent=<span class="hljs-string">"       "</span> /&gt;
+        &lt;/#list&gt;
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+        &lt;#<span class="hljs-keyword">else</span>&gt;
+        &lt;#<span class="hljs-keyword">if</span> fileInfo.condition??&gt;
+        <span class="hljs-keyword">if</span>(${fileInfo.condition}) {
+            &lt;<span class="hljs-meta">@generateFile</span> fileInfo=fileInfo indent=<span class="hljs-string">"           "</span> /&gt;
+        }
+        &lt;#<span class="hljs-keyword">else</span>&gt;
+        &lt;<span class="hljs-meta">@generateFile</span> fileInfo=fileInfo indent=<span class="hljs-string">"       "</span> /&gt;
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+    &lt;/#list&gt;
+    }
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2692052417738946</span></pre>
+<h3>3、同参数控制代码和文件生成<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8622081320772035</span></h3>
+<p>其实这个能力我们已经实现了！只要让同一个参数既出现在 condition 中控制文件生成，又出现在 FreeMarker 动态模板中作为生成代码的参数即可。</p>
+<h3 data-id="heading-21">4、定义一组相关的参数</h3>
+<p>对于一个复杂的代码生成器，可能会有很多允许用户自定义的参数，比如光 MySQL 的配置，都可能有十几条。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.049408743604199</span></p>
+<p>如果把所有这些参数全部按顺序写在元信息的模型配置中，可能用户在使用时，会被要求一次性输入大量的参数，增加使用和理解成本。而且配置之间有可能会有名称冲突，比如 MySQL 和其他数据库可能都有 url 配置。</p>
+<p>对于这种情况，最常用的方式就是分组，和上述文件分组类似，我们也可以对数据模型进行分组。各组下的模型参数互相隔离、保证不会出现命名冲突。</p>
+<blockquote>
+<p>TypeScript、FreeMarker 等很多框架都会采用类似命名空间（分组）的概念来隔离变量。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9034880657367761</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.32643910892697625</span></blockquote>
+<h4 data-id="heading-22">元信息修改</h4>
+<p>在元信息的 <code>modelConfig.models</code> 配置下新增 groupKey 为 <code>mainTemplate</code> 的模型参数组，封装 author 和 outputText 这两个用于生成 <code>MainTemplate.java<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5221593610314912</span></code> 文件的字段。</p>
+<p>修改后的元信息代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7912029161553993</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  ...
+  <span class="hljs-attr">"modelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needGit"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"boolean"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"是否生成 .gitignore 文件"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span>
+      <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"loop"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"boolean"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"是否生成循环"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"abbr"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"l"</span>
+      <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"groupKey"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"mainTemplate"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"groupName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"核心模板"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"MainTemplate"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"用于生成核心模板文件"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+          <span class="hljs-punctuation">{</span>
+            <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"author"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"作者注释"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"yupi"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"abbr"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"a"</span>
+          <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+          <span class="hljs-punctuation">{</span>
+            <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"outputText"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"输出信息"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"sum = "</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"abbr"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"o"</span>
+          <span class="hljs-punctuation">}</span>
+        <span class="hljs-punctuation">]</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.47152915205242296</span></pre>
+<p>上述代码的 modelInfo 中新增字段：</p>
+<ul>
+<li>groupKey：组的唯一表示，有 groupKey 表示开启分组，必须为英文</li>
+<li>groupName：组的名称</li>
+<li>type：表示组对应的 Java Class 类型，必须为大写开头<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.31452189513718</span></li>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5059898689982769</span></ul>
+<p>需要同步修改 <code>Meta.java</code> 元信息对应的实体类，为 <code>ModelInfo</code> 补充新字段：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@NoArgsConstructor</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">ModelInfo</span> {
+    <span class="hljs-keyword">private</span> String fieldName;
+    <span class="hljs-keyword">private</span> String type;
+    <span class="hljs-keyword">private</span> String description;
+    <span class="hljs-keyword">private</span> Object defaultValue;
+    <span class="hljs-keyword">private</span> String abbr;
+    <span class="hljs-keyword">private</span> String groupKey;
+    <span class="hljs-keyword">private</span> String groupName;
+    <span class="hljs-keyword">private</span> List&lt;ModelInfo&gt; models;
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14499282281459958</span></pre>
+<p>还需要修改 <code>MetaValidator</code> 的校验逻辑，如果模型的 groupKey 不为空，表示为模型组配置，则不校验 fieldName 等。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6106028821206488</span></p>
+<p>修改的部分代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">for</span> (Meta.ModelConfig.ModelInfo modelInfo : modelInfoList) {
+    <span class="hljs-comment">// 为 group，不校验</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">groupKey</span> <span class="hljs-operator">=</span> modelInfo.getGroupKey();
+    <span class="hljs-keyword">if</span> (StrUtil.isNotEmpty(groupKey)) {
+        <span class="hljs-keyword">continue</span>;
+    }
+    ...
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1749201517260004</span></pre>
+<h4>代码生成器实现<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23755020475009303</span></h4>
+<p>接下来我们试着根据分组配置，去编写一个实现分组功能的代码生成器。</p>
+<p>还是在制作工具生成的 <code>acm-template-pro-generator</code> 项目中修改。</p>
+<p>1）同组参数封装<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5622204095018548</span></p>
+<p>既然参数都已经分组了，为了统一管理同组参数，我们可以将同组参数封装为一个类：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 用于生成核心模板文件
+ */</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainTemplate</span> {
+    <span class="hljs-comment">/**
+     * 作者注释
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-type">String</span> <span class="hljs-variable">author</span> <span class="hljs-operator">=</span> <span class="hljs-string">"yupi"</span>;
+
+    <span class="hljs-comment">/**
+     * 输出信息
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-type">String</span> <span class="hljs-variable">outputText</span> <span class="hljs-operator">=</span> <span class="hljs-string">"sum = "</span>;
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4023202461022932</span></pre>
+<p>然后可以在 DataModel 中定义该类型的属性字段，代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.680890474172845</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 核心模板
+ */</span>
+<span class="hljs-keyword">public</span> MainTemplate mainTemplate;
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5592978334150576</span></pre>
+<p>2）如何让用户的输入自动填充到该对象中呢？</p>
+<p>最直接方式：像原来一样让用户依次输入所有的参数，然后将参数一个个地设置到参数组对象中。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8070619031704587</span></p>
+<p>但这种方式并不优雅，Picocli 作为一个强大的命令行开发框架，已经帮我们想到了复杂参数的场景，并提供了 <strong>参数组特性</strong> 。</p>
+<blockquote>
+<p>Picocli 参数组官方介绍：<a href="https://picocli.info/#_argument_groups">https://picocli.info/#_argument_groups</a></p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.30602585518429426</span></blockquote>
+<p>在 <code>GenerateCommand</code> 类的基础上新建 <code>TestArgGroupCommand</code> 类，用于测试参数组特性。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4543150133006151</span></p>
+<p>在该命令类中，定义参数组属性，并添加 <code>@ArgGroup</code> 注解，用于标识分组：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@CommandLine</span>.ArgGroup(exclusive = <span class="hljs-literal">false</span>, heading = <span class="hljs-string">"核心模板%n"</span>)
+MainTemplate mainTemplate;
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.006356982388365573</span></pre>
+<p>然后在命令类中新建对应的静态内部类，定义 author 和 outputText 属性。并给选项注解的 names 属性增加参数组的 groupKey 前缀，比如 <code>-mainTemplate.a</code>，从而实现同名参数相互隔离。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.11083178673677652</span></p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainTemplate</span> {
+    <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"-mainTemplate.a"</span>, <span class="hljs-string">"--mainTemplate.author"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"作者注释"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+    <span class="hljs-keyword">private</span> <span class="hljs-type">String</span> <span class="hljs-variable">author</span> <span class="hljs-operator">=</span> <span class="hljs-string">"yupi"</span>;
+
+    <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"-mainTemplate.o"</span>, <span class="hljs-string">"--mainTemplate.outputText"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"输出信息"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+    <span class="hljs-keyword">private</span> <span class="hljs-type">String</span> <span class="hljs-variable">outputText</span> <span class="hljs-operator">=</span> <span class="hljs-string">"sum = "</span>;
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3350711205145187</span></pre>
+<p>然后在命令类的 <code>run</code> 方法中打印所有的属性值，并在 <code>main</code> 方法中编写测试调用逻辑。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.024560250258105043</span></p>
+<p><code>TestArgGroupCommand</code> 类的完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.cli.command;
+
+<span class="hljs-keyword">import</span> lombok.Data;
+<span class="hljs-keyword">import</span> picocli.CommandLine;
+
+<span class="hljs-meta">@CommandLine</span>.Command(name = <span class="hljs-string">"test"</span>, mixinStandardHelpOptions = <span class="hljs-literal">true</span>)
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">TestArgGroupCommand</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Runnable</span> {
+
+    <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"--needGit"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"是否生成 .gitignore 文件"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+    <span class="hljs-keyword">private</span> <span class="hljs-type">boolean</span> <span class="hljs-variable">needGit</span> <span class="hljs-operator">=</span> <span class="hljs-literal">true</span>;
+
+    <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"-l"</span>, <span class="hljs-string">"--loop"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"是否生成循环"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+    <span class="hljs-keyword">private</span> <span class="hljs-type">boolean</span> <span class="hljs-variable">loop</span> <span class="hljs-operator">=</span> <span class="hljs-literal">false</span>;
+
+    <span class="hljs-meta">@CommandLine</span>.ArgGroup(exclusive = <span class="hljs-literal">false</span>, heading = <span class="hljs-string">"核心模板%n"</span>)
+    MainTemplate mainTemplate;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">run</span><span class="hljs-params">()</span> {
+        System.out.println(needGit);
+        System.out.println(loop);
+        System.out.println(mainTemplate);
+    }
+
+    <span class="hljs-meta">@Data</span>
+    <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainTemplate</span> {
+        <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"-mainTemplate.a"</span>, <span class="hljs-string">"--mainTemplate.author"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"作者注释"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+        <span class="hljs-keyword">private</span> <span class="hljs-type">String</span> <span class="hljs-variable">author</span> <span class="hljs-operator">=</span> <span class="hljs-string">"yupi"</span>;
+
+        <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"-mainTemplate.o"</span>, <span class="hljs-string">"--mainTemplate.outputText"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"输出信息"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+        <span class="hljs-keyword">private</span> <span class="hljs-type">String</span> <span class="hljs-variable">outputText</span> <span class="hljs-operator">=</span> <span class="hljs-string">"sum = "</span>;
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">main</span><span class="hljs-params">(String[] args)</span> {
+        <span class="hljs-type">CommandLine</span> <span class="hljs-variable">commandLine</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">CommandLine</span>(TestArgGroupCommand.class);
+<span class="hljs-comment">//      commandLine.execute("-l", "-mainTemplate.a", "--mainTemplate.outputText");</span>
+        commandLine.execute( <span class="hljs-string">"--help"</span>);
+    }
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7269120112039367</span></pre>
+<p>执行 main 方法测试，输入 <code>--help</code> 参数时，发现帮助手册已经支持自动分组：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8448591698390651</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/f750329a-3122-46d4-aabf-a43b752e667d.png" alt="image.png" class="medium-zoom-image"></p>
+<p>再测试输入各选项参数，从输出结果可以看到用户输入的值已经填充到了组对象中：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/86c98f68-e36b-4eff-96a1-2c8a83ef3ac6.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9056252862963634</span></p>
+<p>这种方式虽然能够实现参数分组，但对于用户而言，还是要一次性要输入那么多参数、或者一步一步提示，使用成本过高。</p>
+<p>所以我们暂时不修改制作工具，而是思考是否存在更好的实现方式。</p>
+<h3>5、定义可选开启的参数组<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.19099760776333707</span></h3>
+<p>我们的需求是：可以根据用户输入的某个开关参数，来控制是否要让用户输入其他的参数组。</p>
+<p>也就是说，我们的模型参数之间是存在依赖关系的，必须按照某个顺序依次引导用户输入。</p>
+<p>那其实我们可以想一种更优雅的交互方式：首先让用户输入最外层未分组的模型参数，然后再根据用户的输入情况，引导用户依次输入分组的参数。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6009585032774545</span></p>
+<p>简单来说，就是对复杂的输入进行了分步，让用户一步步填写。</p>
+<h4 data-id="heading-25">实现思路</h4>
+<p>如何实现呢？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.48788330976263383</span></p>
+<p>这里鱼皮想到了一种方式：套娃 🪆</p>
+<p>简单来说，就是输入完一个 Command 类，然后再让这个 Command 类去触发另一个 Command 类。</p>
+<p>步骤如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.712253132565444</span></p>
+<p>1）给每个参数组创建一个独立的 Picocli Command 类，用于通过命令行接受该组参数值</p>
+<p>2）先用根 Command 类（<code>GenerateCommand</code>类）接受最外层未分组的参数</p>
+<p>3）外层参数输入完成后，在 <code>run</code>（或者 call）方法中判断输入的参数，如果需要使用参数组，就再次使用步骤 1 中创建的 Command 类和用户交互。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10105572055453993</span></p>
+<h4 data-id="heading-26">代码生成器具体实现</h4>
+<p>有了实现思路后，我们还是先自主实现代码生成器，再考虑用制作工具来制作生成器。</p>
+<p>1）首先在 DataModel 类中新建组参数对应的 <strong>静态内部类</strong> 和对应的属性，注意要给属性填充默认值。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.46299717997019796</span></p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 核心模板
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-type">MainTemplate</span> <span class="hljs-variable">mainTemplate</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">MainTemplate</span>();
+
+<span class="hljs-comment">/**
+ * 用于生成核心模板文件
+ */</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainTemplate</span> {
+    <span class="hljs-comment">/**
+     * 作者注释
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-type">String</span> <span class="hljs-variable">author</span> <span class="hljs-operator">=</span> <span class="hljs-string">"yupi"</span>;
+
+    <span class="hljs-comment">/**
+     * 输出信息
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-type">String</span> <span class="hljs-variable">outputText</span> <span class="hljs-operator">=</span> <span class="hljs-string">"sum = "</span>;
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9904452053994284</span></pre>
+<p>2）编写 Picocli 命令类，在类中定义属性。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3589453477920339</span></p>
+<p>先复制 <code>TestArgGroupCommand</code>，得到 <code>TestGroupCommand</code> 类，接下来的实现代码都写在这个类中。</p>
+<p>根据元信息编写命令类具有的属性和选项。对于参数组对象，我们要使用 <code>static</code> 关键字进行标识，便于后面接受值：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"--needGit"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"是否生成 .gitignore 文件"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+<span class="hljs-keyword">private</span> <span class="hljs-type">boolean</span> <span class="hljs-variable">needGit</span> <span class="hljs-operator">=</span> <span class="hljs-literal">true</span>;
+
+<span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"-l"</span>, <span class="hljs-string">"--loop"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"是否生成循环"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+<span class="hljs-keyword">private</span> <span class="hljs-type">boolean</span> <span class="hljs-variable">loop</span> <span class="hljs-operator">=</span> <span class="hljs-literal">false</span>;
+
+<span class="hljs-keyword">static</span> DataModel.<span class="hljs-type">MainTemplate</span> <span class="hljs-variable">mainTemplate</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">DataModel</span>.MainTemplate();
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7403398882174739</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9658311685306604</span></pre>
+<p>3）编写独立的参数组命令类</p>
+<p>按照上面的步骤，先根据组参数创建一个独立的 Picocli 命令类，作为 <strong>静态内部类</strong> 放在 TestGroupCommand 主类中。由于是分步输入，这次 Option 注解的 names 属性可以不用再带 groupKey 前缀了。</p>
+<p>然后在该类的 run 方法中，将接受到的用户输入依次赋值给外层的参数组对象。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4937054163983925</span></p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@CommandLine</span>.Command(name = <span class="hljs-string">"mainTemplate"</span>)
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainTemplateCommand</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Runnable</span> {
+
+    <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"-a"</span>, <span class="hljs-string">"--author"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"作者注释"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+    <span class="hljs-keyword">private</span> <span class="hljs-type">String</span> <span class="hljs-variable">author</span> <span class="hljs-operator">=</span> <span class="hljs-string">"yupi"</span>;
+
+    <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"-o"</span>, <span class="hljs-string">"--outputText"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"输出信息"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+    <span class="hljs-keyword">private</span> <span class="hljs-type">String</span> <span class="hljs-variable">outputText</span> <span class="hljs-operator">=</span> <span class="hljs-string">"sum = "</span>;
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">run</span><span class="hljs-params">()</span> {
+        mainTemplate.author = author;
+        mainTemplate.outputText = outputText;
+    }
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13831218066460993</span></pre>
+<p>4）控制参数组命令交互<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10384360310541196</span></p>
+<p>在主命令类的 run 方法中，添加根据条件判断是否要输入分组参数的逻辑。</p>
+<p>可以通过 <code>commandLine.execute</code> 方法以及自己构造的完整命令行参数，来触发分组下所有字段的交互式输入。最后再将获取到的参数对象赋值给 DataModel 对象。</p>
+<p>代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4015776362225949</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Override</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">run</span><span class="hljs-params">()</span> {
+    System.out.println(needGit);
+    System.out.println(loop);
+    <span class="hljs-keyword">if</span> (<span class="hljs-literal">true</span>) {
+        System.out.println(<span class="hljs-string">"输入核心模板配置："</span>);
+        <span class="hljs-type">CommandLine</span> <span class="hljs-variable">commandLine</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">CommandLine</span>(MainTemplateCommand.class);
+        commandLine.execute( <span class="hljs-string">"-a"</span>, <span class="hljs-string">"-o"</span>);
+        System.out.println(mainTemplate);
+    }
+    <span class="hljs-comment">// 需要赋值给 DataModel</span>
+<span class="hljs-comment">//        DataModel dataModel = new DataModel();</span>
+<span class="hljs-comment">//        BeanUtil.copyProperties(this, dataModel);</span>
+<span class="hljs-comment">//        dataModel.mainTemplate = mainTemplate;</span>
+<span class="hljs-comment">//        MainGenerator.doGenerate(dataModel);</span>
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06888490076194986</span></pre>
+<p>经过上述步骤，<code>TestGroupCommand.java</code> 的完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.cli.command;
+
+<span class="hljs-keyword">import</span> com.yupi.model.DataModel;
+<span class="hljs-keyword">import</span> lombok.Data;
+<span class="hljs-keyword">import</span> picocli.CommandLine;
+
+<span class="hljs-keyword">import</span> java.util.concurrent.Callable;
+
+<span class="hljs-meta">@CommandLine</span>.Command(name = <span class="hljs-string">"test"</span>, mixinStandardHelpOptions = <span class="hljs-literal">true</span>)
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">TestGroupCommand</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Runnable</span> {
+
+    <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"--needGit"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"是否生成 .gitignore 文件"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+    <span class="hljs-keyword">private</span> <span class="hljs-type">boolean</span> <span class="hljs-variable">needGit</span> <span class="hljs-operator">=</span> <span class="hljs-literal">true</span>;
+
+    <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"-l"</span>, <span class="hljs-string">"--loop"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"是否生成循环"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+    <span class="hljs-keyword">private</span> <span class="hljs-type">boolean</span> <span class="hljs-variable">loop</span> <span class="hljs-operator">=</span> <span class="hljs-literal">false</span>;
+
+    <span class="hljs-keyword">static</span> DataModel.<span class="hljs-type">MainTemplate</span> <span class="hljs-variable">mainTemplate</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">DataModel</span>.MainTemplate();
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">run</span><span class="hljs-params">()</span> {
+        System.out.println(needGit);
+        System.out.println(loop);
+        <span class="hljs-keyword">if</span> (<span class="hljs-literal">true</span>) {
+            System.out.println(<span class="hljs-string">"输入核心模板配置："</span>);
+            <span class="hljs-type">CommandLine</span> <span class="hljs-variable">commandLine</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">CommandLine</span>(MainTemplateCommand.class);
+            commandLine.execute( <span class="hljs-string">"-a"</span>, <span class="hljs-string">"-o"</span>);
+            System.out.println(mainTemplate);
+        }
+        <span class="hljs-comment">// 需要赋值给 DataModel</span>
+<span class="hljs-comment">//        DataModel dataModel = new DataModel();</span>
+<span class="hljs-comment">//        BeanUtil.copyProperties(this, dataModel);</span>
+<span class="hljs-comment">//        dataModel.mainTemplate = mainTemplate;</span>
+<span class="hljs-comment">//        MainGenerator.doGenerate(dataModel);</span>
+    }
+
+    <span class="hljs-meta">@CommandLine</span>.Command(name = <span class="hljs-string">"mainTemplate"</span>)
+    <span class="hljs-meta">@Data</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MainTemplateCommand</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Runnable</span> {
+
+        <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"-a"</span>, <span class="hljs-string">"--author"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"作者注释"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+        <span class="hljs-keyword">private</span> <span class="hljs-type">String</span> <span class="hljs-variable">author</span> <span class="hljs-operator">=</span> <span class="hljs-string">"yupi"</span>;
+
+        <span class="hljs-meta">@CommandLine</span>.Option(names = {<span class="hljs-string">"-o"</span>, <span class="hljs-string">"--outputText"</span>}, arity = <span class="hljs-string">"0..1"</span>, description = <span class="hljs-string">"输出信息"</span>, interactive = <span class="hljs-literal">true</span>, echo = <span class="hljs-literal">true</span>)
+        <span class="hljs-keyword">private</span> <span class="hljs-type">String</span> <span class="hljs-variable">outputText</span> <span class="hljs-operator">=</span> <span class="hljs-string">"sum = "</span>;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">run</span><span class="hljs-params">()</span> {
+            mainTemplate.author = author;
+            mainTemplate.outputText = outputText;
+        }
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">main</span><span class="hljs-params">(String[] args)</span> {
+        <span class="hljs-type">CommandLine</span> <span class="hljs-variable">commandLine</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">CommandLine</span>(TestGroupCommand.class);
+        commandLine.execute(<span class="hljs-string">"-l"</span>);
+<span class="hljs-comment">//        commandLine.execute( "--help");</span>
+    }
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.965156853422775</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3593907033637278</span></pre>
+<p>最后执行 main 方法测试，会按照顺序引导用户输入，符合预期：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/3a9e7f94-f53a-4da0-9b24-48e751acf61b.png" alt="image.png" class="medium-zoom-image"></p>
+<h4>制作工具实现<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6610989580660764</span></h4>
+<p>已经确定了要制作的代码生成器的代码后，就可以增强制作工具，通过配置自动生成上述代码了。</p>
+<p>比较关键的一点是：如何根据一个模型参数，控制另一个模型参数组是否要输入？</p>
+<p>其实和控制文件是否生成的逻辑一样，我们给模型组增加一个 <code>condition</code> 字段，可以将其他模型参数的 fieldName 作为 condition 表达式的值。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.12837813323465075</span></p>
+<p>1）修改元信息文件的 models 组配置，补充 <code>condition</code> 字段，用 loop 字段来控制是否开启分组：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"groupKey"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"mainTemplate"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"groupName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"核心模板"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"MainTemplate"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"用于生成核心模板文件"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"loop"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+    <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"author"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"作者注释"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"yupi"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"abbr"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"a"</span>
+    <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"outputText"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"输出信息"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"sum = "</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"abbr"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"o"</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span>
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1395968992081862</span></pre>
+<p>同步修改 <code>Meta</code> 文件，给 <code>ModelInfo</code> 补充 <code>condition<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5547996225771239</span></code> 字段：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3004686689529552</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@NoArgsConstructor</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">ModelInfo</span> {
+    <span class="hljs-keyword">private</span> String fieldName;
+    <span class="hljs-keyword">private</span> String type;
+    <span class="hljs-keyword">private</span> String description;
+    <span class="hljs-keyword">private</span> Object defaultValue;
+    <span class="hljs-keyword">private</span> String abbr;
+    <span class="hljs-keyword">private</span> String groupKey;
+    <span class="hljs-keyword">private</span> String groupName;
+    <span class="hljs-keyword">private</span> List&lt;ModelInfo&gt; models;
+    <span class="hljs-keyword">private</span> String condition;
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08820078730224212</span></pre>
+<p>2）修改 <code>DataModel.java.ftl</code> 模板文件，目标是生成前面已经跑通流程的代码。</p>
+<p>注意重复的代码片段使用 FreeMarker 宏定义实现。完整代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4767966421507386</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> ${basePackage}.model;
+
+<span class="hljs-keyword">import</span> lombok.Data;
+
+&lt;#macro generateModel indent modelInfo&gt;
+&lt;#<span class="hljs-keyword">if</span> modelInfo.description??&gt;
+${indent}<span class="hljs-comment">/**
+${indent} * ${modelInfo.description}
+${indent} */</span>
+&lt;/#<span class="hljs-keyword">if</span>&gt;
+${indent}<span class="hljs-keyword">public</span> ${modelInfo.type} ${modelInfo.fieldName}&lt;#<span class="hljs-keyword">if</span> modelInfo.defaultValue??&gt; = ${modelInfo.defaultValue?c}&lt;/#<span class="hljs-keyword">if</span>&gt;;
+&lt;/#macro&gt;
+
+<span class="hljs-comment">/**
+ * 数据模型
+ */</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">DataModel</span> {
+&lt;#list modelConfig.models as modelInfo&gt;
+
+    &lt;#-- 有分组 --&gt;
+    &lt;#<span class="hljs-keyword">if</span> modelInfo.groupKey??&gt;
+    <span class="hljs-comment">/**
+     * ${modelInfo.groupName}
+     */</span>
+    <span class="hljs-keyword">public</span> ${modelInfo.type} ${modelInfo.groupKey} = <span class="hljs-keyword">new</span> <span class="hljs-title class_">$</span>{modelInfo.type}();
+
+    <span class="hljs-comment">/**
+     * ${modelInfo.description}
+     */</span>
+    <span class="hljs-meta">@Data</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">$</span>{modelInfo.type} {
+    &lt;#list modelInfo.models as modelInfo&gt;
+        &lt;<span class="hljs-meta">@generateModel</span> indent=<span class="hljs-string">"        "</span> modelInfo=modelInfo /&gt;
+    &lt;/#list&gt;
+    }
+
+    &lt;#<span class="hljs-keyword">else</span>&gt;
+    &lt;#-- 无分组 --&gt;
+    &lt;<span class="hljs-meta">@generateModel</span> indent=<span class="hljs-string">"    "</span> modelInfo=modelInfo /&gt;
+    &lt;/#<span class="hljs-keyword">if</span>&gt;
+&lt;/#list&gt;
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8365739261253735</span></pre>
+<p>3）注意，模型分组后，我们在 <code>MainGenerator</code> 中获取模型字段的代码也要修改，多取一个层级：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">String</span> <span class="hljs-variable">outputText</span> <span class="hljs-operator">=</span> model.mainTemplate.outputText;
+<span class="hljs-type">String</span> <span class="hljs-variable">author</span> <span class="hljs-operator">=</span> model.mainTemplate.author;
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9684927890950776</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8452180594444265</span></pre>
+<p>所以需要修改 <code>MainGenerator.java.ftl</code> 模型文件，修改的部分代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">&lt;#-- 获取模型变量 --&gt;
+&lt;#list modelConfig.models as modelInfo&gt;
+    &lt;#-- 有分组 --&gt;
+    &lt;#<span class="hljs-keyword">if</span> modelInfo.groupKey??&gt;
+    &lt;#list modelInfo.models as subModelInfo&gt;
+    ${subModelInfo.type} ${subModelInfo.fieldName} = model.${modelInfo.groupKey}.${subModelInfo.fieldName};
+    &lt;/#list&gt;
+    &lt;#<span class="hljs-keyword">else</span>&gt;
+    ${modelInfo.type} ${modelInfo.fieldName} = model.${modelInfo.fieldName};
+    &lt;/#<span class="hljs-keyword">if</span>&gt;
+&lt;/#list&gt;
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15370214396898962</span></pre>
+<p>4）修改 <code>GenerateCommand.java.ftl</code> 模板文件，目标是生成前面已经跑通流程的代码。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4462550343096823</span></p>
+<p>这里最复杂的地方在于如何根据 models 配置生成包含所有参数的 args 列表。</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">commandLine.execute(<span class="hljs-string">"--author"</span>, <span class="hljs-string">"--outputText"</span>);
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5977431295347644</span></pre>
+<p>涉及到遍历（models）、取特定字段（fieldName）、拼接字符串（用逗号连接）等逻辑，都在 FreeMarker 中实现就太复杂了。所以此处我们选择在 Java 代码中处理好变量，然后在 FreeMarker 模板直接引用变量即可。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8426728530346939</span></p>
+<p>修改 <code>Meta.java</code> 实体类，给 <code>ModelInfo</code> 补充 <code>allArgsStr<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4692611948657861</span></code> 中间参数，记录该分组下所有参数拼接字符串：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@NoArgsConstructor</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">ModelInfo</span> {
+    <span class="hljs-keyword">private</span> String fieldName;
+    <span class="hljs-keyword">private</span> String type;
+    <span class="hljs-keyword">private</span> String description;
+    <span class="hljs-keyword">private</span> Object defaultValue;
+    <span class="hljs-keyword">private</span> String abbr;
+    <span class="hljs-keyword">private</span> String groupKey;
+    <span class="hljs-keyword">private</span> String groupName;
+    <span class="hljs-keyword">private</span> List&lt;ModelInfo&gt; models;
+    <span class="hljs-keyword">private</span> String condition;
+    
+    <span class="hljs-comment">// 中间参数</span>
+    <span class="hljs-comment">// 该分组下所有参数拼接字符串</span>
+    <span class="hljs-keyword">private</span> String allArgsStr;
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3319231250213064</span></pre>
+<p>然后在 <code>MetaValidator</code> 中补充生成中间参数的逻辑，修改的代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.39882961416297347</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">for</span> (Meta.ModelConfig.ModelInfo modelInfo : modelInfoList) {
+    <span class="hljs-comment">// 为 group，不校验</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">groupKey</span> <span class="hljs-operator">=</span> modelInfo.getGroupKey();
+    <span class="hljs-keyword">if</span> (StrUtil.isNotEmpty(groupKey)) {
+        <span class="hljs-comment">// 生成中间参数</span>
+        List&lt;Meta.ModelConfig.ModelInfo&gt; subModelInfoList = modelInfo.getModels();
+        <span class="hljs-type">String</span> <span class="hljs-variable">allArgsStr</span> <span class="hljs-operator">=</span> modelInfo.getModels().stream()
+                .map(subModelInfo -&gt; String.format(<span class="hljs-string">"\"--%s\""</span>, subModelInfo.getFieldName()))
+                .collect(Collectors.joining(<span class="hljs-string">", "</span>));
+        modelInfo.setAllArgsStr(allArgsStr);
+        <span class="hljs-keyword">continue</span>;
+    }
+    ...
+}
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.944994778856991</span></pre>
+<p>然后就可以在模板文件中直接使用该变量了。</p>
+<p>对照着上面我们编写好的代码生成器命令类 <code>TestGroupCommand</code>，我们可以编写出 <code>GenerateCommand.java.ftl</code> 模板文件，完整代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5377448938587783</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> ${basePackage}.cli.command;
+
+<span class="hljs-keyword">import</span> cn.hutool.core.bean.BeanUtil;
+<span class="hljs-keyword">import</span> ${basePackage}.generator.MainGenerator;
+<span class="hljs-keyword">import</span> ${basePackage}.model.DataModel;
+<span class="hljs-keyword">import</span> lombok.Data;
+<span class="hljs-keyword">import</span> picocli.CommandLine;
+<span class="hljs-keyword">import</span> picocli.CommandLine.Command;
+<span class="hljs-keyword">import</span> picocli.CommandLine.Option;
+
+<span class="hljs-keyword">import</span> java.util.concurrent.Callable;
+
+&lt;#-- 生成选项 --&gt;
+&lt;#macro generateOption indent modelInfo&gt;
+${indent}<span class="hljs-meta">@Option(names = {&lt;#if modelInfo.abbr??&gt;"-${modelInfo.abbr}", &lt;/#if&gt;"--${modelInfo.fieldName}"}, arity = "0..1", &lt;#if modelInfo.description??&gt;description = "${modelInfo.description}", &lt;/#if&gt;interactive = true, echo = true)</span>
+${indent}<span class="hljs-keyword">private</span> ${modelInfo.type} ${modelInfo.fieldName}&lt;#<span class="hljs-keyword">if</span> modelInfo.defaultValue??&gt; = ${modelInfo.defaultValue?c}&lt;/#<span class="hljs-keyword">if</span>&gt;;
+&lt;/#macro&gt;
+
+&lt;#-- 生成命令调用 --&gt;
+&lt;#macro generateCommand indent modelInfo&gt;
+${indent}System.out.println(<span class="hljs-string">"输入${modelInfo.groupName}配置："</span>);
+${indent}<span class="hljs-type">CommandLine</span> <span class="hljs-variable">commandLine</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">CommandLine</span>(${modelInfo.type}Command.class);
+${indent}commandLine.execute(${modelInfo.allArgsStr});
+&lt;/#macro&gt;
+
+<span class="hljs-meta">@Command(name = "generate", description = "生成代码", mixinStandardHelpOptions = true)</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">GenerateCommand</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Callable</span>&lt;Integer&gt; {
+&lt;#list modelConfig.models as modelInfo&gt;
+
+    &lt;#-- 有分组 --&gt;
+    &lt;#<span class="hljs-keyword">if</span> modelInfo.groupKey??&gt;
+    <span class="hljs-comment">/**
+     * ${modelInfo.groupName}
+     */</span>
+    <span class="hljs-keyword">static</span> DataModel.${modelInfo.type} ${modelInfo.groupKey} = <span class="hljs-keyword">new</span> <span class="hljs-title class_">DataModel</span>.${modelInfo.type}();
+
+    &lt;#-- 根据分组生成命令类 --&gt;
+    <span class="hljs-meta">@Command(name = "${modelInfo.groupKey}")</span>
+    <span class="hljs-meta">@Data</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">$</span>{modelInfo.type}Command <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Runnable</span> {
+    &lt;#list modelInfo.models as subModelInfo&gt;
+        &lt;<span class="hljs-meta">@generateOption</span> indent=<span class="hljs-string">"        "</span> modelInfo=subModelInfo /&gt;
+    &lt;/#list&gt;
+
+        <span class="hljs-meta">@Override</span>
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">run</span><span class="hljs-params">()</span> {
+            &lt;#list modelInfo.models as subModelInfo&gt;
+            ${modelInfo.groupKey}.${subModelInfo.fieldName} = ${subModelInfo.fieldName};
+            &lt;/#list&gt;
+        }
+    }
+    &lt;#<span class="hljs-keyword">else</span>&gt;
+    &lt;<span class="hljs-meta">@generateOption</span> indent=<span class="hljs-string">"    "</span> modelInfo=modelInfo /&gt;
+    &lt;/#<span class="hljs-keyword">if</span>&gt;
+&lt;/#list&gt;
+
+    &lt;#-- 生成调用方法 --&gt;
+    <span class="hljs-keyword">public</span> Integer <span class="hljs-title function_">call</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception {
+        &lt;#list modelConfig.models as modelInfo&gt;
+        &lt;#<span class="hljs-keyword">if</span> modelInfo.groupKey??&gt;
+        &lt;#<span class="hljs-keyword">if</span> modelInfo.condition??&gt;
+        <span class="hljs-keyword">if</span> (${modelInfo.condition}) {
+            &lt;<span class="hljs-meta">@generateCommand</span> indent=<span class="hljs-string">"            "</span> modelInfo=modelInfo /&gt;
+        }
+        &lt;#<span class="hljs-keyword">else</span>&gt;
+        &lt;<span class="hljs-meta">@generateCommand</span> indent=<span class="hljs-string">"      "</span> modelInfo=modelInfo /&gt;
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+        &lt;/#list&gt;
+        &lt;#-- 填充数据模型对象 --&gt;
+        <span class="hljs-type">DataModel</span> <span class="hljs-variable">dataModel</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">DataModel</span>();
+        BeanUtil.copyProperties(<span class="hljs-built_in">this</span>, dataModel);
+        &lt;#list modelConfig.models as modelInfo&gt;
+        &lt;#<span class="hljs-keyword">if</span> modelInfo.groupKey??&gt;
+        dataModel.${modelInfo.groupKey} = ${modelInfo.groupKey};
+        &lt;/#<span class="hljs-keyword">if</span>&gt;
+        &lt;/#list&gt;
+        MainGenerator.doGenerate(dataModel);
+        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+    }
+}
+
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2736997894599522</span></pre>
+<p>最后测试一下效果，输入 loop 值为 true 时，工具会接着引导我们输入核心模板配置：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/80adf9a2-ba8d-45bb-9b98-b6a227aab889.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1432458064867912</span></p>
+<p>而输入 loop 值为 false 时，直接结束，符合预期：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a87a3e6d-40da-4f8a-a79d-4a9f201eb3eb.png" alt="image.png" class="medium-zoom-image"></p>
+<p>但是存在一个问题，我们查看制作工具打包的代码生成器生成的目标代码，发现 author 的值并没有生成：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.088847214364137</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/21c723b6-5b34-496a-a5ef-bfd8bad0a605.png" alt="image.png" class="medium-zoom-image"></p>
+<p>经过 debug 排查，这是因为我们之前 ACM 模板项目的 FTL 文件中，用到的模型参数是 <code>${author}</code> 和 <code>${outputText}</code>，但现在我们的数据模型参数都放在了 <code>mainTemplate<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14132608017935477</span></code> 对象下，所以要同步修改 FTL 模板获取的参数为 <code>${mainTemplate.author}</code> 和 <code>${mainTemplate.outputText}</code>。</p>
+<p>通过这个例子我们发现，模板和配置文件是有很强的绑定关系的，如果我们自己编写模板和配置，不仅麻烦，还可能出现各种不一致的问题。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2971982353018736</span></p>
+<h2 data-id="heading-28">最后</h2>
+<p>以上就是本节教程，我们通过生成 Spring Boot 项目生成器的目标，梳理出了制作工具应具有的增强配置能力，并且依次实现。</p>
+<p>本节教程中涉及多个复杂 FreeMarker 模板的编写，这是一个需要细心和耐心的工作，建议大家自己编写，并且注意微调缩进格式。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6063665091100832</span></p>
+<p>在下节教程中，让我们进一步增加制作工具的功能，帮助开发者自动生成配置文件和 FTL 动态模板文件，解决上面提到的问题、并进一步提高效率。</p>
+<h2 data-id="heading-29">本期作业</h2>
+<p>1）掌握从个例中梳理通用需求的方法<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7399201887982974</span></p>
+<p>2）理解 FreeMarker 中的宏定义，掌握组件复用的思想，能够编写出复杂的模板</p>
+<p>3）自己编写代码实现本节项目，并且在自己的代码仓库完成一次提交</p><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8112519567981966</span></div></div></div><div style="margin-bottom: 16px;"></div><div style="margin-bottom: 16px;"></div><div id="toggleArea" class="ant-row ant-row-no-wrap ant-row-space-between" style="margin-left: -10px; margin-right: -10px; margin-top: 40px; row-gap: 20px;"><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>上一节</div><a href="/course/1790980795074654209/section/1790995889540083713"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><span role="img" aria-label="double-left" class="anticon anticon-double-left" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-left" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M272.9 512l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L186.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H532c6.7 0 10.4-7.7 6.3-12.9L272.9 512zm304 0l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L490.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H836c6.7 0 10.4-7.7 6.3-12.9L576.9 512z"></path></svg></span></div><div class="ant-space-item"><div class="text-ellipsis">5. 制作工具优化</div></div></div></a></div><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>下一节</div><a href="/course/1790980795074654209/section/1790995984192942082"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><div class="text-ellipsis">7. 模板制作工具</div></div><div class="ant-space-item"><span role="img" aria-label="double-right" class="anticon anticon-double-right" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-right" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M533.2 492.3L277.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H188c-6.7 0-10.4 7.7-6.3 12.9L447.1 512 181.7 851.1A7.98 7.98 0 00188 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5zm304 0L581.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H492c-6.7 0-10.4 7.7-6.3 12.9L751.1 512 485.7 851.1A7.98 7.98 0 00492 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5z"></path></svg></span></div></div></a></div></div></div>

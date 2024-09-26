@@ -1,0 +1,366 @@
+<div class="ant-card-body"><h1 class="ant-typography" style="font-size: 30px;" data-id="">15. 部署上线</h1><div class="ant-space ant-space-horizontal ant-space-align-center" style="margin-bottom: 15px; gap: 8px;"><div class="ant-space-item" style=""><a class="text-gray-500" target="_blank" href="/user/1601072287388278786">程序员鱼皮</a></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item" style=""><span class="text-gray-500">2024-05-16 14:45</span></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item"><span class="text-gray-500">阅读 458</span></div></div><div style="margin-bottom: 16px;"></div><div class="course-container"><div class="md-viewer "><div class="markdown-body"><h2 data-id="heading-0">前情回顾</h2>
+<p>经过了项目的设计、开发和优化，我们终于迎来了最后一步，将项目部署上线并且让其他用户访问。</p>
+<p>本节教程中，鱼皮将用一种简单易懂的方式，带大家从 0 开始将项目的前后端完整上线。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14430112539027262</span></p>
+<h2 data-id="heading-1">本节重点</h2>
+<p>本节重点内容是项目部署上线，包括：</p>
+<ol>
+<li>服务器初始化</li>
+<li>部署规划</li>
+<li>安装依赖<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7850243862263244</span></li>
+<li>前端部署</li>
+<li>后端部署</li>
+<li>测试验证<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16431626961166867</span></li>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6318539693723277</span></ol>
+<p>本节教程可以单独学习，希望大家能够掌握这种快速上线项目的方法。</p>
+<h2 data-id="heading-2">一、服务器初始化</h2>
+<p>首先购买一台服务器，各大云服务商的新用户都有优惠，推荐先看“最新活动”页面，比如：<a href="https://cloud.tencent.com/act">https://cloud.tencent.com/act</a>。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.17327686005243592</span></p>
+<p>如图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/85218190-20d7-4168-978e-9936fca0afad.png" alt="image.png" class="medium-zoom-image"></p>
+<p>推荐购买轻量应用服务器，提供了很多开箱即用的模板，帮我们预装了环境和软件，省时省力。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24878689002577237</span></p>
+<p>鱼皮这里选择一台预装了宝塔 Linux 应用的轻量应用服务器，配置为 2 核 2 G，部署咱们的项目足够了：</p>
+<blockquote>
+<p>宝塔 Linux 是一个可视化 Linux 运维管理工具，提供了很多帮助我们管理服务器的功能，适合中小团队或者个人学习使用。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8336534232401387</span></blockquote>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/c6190084-b239-49e1-94eb-187728cbf74a.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9560860535571829</span></p>
+<p>购买好服务器后，进入控制台，可以看到新增的服务器信息，注意不要主动对外暴露公网 IP！</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5e887b42-895a-4e29-aa76-6b34aeaa9866.png" alt="image.png" class="medium-zoom-image"></p>
+<p>点击服务器进入详情页，在防火墙 tab 中放通 8888 宝塔面板端口，否则无法在自己的电脑上访问宝塔。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5141970673762024</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5851b97f-a427-47c2-a030-e53a66fab2e4.png" alt="image.png" class="medium-zoom-image"></p>
+<p>新增一条防火墙规则：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/499d33fe-095b-4042-ab19-0591d28cef5d.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.38918829930758214</span></p>
+<p>进入应用管理标签页，登录宝塔。</p>
+<p>首次登录时，需要先登录服务器，通过输入命令的方式获取宝塔默认账号密码，如图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/db4b7ac2-b35f-49a1-a87f-2196868173ea.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1471801724662425</span></p>
+<p>点击登录后，进入到 web 终端，复制脚本并执行：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/bd212371-d365-4551-92d0-868c30a875db.png" alt="image.png" class="medium-zoom-image"></p>
+<p>根据终端输出的信息，访问宝塔面板，输入初始用户名和密码：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15471498742229817</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/7336f431-5301-4441-83f7-16978a4ff69f.png" alt="image.png" class="medium-zoom-image"></p>
+<p>首次进入宝塔时，会提示我们安装环境，这里推荐安装 LNMP（包含 Nginx 服务器），适合部署前后端分离的项目：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/dce573cf-4be4-463d-8467-4a081869dccb.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.33856741553362424</span></p>
+<p>首次进入宝塔面板时，记得修改面板账号密码（每次修改完都要重新登录）：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/1a3ba3c0-5bd6-4476-9768-40083b5e5870.png" alt="image.png" class="medium-zoom-image"></p>
+<h2>二、部署规划<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.37992990783108915</span></h2>
+<p>在正式操作前后端部署前，我们要先进行一个规划，比如要部署哪些项目和服务、需要哪些依赖、占用哪些端口等。</p>
+<h3 data-id="heading-4">部署项目</h3>
+<p>前端：通过 Nginx 进行部署，访问地址为 <code>http://{域名}</code>。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2253967590455479</span></p>
+<p>后端：通过 Nginx 进行转发，访问地址为 <code>http://{域名}/api</code>，实际运行在 8120 端口。</p>
+<blockquote>
+<p>为什么要用 Nginx 转发？
+前端和后端域名一致，保证不会出现跨域问题。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3066538676803132</span></blockquote>
+<p>xxl-job-admin：访问地址为 <code>http://{域名}:8080/xxl-job-admin</code>，实际运行在 8080 端口。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5547901360364895</span></p>
+<h3 data-id="heading-5">部署依赖</h3>
+<p>Nginx：服务器 80 端口，默认已安装。</p>
+<p>数据库：服务器 3306 端口，默认已安装。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.33917660560519325</span></p>
+<p>Redis：服务器 6379 端口，需要手动安装。</p>
+<hr>
+<p>做好规划后，我们需要在腾讯云控制台的防火墙中开通需要外网访问的服务端口：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8131210845788721</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/33b8bb28-4cad-4e0d-97c3-88103d0e66da.png" alt="image.png" class="medium-zoom-image"></p>
+<h2 data-id="heading-6">二、安装依赖</h2>
+<h3>数据库<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.04902059325864183</span></h3>
+<p>宝塔面板已经自动安装，我们可以直接使用。xxl-job-admin 和我们的 web 后端都依赖数据库。</p>
+<p>添加数据库，先为 xxl-job-admin 项目准备数据库。</p>
+<p>数据库名称和我们项目需要的数据库名称保持一致，注意用户名、密码和访问权限：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.802269586256084</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/397e08e9-7d69-49bc-8b39-ce3d02291f7d.png" alt="image.png" class="medium-zoom-image"></p>
+<p>在 IDEA 中打开 xxl-job-admin 项目，通过数据库面板在本地检查连接是否正常：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/7becb78a-61aa-4724-8481-3f0530ef456c.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7564140559573924</span></p>
+<p>执行脚本，初始化 XXL-JOB 库表：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/997efaec-82cc-41fe-a634-ddc7a8a1b0b0.png" alt="image.png" class="medium-zoom-image"></p>
+<p>记得验证数据库表是否创建成功，如下图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8974362506918938</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/9e00ce77-b475-4560-a896-c5872cc18526.png" alt="image.png" class="medium-zoom-image"></p>
+<p>按照同样的方法，初始化后端项目需要的库表：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/7713a8d2-a046-4747-a3cb-96ef77afe58e.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13004720458582075</span></p>
+<p>在后端项目本地检查数据库能否正常连接：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/8340ed75-29ac-452f-8609-9c0b00aafe42.png" alt="image.png" class="medium-zoom-image"></p>
+<p>执行数据库初始化脚本：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10300730106685352</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/60bf2c11-3ad4-4a7e-95fb-2687f16f4883.png" alt="image.png" class="medium-zoom-image"></p>
+<p>最后，记得验证下数据库表是否创建成功：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/1d3cc6ff-2df0-4989-b0d3-0ebbd97019de.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7898027673983345</span></p>
+<h3 data-id="heading-8">Redis</h3>
+<p>在宝塔面板的软件商店中，搜索并安装 Redis：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/bc5aee41-41d1-4507-b639-b7f21bccba67.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.669579014127714</span></p>
+<p>配置 Redis，开启远程访问并配置密码，否则我们自己的电脑是无法连接 Redis 的：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/4e9f0404-9cd7-42f4-bd87-ed0c992c4eaa.png" alt="image.png" class="medium-zoom-image"></p>
+<p>修改配置后，一定要重载配置：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5080476865812027</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/f133a550-ed66-46f0-a7b7-26deaa361625.png" alt="image.png" class="medium-zoom-image"></p>
+<p>最后，在 IDEA 数据库面板中验证本地能否连接远程 Redis：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/b1033f0d-edc8-4ffd-8f58-202924c91996.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6648585215786078</span></p>
+<h3 data-id="heading-9">Java 环境</h3>
+<p>要部署 Java 项目，必须安装 JDK。在宝塔面板中，可以通过下图的方式快速安装指定版本的 JDK：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/88c55676-e8ad-435a-96b1-3b1840d51ab3.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3731099924761174</span></p>
+<h3 data-id="heading-10">Maven 环境</h3>
+<p>因为我们的 maker 制作工具项目需要执行 Maven 命令打包生成器，所以服务器必须安装 Maven。</p>
+<p>在腾讯云控制台中登录 web 版的 Linux 终端，用软件包管理器 yum 快速安装 Maven，输入命令如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4455162918841904</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">bash</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-bash hljs" data-highlighted="yes">sudo yum install maven -y
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.12494792903812413</span></pre>
+<p>如图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ed8b9944-cea6-40b2-bae6-27dc53f36a71.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.911351980990095</span></p>
+<h3 data-id="heading-11">XXL-JOB 任务调度平台</h3>
+<p>准备好数据库后，我们就可以部署 xxl-job-admin 调度中心了。</p>
+<p>首先修改 admin 项目的数据库配置：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07063149132289759</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ee6c2a00-d629-4c45-90e2-639cd52a306f.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后执行 Maven 打包：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a9d083c3-3b98-4db3-9058-47dd8a01b642.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6429243533866029</span></p>
+<p>如果出现报错，就认真阅读错误信息并分析解决。如下图：pom.xml 中的依赖版本有误</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5b87e501-3c8c-40f9-a676-3d468c47ea9e.png" alt="image.png" class="medium-zoom-image"></p>
+<p>那我们就修改 pom.xml 中的依赖版本，如图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.39140687263205876</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/fd012124-22aa-4315-ac2c-b68d020de44f.png" alt="image.png" class="medium-zoom-image"></p>
+<p>再次执行打包，成功：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a78d0d21-4313-40e4-b543-fe7e6ffb2e0a.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6426215638188466</span></p>
+<p>可以在 target 目录下可以找到打包好的 jar 包文件：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/0cbd9e1b-41d0-494c-992d-71b2bc1bcb09.png" alt="image.png" class="medium-zoom-image"></p>
+<p>建议先在本地运行 jar 包，确认打包正常，命令如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.29287511589126347</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">bash</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-bash hljs" data-highlighted="yes">java -jar xxl-job-admin-2.4.0.jar
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9586806423456746</span></pre>
+<p>查看控制台输出，正常运行：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/bb06b9f9-e4c4-4409-8ecf-420f16479daa.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5848177867647202</span></p>
+<p>打开浏览器访问管理页面，确认也能正常访问：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/271c5dc7-8ac0-4b6a-9e7b-18c6f615a187.png" alt="image.png" class="medium-zoom-image"></p>
+<p>本地验证无误，就可以通过宝塔自带的文件管理功能，上传 jar 包到服务器：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9733963729417432</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/17f76fc4-53e4-4b95-aa8e-5e453c3a4681.png" alt="image.png" class="medium-zoom-image"></p>
+<p>准备好 jar 包后，创建 Java 后端项目，配置如下：</p>
+<blockquote>
+<p>注意配置中填写的端口号一定要和实际项目的端口号一致！</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.40608668860549124</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7329815800206636</span></blockquote>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/c9f7bff6-9120-4dcb-9a9d-a64269809437.png" alt="image.png" class="medium-zoom-image"></p>
+<p>如果项目未正常启动，就先查看项目日志。比如下图中，鱼皮发现是程序创建日志目录失败（可能是无权限）：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a4ba029e-c581-433f-b08f-3136a32b74fa.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8475726864617905</span></p>
+<p>这里有 2 种解决方法，一种是手动创建出这个目录，另一种是修改项目配置。</p>
+<p>为了其他人部署更方便、更灵活，我选择方法 2。</p>
+<p>修改日志输出路径为相对路径：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5998665070196705</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/43107465-da67-4659-b9cc-6305b59befbb.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后重新打包上传，再重启 Java 项目。</p>
+<p>这次正常启动：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6476167312944954</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ec438b50-06d4-4781-bedb-60814af7d23b.png" alt="image.png" class="medium-zoom-image"></p>
+<p>访问远程地址，比如：<a href="http://49.235.165.230:8080/xxl-job-admin">http://49.235.165.230:8080/xxl-job-admin</a></p>
+<p>调度中心能够正常运行：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13477612978432774</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/e10644d2-3ab9-467a-8d18-94c1195390f4.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-12">对象存储</h3>
+<p>我们使用了第三方的对象存储（腾讯云 COS），前面的教程已经完成讲解，此处不再赘述。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8718461210292567</span></p>
+<h2 data-id="heading-13">三、前端部署</h2>
+<h3 data-id="heading-14">修改配置</h3>
+<p>线上的前端需要请求线上的后端接口，所以需要修改常量文件中的线上请求地址：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09458898265344584</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/bec7ee37-3bb7-496b-a7e6-ce726bf0a24f.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-15">打包部署</h3>
+<p>执行 <code>package.json</code> 文件中定义的 <code>build</code> 命令，执行打包构建：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.40278275315918477</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/1d48a8a3-7581-4080-92e9-ec8411a0546d.png" alt="image.png" class="medium-zoom-image"></p>
+<p>打包成功后，得到 <code>dist</code> 目录：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/c2c3c955-0764-47ca-a1d5-03b4adf8c90a.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3615522550620742</span></p>
+<p>在宝塔面板配置 Nginx 服务器，暂时用 IP 作为域名，根目录改为自己前端文件所在的目录（没有就新建）。如图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/6a6b1f51-e9d2-4a9f-b1ba-2292fe975fce.png" alt="image.png" class="medium-zoom-image"></p>
+<p>将打包好的 dist <strong>目录内</strong> 的所有文件上传到上述根目录中，如图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.004114774346381411</span></p>
+<blockquote>
+<p>同名文件须覆盖</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0020913318916930823</span></blockquote>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/6764384a-736c-4807-a890-a7267739b59d.png" alt="image.png" class="medium-zoom-image"></p>
+<p>访问地址，就能打开前端网站了：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20716848436196056</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/2a65e659-6954-428c-8fdc-1519ee5c2bf0.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-16">Nginx 转发</h3>
+<p>但是经过验证，目前访问除主页外的其他页面（比如 <a href="http://49.235.165.230/generator/add">/generator/add</a>），如果刷新，就会出现 404。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1164523550800729</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/de36c36a-366f-4bad-918e-7b6ec4478b45.png" alt="image.png" class="medium-zoom-image"></p>
+<p>怎么解决呢？</p>
+<p>遇到部署上的问题，建议先阅读项目使用的框架的官方文档，比如：<a href="https://pro.ant.design/zh-CN/docs/deploy">https://pro.ant.design/zh-CN/docs/deploy</a>，官方提供了 Nginx 部署的方法。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.606124365669183</span></p>
+<p>这个问题是由于服务器上不存在对应的页面文件（比如 /generator/add.html），所以需要在 Nginx 配置转发。如果找不到某个页面文件，就加载主页 index.html 文件。</p>
+<p>配置如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/d2f5c4a0-90f5-423d-90d9-8774819dc54e.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.11132950819854637</span></p>
+<p>追加的配置如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">nginx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-nginx hljs" data-highlighted="yes"><span class="hljs-section">location</span> / {
+    <span class="hljs-attribute">try_files</span> <span class="hljs-variable">$uri<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4053813709834839</span></span> <span class="hljs-variable">$uri</span>/index.html /index.html;
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.12598253141019788</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18315883413354195</span></pre>
+<h2>四、后端部署<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.643122182760542</span></h2>
+<h3 data-id="heading-18">修改配置和代码</h3>
+<p>修改 <code>application-prod</code> 生产环境配置，包括数据库、Redis、xxl-job、对象存储等，替换为上述安装依赖时指定的配置（如用户名、密码）。</p>
+<p>参考配置如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.043041203346398715</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">yaml</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-yaml hljs" data-highlighted="yes"><span class="hljs-comment"># 线上配置文件</span>
+<span class="hljs-comment"># @author &lt;a href="https://github.com/liyupi"&gt;程序员鱼皮&lt;/a&gt;</span>
+<span class="hljs-comment"># @from &lt;a href="https://yupi.icu"&gt;编程导航知识星球&lt;/a&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.009078499951543861</span></span>
+<span class="hljs-attr">server:</span>
+  <span class="hljs-attr">port:</span> <span class="hljs-number">8120<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6900634583997312</span></span>
+<span class="hljs-attr">spring:</span>
+  <span class="hljs-comment"># 数据库配置</span>
+  <span class="hljs-comment"># todo 需替换配置<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2703245839923978</span></span>
+  <span class="hljs-attr">datasource:</span>
+    <span class="hljs-attr">driver-class-name:</span> <span class="hljs-string">com.mysql.cj.jdbc.Driver<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4375669386065193</span></span>
+    <span class="hljs-attr">url:</span> <span class="hljs-string">jdbc:mysql://49.235.165.230:3306/my_db</span>
+    <span class="hljs-attr">username:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8774895470499173</span></span> <span class="hljs-string">my_db_user</span>
+    <span class="hljs-attr">password:</span> <span class="hljs-number">123456<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8439694981378689</span></span>
+  <span class="hljs-comment"># Redis 配置</span>
+  <span class="hljs-comment"># todo 需替换配置</span>
+  <span class="hljs-attr">redis:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18406380326558347</span></span>
+    <span class="hljs-attr">database:</span> <span class="hljs-number">1</span>
+    <span class="hljs-attr">host:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6863246376782366</span></span> <span class="hljs-number">49.235</span><span class="hljs-number">.165</span><span class="hljs-number">.230<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4702554907687433</span></span>
+    <span class="hljs-attr">port:</span> <span class="hljs-number">6379</span>
+    <span class="hljs-attr">timeout:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5292922634099004</span></span> <span class="hljs-number">5000</span>
+    <span class="hljs-attr">password:</span> <span class="hljs-number">123456<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8664204044341568</span></span>
+<span class="hljs-attr">mybatis-plus:</span>
+  <span class="hljs-attr">configuration:</span>
+    <span class="hljs-comment"># 生产环境关闭日志<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.244165824819925</span></span>
+    <span class="hljs-attr">log-impl:</span> <span class="hljs-string">''</span>
+<span class="hljs-comment"># 接口文档配置<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.42018586809922587</span></span>
+<span class="hljs-attr">knife4j:</span>
+  <span class="hljs-attr">basic:</span>
+    <span class="hljs-attr">enable:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9417815972271342</span></span> <span class="hljs-literal">true</span>
+    <span class="hljs-attr">username:</span> <span class="hljs-string">root<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6318661250559452</span></span>
+    <span class="hljs-attr">password:</span> <span class="hljs-number">123456</span>
+<span class="hljs-comment"># xxl-job 配置<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6652957175567347</span></span>
+<span class="hljs-attr">xxl:</span>
+  <span class="hljs-attr">job:</span>
+    <span class="hljs-attr">admin:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9703000727835978</span></span>
+      <span class="hljs-comment"># xxl-job admin address list, such as "http://address" or "http://address01,http://address02"</span>
+      <span class="hljs-attr">addresses:</span> <span class="hljs-string">http://49.235.165.230:8080/xxl-job-admin<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8486511164598918</span></span>
+    <span class="hljs-comment"># xxl-job, access token</span>
+    <span class="hljs-attr">accessToken:</span> <span class="hljs-string">default_token<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.28492169539838486</span></span>
+    <span class="hljs-attr">executor:</span>
+      <span class="hljs-comment"># xxl-job executor appname</span>
+      <span class="hljs-attr">appname:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7282068933602612</span></span> <span class="hljs-string">yuzi-generator-web-backend</span>
+      <span class="hljs-comment"># xxl-job executor registry-address: default use address to registry , otherwise use ip:port if address is null</span>
+      <span class="hljs-attr">address:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.28963598271099444</span></span>
+      <span class="hljs-comment"># xxl-job executor server-info</span>
+      <span class="hljs-attr">ip:</span>
+      <span class="hljs-attr">port:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6377530484712799</span></span> <span class="hljs-number">9999</span>
+      <span class="hljs-comment"># xxl-job executor log-path</span>
+      <span class="hljs-attr">logpath:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7523676352521071</span></span> <span class="hljs-string">logs/jobhandler</span>
+      <span class="hljs-comment"># xxl-job executor log-retention-days</span>
+      <span class="hljs-attr">logretentiondays:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.19886199440280117</span></span> <span class="hljs-number">30</span>
+<span class="hljs-comment"># 对象存储</span>
+<span class="hljs-attr">cos:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1590367382258111</span></span>
+  <span class="hljs-attr">client:</span>
+    <span class="hljs-attr">accessKey:</span> <span class="hljs-string">替换为自己的<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.12685948750675924</span></span>
+    <span class="hljs-attr">secretKey:</span> <span class="hljs-string">替换为自己的</span>
+    <span class="hljs-attr">region:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4944649594713404</span></span> <span class="hljs-string">ap-shanghai</span>
+    <span class="hljs-attr">bucket:</span> <span class="hljs-string">替换为自己的<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9902215765680058</span></span>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4142430962088397</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5719127942860494</span></pre>
+<p>除了修改配置外，之前我们是在 Windows 系统上开发运行项目，而现在要部署到 Linux 系统上，二者在执行命令脚本的代码上有一些区别。</p>
+<p>比如要修改 maker 制作工具项目执行 maven 脚本的命令，适应 Linux 系统：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09179956671508749</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">JarGenerator<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5522418551969963</span></span> {
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9227328135687498</span></span> <span class="hljs-title function_">doGenerate</span><span class="hljs-params">(String projectDir)</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7541000397960471</span></span> IOException, InterruptedException {
+        <span class="hljs-comment">// 清理之前的构建并打包</span>
+        <span class="hljs-comment">// 注意不同操作系统，执行的命令不同</span>
+<span class="hljs-comment">//        String winMavenCommand = "mvn.cmd clean package -DskipTests=true";<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.48419539199796424</span></span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">otherMavenCommand</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6002705261698849</span></span> <span class="hljs-string">"mvn clean package -DskipTests=true"</span>;
+        <span class="hljs-type">String</span> <span class="hljs-variable">mavenCommand<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08099209838287913</span></span> <span class="hljs-operator">=</span> otherMavenCommand;
+        ...
+    }
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.74211417655369</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2554044330561158</span></pre>
+<p>还要修改使用生成器执行脚本的命令，修改 <code>useGenerator</code> 方法的部分代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 构造命令</span>
+<span class="hljs-type">File</span> <span class="hljs-variable">scriptDir<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9182521148611049</span></span> <span class="hljs-operator">=</span> scriptFile.getParentFile();
+<span class="hljs-comment">// win 系统</span>
+<span class="hljs-comment">//        String scriptAbsolutePath = scriptFile.getAbsolutePath().replace("\\", "/");<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6372645268286563</span></span>
+<span class="hljs-comment">//        String[] commands = new String[]{scriptAbsolutePath, "json-generate", "--file=" + dataModelFilePath};</span>
+
+<span class="hljs-comment">// 注意，如果是 mac / linux 系统，要用 "./generator"</span>
+<span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4020709017630457</span></span> <span class="hljs-variable">scriptAbsolutePath</span> <span class="hljs-operator">=</span> scriptFile.getAbsolutePath();
+String[] commands = <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4422642835225141</span></span> <span class="hljs-title class_">String</span>[]{scriptAbsolutePath, <span class="hljs-string">"json-generate"</span>, <span class="hljs-string">"--file="<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.48147146990157874</span></span> + dataModelFilePath};
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.02687859107145818</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8928943171709984</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8236275727991336</span></pre>
+<h3 data-id="heading-19">打包部署</h3>
+<p>由于 web 项目引入了本地 maker 项目作为依赖，所以打包 web 项目前，需要先用 <code>mvn install</code> 命令来打包 maker 项目。</p>
+<p>然后在 IDEA 中打开 web 项目，忽略测试并打包：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9656752788848533</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/14a4ce5b-eee7-4e1e-a26e-8dedbeaf7055.png" alt="image.png" class="medium-zoom-image"></p>
+<p>打包成功，得到 jar 包文件：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5acdadf0-8bdf-4e6a-b09c-e3a7d21bbe8c.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8860058520193255</span></p>
+<p>按照之前的流程，先上传 jar 包到服务器：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/e5028077-5469-4b9f-9efa-53cd542851e0.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后添加 Java 项目，注意要激活生产环境的配置！<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1344195863027946</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ee23beb3-3ec5-4c3e-bd4e-3f57af46857b.png" alt="image.png" class="medium-zoom-image"></p>
+<p>如果发现启动失败，需要先观察日志。比如 Caffeine 和现在的 JDK 版本冲突的问题，如图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a00d6bee-1430-46a7-9956-13582cf6e814.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4186893308493387</span></p>
+<p>阅读 Caffeine 的官方文档，发现我们项目引入的 Caffeine 版本需要 JDK 11 或以上。</p>
+<blockquote>
+<p>官方文档：<a href="https://github.com/ben-manes/caffeine?tab=readme-ov-file#download">https://github.com/ben-manes/caffeine?tab=readme-ov-file#download</a></p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6169150865906243</span></blockquote>
+<p>如图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13861344276901422</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/7b956b0d-393d-4bc2-bcb7-f14abcef78e4.png" alt="image.png" class="medium-zoom-image"></p>
+<p>那我们就安装 JDK 17（和自己本地正常运行时保持一致）：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/567addc6-fb7a-4231-a218-b579b6c46bfb.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.763044535074554</span></p>
+<p>修改项目配置，更改项目 JDK 版本：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/90318dd3-e9b9-4f40-bae6-6892c501206d.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后重启项目，这次正常运行：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05952119039738091</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/f0d5da11-b233-42e9-ae33-172b765f6455.png" alt="image.png" class="medium-zoom-image"></p>
+<p>可以看到项目成功占用了端口：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/43ebbaa0-ff6d-4b8a-8e3c-594da39094c0.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8468028403045851</span></p>
+<p>但是，我们现在无法通过浏览器访问接口文档：<a href="http://49.235.165.230:8120/api/doc.html">http://49.235.165.230:8120/api/doc.html</a></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/0c1e0cd8-8774-4a5f-b92a-8f6e28958f8f.png" alt="image.png" class="medium-zoom-image"></p>
+<p>这是因为我们的服务器防火墙没有放开 8120 端口。这里我们故意不放开，因为在之前的部署规划中，后端需要通过 Nginx 进行转发，从而解决跨域问题。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2535150754609039</span></p>
+<h3 data-id="heading-20">Nginx 转发</h3>
+<p>如果访问的是后端接口（地址有 <code>/api</code> 前缀），则 Nginx 将请求转发到后端服务，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">nginx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-nginx hljs" data-highlighted="yes"><span class="hljs-section">location</span> /api {
+  <span class="hljs-attribute">proxy_pass</span>  http://127.0.0.1:8120;
+  <span class="hljs-attribute">proxy_set_header<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8136950771916229</span></span> Host <span class="hljs-variable">$proxy_host</span>;
+  <span class="hljs-attribute">proxy_set_header</span> X-Real-IP <span class="hljs-variable">$remote_addr<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2584973111806572</span></span>;
+  <span class="hljs-attribute">proxy_set_header</span> X-Forwarded-For <span class="hljs-variable">$proxy_add_x_forwarded_for</span>;
+  <span class="hljs-attribute">proxy_buffering<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9159277044687355</span></span> <span class="hljs-literal">off</span>;
+  <span class="hljs-attribute">proxy_set_header</span> Connection <span class="hljs-string">""<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3430484531064346</span></span>;
+}
+
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.057329606297656044</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8372990258344088</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7107218542837035</span></pre>
+<p>配置如图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/b8212fb9-5eb4-4136-b30a-f4bd8f416ffe.png" alt="image.png" class="medium-zoom-image"></p>
+<p>修改完后，就可以通过 80 端口（可以省略）访问到接口文档，比如：<a href="http://49.235.165.230/api/doc.html">http://49.235.165.230/api/doc.html</a>。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9544572934773539</span></p>
+<h2 data-id="heading-21">五、测试验证</h2>
+<p>最后，我们来对上线效果进行验证。</p>
+<h3>1、验证基本操作<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9754707478548257</span></h3>
+<p>访问主页，数据正常加载、能够查询、并且缓存生效。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/2e480274-f4c7-4e46-8d08-23550e4ef2f9.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后依次验证登录 =&gt; 创建生成器 =&gt; 在线制作生成器 =&gt; 搜索 =&gt; 详情页 =&gt; 下载 =&gt; 在线使用这一系列完整流程。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9824854090894382</span></p>
+<p>用户登录：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/0a867731-7a93-4a5b-ac7a-aa91534ed4ce.png" alt="image.png" class="medium-zoom-image"></p>
+<p>在创建生成器、上传图片时，发现无法正常加载已上传的图片：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.17141534847493678</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/38147f52-d5b4-424a-89cc-97128ed89b85.png" alt="image.png" class="medium-zoom-image"></p>
+<p>这是由于对象存储设置了防盗链，需要把我们的前端网址添加到防盗链白名单域名中：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/fcf5b301-8628-437a-a66a-0bbb23831fcb.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20884774861527178</span></p>
+<p>再次上传图片，能够顺利加载：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/de955442-9f88-4e24-8449-fd802cf8f116.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后验证生成器文件的上传并提交：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9165632669847184</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/21edfae2-36f2-495c-80ef-809b779642af.png" alt="image.png" class="medium-zoom-image"></p>
+<p>创建生成器成功后，进入详情页，能够正常看到数据：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a97d75c3-a4e0-48e5-934b-4da98d320169.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9446855997710888</span></p>
+<p>然后验证下载，对比下载到的文件和之前上传的代码生成器是否一致。</p>
+<h3 data-id="heading-23">2、验证生成器在线制作</h3>
+<p>测试在线制作功能，可以上传 <code>demo</code> 项目中的 ACM 示例模板文件。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7203788324836427</span></p>
+<p>src 压缩包阿里云盘：<a href="https://www.alipan.com/s/USLx7QYBwwt">https://www.alipan.com/s/USLx7QYBwwt</a>
+提取码: 28gu</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/425021ba-12ca-4894-a426-752738dde0f1.png" alt="image.png" class="medium-zoom-image"></p>
+<p>首次执行制作会失败，通过查看后端日志发现，由于 Maven 拉取依赖的耗时太长，导致超时。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.40208115397169086</span></p>
+<p>因为腾讯云服务器从 Maven 官方镜像源拉取依赖的速度非常慢（甚至无法拉取），所以我们要更换一个传输更快、更稳定的 Maven 镜像源。</p>
+<p>修改 Maven 的全局配置文件 <code>/etc/maven/settings.xml</code>，更换镜像源为阿里镜像源，配置如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">xml</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-xml hljs" data-highlighted="yes"><span class="hljs-tag">&lt;<span class="hljs-name">mirror</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.03341283292101349</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">id</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5195568735696172</span></span>alimaven<span class="hljs-tag">&lt;/<span class="hljs-name">id</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.036901535928708595</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.29433593487569953</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">name</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5385387893592513</span></span>aliyun maven<span class="hljs-tag">&lt;/<span class="hljs-name">name</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23533022344563292</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">url</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6792011372805193</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15743574200908816</span></span>http://maven.aliyun.com/nexus/content/groups/public/<span class="hljs-tag">&lt;/<span class="hljs-name">url</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5365607798773588</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">mirrorOf</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.44653365912732834</span></span>central<span class="hljs-tag">&lt;/<span class="hljs-name">mirrorOf</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8516203319008779</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5433013603439301</span></span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">mirror</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5259831956081698</span></span>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4989999859675649</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.37266653864032584</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7244062073326665</span></pre>
+<p>可以通过宝塔面板的文件编辑功能可视化修改配置，如下图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a992cb02-678d-4936-97f6-e141b3d120d4.png" alt="image.png" class="medium-zoom-image"></p>
+<p>再次执行制作，多试几次直到依赖都安装完成，之后便可以制作成功。如下图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6432148942219427</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/db597cd1-5683-4abd-a5fd-0d0ff74fb9ce.png" alt="image.png" class="medium-zoom-image"></p>
+<p>可以将制作好的生成器文件进行上传。</p>
+<h3>3、验证在线使用<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7450431153997659</span></h3>
+<p>就以刚刚我们在线制作得到的生成器为例，验证在线使用功能，发现可以正常运行：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/177866b6-5b81-478f-ac2e-ac05e84de825.png" alt="image.png" class="medium-zoom-image"></p>
+<h3>4、验证定时任务执行<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5067491414549707</span></h3>
+<p>除了验证主项目之外，还要验证定时任务能否正常执行。</p>
+<p>打开调度中心的执行器管理页面，创建执行器：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/3d046d27-39e2-406a-b457-a6ed493d0fa7.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2271143388594017</span></p>
+<p>成功识别到了内网机器：</p>
+<blockquote>
+<p>因为 xxl-job-admin 和后端在同一个服务器，所以不需要开放 9999 端口，直接通过内网 IP 访问。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7459790731777809</span></blockquote>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/860a1ad6-6346-4b86-bdd8-f8b2b53cc8d1.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7413835791362857</span></p>
+<p>进入任务管理页面，新增任务：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/522cbace-c53f-43d9-a9d8-91062faef53d.png" alt="image.png" class="medium-zoom-image"></p>
+<p>单次执行任务：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23527458265352896</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/7cfe0e56-1cc0-4688-9ade-1f4c2cf0cb15.png" alt="image.png" class="medium-zoom-image"></p>
+<p>执行成功，如图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/cb16fa84-95d3-495e-989f-1f2a756a2428.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18560560720332564</span></p>
+<h2 data-id="heading-26">最后</h2>
+<p>至此，整个项目已经完成上线，希望大家能通过这个项目掌握复杂业务的开发、优化和上线方法，得到全方面编程技能和程序员素养的提升。</p>
+<h2>本期作业<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.27937738049583305</span></h2>
+<p>1）完成项目的上线</p>
+<p>2）尝试给项目绑定域名、或者申请 HTTPS 证书（通过自行查阅资料实现）</p>
+<p>3）完成整个项目，并且自行增加 2 - 3 个扩展点，可以新增功能、也可以是某个优化、还可以将其他项目的知识点融合到本项目中。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7889807978573247</span></p>
+<p>4）自己编写代码实现本节项目，并且在自己的代码仓库完成一次提交。</p><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20587917590525295</span></div></div></div><div style="margin-bottom: 16px;"></div><div style="margin-bottom: 16px;"></div><div id="toggleArea" class="ant-row ant-row-no-wrap ant-row-space-between" style="margin-left: -10px; margin-right: -10px; margin-top: 40px; row-gap: 20px;"><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>上一节</div><a href="/course/1790980795074654209/section/1790996857287651330"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><span role="img" aria-label="double-left" class="anticon anticon-double-left" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-left" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M272.9 512l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L186.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H532c6.7 0 10.4-7.7 6.3-12.9L272.9 512zm304 0l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L490.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H836c6.7 0 10.4-7.7 6.3-12.9L576.9 512z"></path></svg></span></div><div class="ant-space-item"><div class="text-ellipsis">14. 存储优化</div></div></div></a></div><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>下一节</div><a href="/course/1790980795074654209/section/1790994641201967106"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><div class="text-ellipsis">代码生成器共享平台项目大纲</div></div><div class="ant-space-item"><span role="img" aria-label="double-right" class="anticon anticon-double-right" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-right" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M533.2 492.3L277.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H188c-6.7 0-10.4 7.7-6.3 12.9L447.1 512 181.7 851.1A7.98 7.98 0 00188 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5zm304 0L581.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H492c-6.7 0-10.4 7.7-6.3 12.9L751.1 512 485.7 851.1A7.98 7.98 0 00492 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5z"></path></svg></span></div></div></a></div></div></div>

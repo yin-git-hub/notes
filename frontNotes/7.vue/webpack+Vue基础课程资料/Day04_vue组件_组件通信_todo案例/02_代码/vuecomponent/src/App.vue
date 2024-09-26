@@ -1,69 +1,65 @@
 <template>
-  <div>
-    <p>商品清单如下:</p>
-    <div v-for="(obj, index) in shopData" :key="index">
-      {{ obj.shopName }} -- {{ obj.price }}元/份
+  <div style="overflow: hidden;">
+    <div style="float: left;">
+      <MyProduct
+      v-for="(obj, ind) in list"
+      :key="obj.id"
+      :title="obj.proname"
+      :price="obj.proprice"
+      :intro="obj.info"
+      :index="ind"
+      @subprice="fn"
+    ></MyProduct>
     </div>
-    <p>请选择购买数量:</p>
-    <Food
-      v-for="(obj, index) in shopData"
-      :key="index + ' '"
-      :goodsname="obj.shopName"
-      :ind="index"
-      :count="obj.count"
-      @addE="addFn"
-      @secE="secFn"
-    >
-    </Food>
-    <p>总价为: {{ allPrice }}</p>
+    <div style="float: left;">
+      <div>111111111111111</div>
+      <List :arr="list"></List>
+    </div>
   </div>
 </template>
 
 <script>
-import Food from "@/components/practise/Food";
+import MyProduct from "./components/MyProduct_sub";
+import List from "./components/List";
 export default {
   data() {
     return {
-      // 商品数据
-      shopData: [
+      list: [
         {
-          shopName: "可比克薯片",
-          price: 5.5,
-          count: 0,
+          id: 1,
+          proname: "超级好吃的棒棒糖",
+          proprice: 18.8,
+          info: "开业大酬宾, 全场8折",
         },
         {
-          shopName: "草莓酱",
-          price: 3.5,
-          count: 0,
+          id: 2,
+          proname: "超级好吃的大鸡腿",
+          proprice: 34.2,
+          info: "好吃不腻, 快来买啊",
         },
         {
-          shopName: "红烧肉",
-          price: 55,
-          count: 0,
-        },
-        {
-          shopName: "方便面",
-          price: 12,
-          count: 0,
+          id: 3,
+          proname: "超级无敌的冰激凌",
+          proprice: 14.2,
+          info: "炎热的夏天, 来个冰激凌了",
         },
       ],
     };
   },
   components: {
-    Food,
+    MyProduct,
+    List,
   },
   methods: {
-    addFn(ind){
-      this.shopData[ind].count++
+    fn(inde, price) {
+      this.list[inde].proprice > 1 &&
+        (this.list[inde].proprice = (this.list[inde].proprice - price).toFixed(
+          2
+        ));
     },
-    secFn(ind){
-      this.shopData[ind].count > 0 && this.shopData[ind].count--
-    }
   },
-  computed: {
-    allPrice(){
-      return this.shopData.reduce((sum, obj) => sum += obj.count * obj.price, 0)
-    }
-  }
 };
 </script>
+
+<style>
+</style>

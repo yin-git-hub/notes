@@ -1,0 +1,2090 @@
+<div class="ant-card-body"><h1 class="ant-typography" style="font-size: 30px;" data-id="">10. 生成器共享</h1><div class="ant-space ant-space-horizontal ant-space-align-center" style="margin-bottom: 15px; gap: 8px;"><div class="ant-space-item" style=""><a class="text-gray-500" target="_blank" href="/user/1601072287388278786">程序员鱼皮</a></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item" style=""><span class="text-gray-500">2024-05-16 14:44</span></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item"><span class="text-gray-500">阅读 503</span></div></div><div style="margin-bottom: 16px;"></div><div class="course-container"><div class="md-viewer "><div class="markdown-body"><h2 data-id="heading-0">前情回顾</h2>
+<p>目前，我们已经进入了第三阶段项目的开发，做一个在线的代码生成器平台。</p>
+<p>在上期教程中，我们计划了整个平台的实现方案，完成了项目初始化、库表设计等前期工作，并且开发了用户注册页面、代码生成器管理页面和平台主页，已经能够根据名称搜索代码生成器。</p>
+<p>本节教程，我们将继续开发在线代码生成器平台的核心功能，实现代码生成器的共享（上传与下载）。</p>
+<h2 data-id="heading-1">本节重点</h2>
+<p>本节教程属于项目的第三阶段 —— 开发在线代码生成器平台。</p>
+<p>本节重点内容：</p>
+<ol>
+<li>需求分析</li>
+<li>通用文件上传下载能力（对象存储零基础教程）</li>
+<li>创建代码生成器功能（前后端开发）</li>
+<li>代码生成器详情页（前后端开发）</li>
+</ol>
+<p><strong>注意：本节教程开发量较大，建议看视频教程！</strong></p>
+<h2 data-id="heading-2">零、前置修改（极其重要）</h2>
+<p>在之前的教程中，鱼皮的后端万用模板使用的是 OpenAPI 3 版本的接口文档，但是前端 openapi 代码生成器无法很好地和该版本的接口文档兼容，所以建议大家使用 OpenAPI 2 版本的接口文档。</p>
+<blockquote>
+<p>如果使用的是最新版本的后端万用模板项目，用的已经是 OpenAPI 2 版本了，可以忽略本小节。</p>
+</blockquote>
+<p>切换方式很简单，如果是完全跟着鱼皮的教程做，那就不建议再花时间调整了，直接拉取本节代码即可。</p>
+<p>本部分修改对应的提交：<a href="https://github.com/liyupi/yuzi-generator/commit/831a08eadc49e937dba2111bf693cd87acf2d315">https://github.com/liyupi/yuzi-generator/commit/831a08eadc49e937dba2111bf693cd87acf2d315</a></p>
+<p>下面简单介绍下修改步骤：</p>
+<h3 data-id="heading-3">后端修改</h3>
+<p>1）更换引入的接口文档依赖：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">xml</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-xml hljs" data-highlighted="yes"><span class="hljs-comment">&lt;!-- https://doc.xiaominfo.com/docs/quick-start#openapi2 --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.github.xiaoymin<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>knife4j-openapi2-spring-boot-starter<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>4.4.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span>
+</code></pre>
+<p>2）修改接口文档配置</p>
+<p>修改 <code>application.yml</code> 文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">yaml</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-yaml hljs" data-highlighted="yes"><span class="hljs-comment"># 接口文档配置</span>
+<span class="hljs-attr">knife4j:</span>
+  <span class="hljs-attr">enable:</span> <span class="hljs-literal">true</span>
+  <span class="hljs-attr">openapi:</span>
+    <span class="hljs-attr">title:</span> <span class="hljs-string">"接口文档"</span>
+    <span class="hljs-attr">version:</span> <span class="hljs-number">1.0</span>
+    <span class="hljs-attr">group:</span>
+      <span class="hljs-attr">default:</span>
+        <span class="hljs-attr">api-rule:</span> <span class="hljs-string">package</span>
+        <span class="hljs-attr">api-rule-resources:</span>
+          <span class="hljs-bullet">-</span> <span class="hljs-string">com.yupi.web.controller</span>
+</code></pre>
+<p>修改 <code>application-prod.yml</code> 文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">yaml</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-yaml hljs" data-highlighted="yes"><span class="hljs-comment"># 接口文档配置</span>
+<span class="hljs-attr">knife4j:</span>
+  <span class="hljs-attr">basic:</span>
+    <span class="hljs-attr">enable:</span> <span class="hljs-literal">true</span>
+    <span class="hljs-attr">username:</span> <span class="hljs-string">root</span>
+    <span class="hljs-attr">password:</span> <span class="hljs-number">123456</span>
+</code></pre>
+<p>访问 <a href="http://localhost:8120/api/v2/api-docs">http://localhost:8120/api/v2/api-docs</a>，可以看到接口文档定义数据：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5d73e6a7-af8a-4b3e-bc94-a1124cd3f248.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-4">前端修改</h3>
+<p>1）替换 openAPI 生成工具指定的接口文档地址，重新生成代码：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes"><span class="hljs-attr">openAPI</span>: [
+  {
+    <span class="hljs-attr">requestLibPath</span>: <span class="hljs-string">"import { request } from '@umijs/max'"</span>,
+    <span class="hljs-attr">schemaPath</span>: <span class="hljs-string">'http://localhost:8120/api/v2/api-docs'</span>,
+    <span class="hljs-attr">projectName</span>: <span class="hljs-string">'backend'</span>,
+  },
+]
+</code></pre>
+<p>重新生成后，得到的代码和原来有一些不同，我们需要做对应的调整。</p>
+<p>2）修改本地请求地址，移除 <code>/api</code> 后缀，因为生成的代码自动将后缀拼接到了请求代码中。</p>
+<p>修改的代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 本地后端地址
+ */</span>
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> <span class="hljs-variable constant_">BACKEND_HOST_LOCAL</span> = <span class="hljs-string">"http://localhost:8120"</span>;
+</code></pre>
+<p>3）启动项目，根据报错修改所有请求函数的名称，因为新生成的函数名后缀会携带请求类型。</p>
+<p>比如：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/f05d9f2b-cf1f-4823-a61e-247e9aacb6af.png" alt="image.png" class="medium-zoom-image"></p>
+<p>将 <code>listUserByPage</code> 替换为 <code>listUserByPageUsingPost</code> 即可，其他位置同理。</p>
+<p>修改完成后，能够顺利启动项目。</p>
+<h2 data-id="heading-5">一、需求分析</h2>
+<p>根据之前规划好的实现流程，本节教程我们要实现的核心需求是：实现文件上传下载功能，让用户能够上传和下载代码生成器产物包。</p>
+<p>为了实现这个功能，我们需要完成：</p>
+<p>1）代码生成器创建（修改）页面，用户可以上传生成器</p>
+<p>2）代码生成器详情页面，用户可以查看和下载代码生成器</p>
+<p>页面之间的关系如图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ccfea2f1-6388-4f08-b7db-9f84a6539cec.png" alt="" class="medium-zoom-image"></p>
+<p>想要实现这些功能，需要的核心能力是文件的上传和下载，以实现代码生成器图片文件、代码生成器产物包文件的存储。</p>
+<p>这也是很多项目中都需要的能力，所以接下来我们优先实现通用的文件上传和下载功能，然后再去开发页面。</p>
+<h2 data-id="heading-6">二、通用文件上传下载能力</h2>
+<p>首先我们要思考：将文件上传到哪里？从哪里下载？</p>
+<p>最简单的方式就是上传到后端项目所在的服务器，直接使用 Java 自带的文件读写 API 就能实现。但是，这种方式存在不少缺点，比如：</p>
+<ol>
+<li>不利于扩展：单个服务器的存储是有限的，如果存满了，只能再新增存储空间或者清理文件。</li>
+<li>不利于迁移：如果后端项目要更换服务器部署，之前所有的文件都要迁移到新服务器，非常麻烦。</li>
+<li>不够安全：如果忘记控制权限，用户很有可能通过恶意代码访问服务器上的文件，而且想控制权限也比较麻烦，需要自己实现。</li>
+<li>不利于管理：只能通过一些文件管理器进行简单的管理操作，但是缺乏数据处理、流量控制等多种高级能力。</li>
+</ol>
+<p>因此，除了存储一些需要清理的临时文件之外，我们通常不会将用户上传并保存的文件（比如用户头像）直接上传到服务器，而是更推荐大家使用专业的第三方存储服务，专业的工具做专业的事。其中，最常用的便是 <strong>对象存储</strong> 。</p>
+<h3 data-id="heading-7">什么是对象存储？</h3>
+<p>对象存储是一种存储 <strong>海量文件</strong> 的 <strong>分布式</strong> 存储服务，具有高扩展性、低成本、可靠安全等优点。</p>
+<p>比如开源的对象存储服务 MinIO，还有商业版的云服务，像亚马逊 S3（Amazon S3）、阿里云对象存储（OSS）、腾讯云对象存储（COS）等等。</p>
+<p>我个人更推荐大家使用第三方云服务，不要自己再去搭建 MinIO 之类的，咱学习主打一个快速！</p>
+<p>鱼皮使用最多的对象存储服务当属腾讯云的 COS 了，除了基本的对象存储的优点外，还可以通过控制台、API、SDK 和工具等多样化方式，简单快速地接入 COS，进行多格式文件的上传、下载和管理，实现海量数据存储和管理。</p>
+<p>本教程中，将用腾讯云的 COS 带大家实现文件的上传和下载。鱼皮之前搭建的图床就是使用了 COS 对象存储实现，很简单。</p>
+<h3 data-id="heading-8">创建并使用</h3>
+<p>首先进入对象存储的控制台，创建存储桶。</p>
+<blockquote>
+<p>地址：<a href="https://console.cloud.tencent.com/cos/bucket">https://console.cloud.tencent.com/cos/bucket</a></p>
+</blockquote>
+<p>可以把存储桶理解为一个存储空间，和文件系统类似，都是根据路径找到文件或目录（比如 <code>/test/aaa.jpg</code>）。可以多个项目共用一个存储桶，也可以每个项目一个。</p>
+<p>点击创建存储桶，注意地域选择国内（离用户较近的位置）。此处访问权限先选择“公有读私有写”，因为我们的存储桶要存储允许用户公开访问的代码生成器图片。而如果整个存储桶要存储的文件都不允许用户访问，建议选择私有读写，更安全。</p>
+<p>默认告警一定要勾选！因为对象存储服务的存储和访问流量都是计费的，超限后我们要第一时间得到通知并进行相应的处理。</p>
+<blockquote>
+<p>不过也不用太担心，自己做项目的话一般是没人攻击你的，而且对象存储很便宜，正常情况下消耗的费用寥寥无几。</p>
+</blockquote>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/22e6a440-5066-4401-8e57-1d8286b15c37.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后一直点击“下一步”即可：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a38a017a-3a59-4390-b200-723178e25c84.png" alt="image.png" class="medium-zoom-image"></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/874d1802-806b-4027-b008-2b04a86fbe2b.png" alt="image.png" class="medium-zoom-image"></p>
+<p>开通成功后，我们可以试着使用 web 控制台上传和浏览文件：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/1f69b926-ad03-4483-ba41-6f6b84b9911a.png" alt="image.png" class="medium-zoom-image"></p>
+<p>上传文件后，可以使用对象存储服务为我们生成的默认域名，在线访问图片：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/6552cc0e-eb54-425d-8338-e6bd92487f2c.png" alt="image.png" class="medium-zoom-image"></p>
+<p>当然，一般情况下我们会使用程序来操作存储桶，下面就来实现。</p>
+<h3 data-id="heading-9">后端操作对象存储</h3>
+<p>如何在 Java 程序中使用对象存储呢？</p>
+<p>其实非常简单，一般情况下，第三方服务都会提供比较贴心的文档教程，比如这里我们参考官方的快速入门或 Java SDK 文档，就能快速入门基本操作（增删改查都有）。</p>
+<p>文档地址：<a href="https://cloud.tencent.com/document/product/436/10199">https://cloud.tencent.com/document/product/436/10199</a></p>
+<p>还有更高级的学习操作方法，如果你是腾讯云熟练用户，可以直接使用 API Explorer，在线寻找操作和示例代码。</p>
+<p>地址：<a href="https://console.cloud.tencent.com/api/explorer?Product=cos&amp;Version=2018-11-26&amp;Action=PutBucket">https://console.cloud.tencent.com/api/explorer?Product=cos&amp;Version=2018-11-26&amp;Action=PutBucket</a></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/c9bf310b-cbb2-45a4-9b11-396ca11cd1dc.png" alt="image.png" class="medium-zoom-image"></p>
+<h4 data-id="heading-10">1、初始化客户端</h4>
+<p>参考官方文档，我们要先初始化一个 COS 客户端对象，和对象存储服务进行交互。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/0bbad20a-5984-4d93-a79b-9be44c9312ed.png" alt="image.png" class="medium-zoom-image"></p>
+<p>对于我们的项目，只需要复用一个 COS 客户端对象即可，所以我们可以通过编写配置类初始化客户端对象。</p>
+<p>1）打开 <code>yuzi-generator-web-backend</code> 项目，在 config 目录下新建 <code>CosClientConfig</code> 类。负责读取配置文件，并创建一个 COS 客户端的 Bean。</p>
+<blockquote>
+<p>后端万用模板中已经整合了该文件，不用自己编写。</p>
+</blockquote>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Configuration</span>
+<span class="hljs-meta">@ConfigurationProperties(prefix = "cos.client")</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">CosClientConfig</span> {
+
+    <span class="hljs-comment">/**
+     * accessKey
+     */</span>
+    <span class="hljs-keyword">private</span> String accessKey;
+
+    <span class="hljs-comment">/**
+     * secretKey
+     */</span>
+    <span class="hljs-keyword">private</span> String secretKey;
+
+    <span class="hljs-comment">/**
+     * 区域
+     */</span>
+    <span class="hljs-keyword">private</span> String region;
+
+    <span class="hljs-comment">/**
+     * 桶名
+     */</span>
+    <span class="hljs-keyword">private</span> String bucket;
+
+    <span class="hljs-meta">@Bean</span>
+    <span class="hljs-keyword">public</span> COSClient <span class="hljs-title function_">cosClient</span><span class="hljs-params">()</span> {
+        <span class="hljs-comment">// 初始化用户身份信息(secretId, secretKey)</span>
+        <span class="hljs-type">COSCredentials</span> <span class="hljs-variable">cred</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BasicCOSCredentials</span>(accessKey, secretKey);
+        <span class="hljs-comment">// 设置bucket的区域, COS地域的简称请参照 https://www.qcloud.com/document/product/436/6224</span>
+        <span class="hljs-type">ClientConfig</span> <span class="hljs-variable">clientConfig</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ClientConfig</span>(<span class="hljs-keyword">new</span> <span class="hljs-title class_">Region</span>(region));
+        <span class="hljs-comment">// 生成cos客户端</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">COSClient</span>(cred, clientConfig);
+    }
+}
+</code></pre>
+<p>2）填写配置文件。</p>
+<p><strong>一定要注意防止密码泄露！</strong> 所以我们新建 <code>application-local.yml</code> 文件，并且在 <code>.gitignore</code> 中忽略该文件的提交，这样就不会将代码等敏感配置提交到代码仓库了。</p>
+<p>配置代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">yaml</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-yaml hljs" data-highlighted="yes"><span class="hljs-comment"># 本地配置文件</span>
+<span class="hljs-comment"># 对象存储</span>
+<span class="hljs-attr">cos:</span>
+  <span class="hljs-attr">client:</span>
+    <span class="hljs-attr">accessKey:</span> <span class="hljs-string">xxx</span>
+    <span class="hljs-attr">secretKey:</span> <span class="hljs-string">xxx</span>
+    <span class="hljs-attr">region:</span> <span class="hljs-string">xxx</span>
+    <span class="hljs-attr">bucket:</span> <span class="hljs-string">xxx</span>
+</code></pre>
+<p>可以通过如下方式分别获取需要的配置。</p>
+<p>accessKey、secretKey 密钥对：在腾讯云访问管理 =&gt; 密钥管理中获取。</p>
+<p>地址：<a href="https://console.cloud.tencent.com/cam/capi">https://console.cloud.tencent.com/cam/capi</a></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/2884f085-8240-4228-bbdb-861191fea521.png" alt="image.png" class="medium-zoom-image"></p>
+<p>region 表示地域名，可以点此获取：<a href="https://cloud.tencent.com/document/product/436/6224">https://cloud.tencent.com/document/product/436/6224</a></p>
+<p>bucket 是存储桶名，可以轻松获取：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/da1729b8-3a2a-40b1-aed1-e6be61aaf042.png" alt="image.png" class="medium-zoom-image"></p>
+<h4 data-id="heading-11">2、通用能力类</h4>
+<p>在 <code>com.yupi.web.manager</code> 包下新建 <code>CosManager</code> 类，提供通用的对象存储操作，比如文件上传、文件下载等，供其他代码（比如 Service）调用。</p>
+<p>该类需要引入对象存储配置和 COS 客户端，用于和 COS 进行交互。代码如下：</p>
+<blockquote>
+<p>后端万用模板中已经整合了该文件，不用自己编写。</p>
+</blockquote>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">CosManager</span> {
+
+    <span class="hljs-meta">@Resource</span>
+    <span class="hljs-keyword">private</span> CosClientConfig cosClientConfig;
+
+    <span class="hljs-meta">@Resource</span>
+    <span class="hljs-keyword">private</span> COSClient cosClient;
+
+    ... 一些操作 COS 的方法
+}
+</code></pre>
+<h4 data-id="heading-12">3、文件上传</h4>
+<p>参考官方文档的“上传对象”部分，可以编写出文件上传的代码。</p>
+<p>地址：<a href="https://cloud.tencent.com/document/product/436/65935">https://cloud.tencent.com/document/product/436/65935</a></p>
+<p>1）<code>CosManager</code> 新增两个上传对象的方法，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">CosManager</span> {
+
+    <span class="hljs-meta">@Resource</span>
+    <span class="hljs-keyword">private</span> CosClientConfig cosClientConfig;
+
+    <span class="hljs-meta">@Resource</span>
+    <span class="hljs-keyword">private</span> COSClient cosClient;
+
+    <span class="hljs-comment">/**
+     * 上传对象
+     *
+     * <span class="hljs-doctag">@param</span> key           唯一键
+     * <span class="hljs-doctag">@param</span> localFilePath 本地文件路径
+     * <span class="hljs-doctag">@return</span>
+     */</span>
+    <span class="hljs-keyword">public</span> PutObjectResult <span class="hljs-title function_">putObject</span><span class="hljs-params">(String key, String localFilePath)</span> {
+        <span class="hljs-type">PutObjectRequest</span> <span class="hljs-variable">putObjectRequest</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">PutObjectRequest</span>(
+            cosClientConfig.getBucket(), key, <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(localFilePath));
+        <span class="hljs-keyword">return</span> cosClient.putObject(putObjectRequest);
+    }
+
+    <span class="hljs-comment">/**
+     * 上传对象
+     *
+     * <span class="hljs-doctag">@param</span> key  唯一键
+     * <span class="hljs-doctag">@param</span> file 文件
+     * <span class="hljs-doctag">@return</span>
+     */</span>
+    <span class="hljs-keyword">public</span> PutObjectResult <span class="hljs-title function_">putObject</span><span class="hljs-params">(String key, File file)</span> {
+        <span class="hljs-type">PutObjectRequest</span> <span class="hljs-variable">putObjectRequest</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">PutObjectRequest</span>(
+            cosClientConfig.getBucket(), key, file);
+        <span class="hljs-keyword">return</span> cosClient.putObject(putObjectRequest);
+    }
+}
+</code></pre>
+<p>2）修改 <code>FileConstant</code> 常量中的 COS 访问域名，便于接下来测试访问已上传的文件。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.web.constant;
+
+<span class="hljs-comment">/**
+ * 文件常量
+ *
+ * <span class="hljs-doctag">@author</span> &lt;a href="https://github.com/liyupi"&gt;程序员鱼皮&lt;/a&gt;
+ * <span class="hljs-doctag">@from</span> &lt;a href="https://yupi.icu"&gt;编程导航知识星球&lt;/a&gt;
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">FileConstant</span> {
+
+    <span class="hljs-comment">/**
+     * COS 访问地址
+     * todo 需替换配置
+     */</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">COS_HOST</span> <span class="hljs-operator">=</span> <span class="hljs-string">"https://yuzi-1256524210.cos.ap-shanghai.myqcloud.com"</span>;
+}
+</code></pre>
+<p>该域名可以在 COS 控制台的域名信息部分找到：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/822cbce7-ea47-40c3-831d-e0e0d9646b09.png" alt="image.png" class="medium-zoom-image"></p>
+<p>3）为了方便测试，在 <code>FileController</code> 中编写测试文件上传接口。</p>
+<p>核心流程是先接受用户上传的文件，指定上传的路径，然后调用 <code>cosManager.putObject</code> 方法上传文件到 COS 对象存储；上传成功后，会返回一个文件的 key（其实就是文件路径），便于我们访问和下载文件。</p>
+<p>需要注意，测试接口一定要加上管理员权限！防止任何用户随意上传文件。</p>
+<p>测试文件上传接口代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 测试文件上传
+ *
+ * <span class="hljs-doctag">@param</span> multipartFile
+ * <span class="hljs-doctag">@return</span>
+ */</span>
+<span class="hljs-meta">@AuthCheck(mustRole = UserConstant.ADMIN_ROLE)</span>
+<span class="hljs-meta">@PostMapping("/test/upload")</span>
+<span class="hljs-keyword">public</span> BaseResponse&lt;String&gt; <span class="hljs-title function_">testUploadFile</span><span class="hljs-params">(<span class="hljs-meta">@RequestPart("file")</span> MultipartFile multipartFile)</span> {
+    <span class="hljs-comment">// 文件目录</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">filename</span> <span class="hljs-operator">=</span> multipartFile.getOriginalFilename();
+    <span class="hljs-type">String</span> <span class="hljs-variable">filepath</span> <span class="hljs-operator">=</span> String.format(<span class="hljs-string">"/test/%s"</span>, filename);
+    <span class="hljs-type">File</span> <span class="hljs-variable">file</span> <span class="hljs-operator">=</span> <span class="hljs-literal">null</span>;
+    <span class="hljs-keyword">try</span> {
+        <span class="hljs-comment">// 上传文件</span>
+        file = File.createTempFile(filepath, <span class="hljs-literal">null</span>);
+        multipartFile.transferTo(file);
+        cosManager.putObject(filepath, file);
+        <span class="hljs-comment">// 返回可访问地址</span>
+        <span class="hljs-keyword">return</span> ResultUtils.success(filepath);
+    } <span class="hljs-keyword">catch</span> (Exception e) {
+        log.error(<span class="hljs-string">"file upload error, filepath = "</span> + filepath, e);
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.SYSTEM_ERROR, <span class="hljs-string">"上传失败"</span>);
+    } <span class="hljs-keyword">finally</span> {
+        <span class="hljs-keyword">if</span> (file != <span class="hljs-literal">null</span>) {
+            <span class="hljs-comment">// 删除临时文件</span>
+            <span class="hljs-type">boolean</span> <span class="hljs-variable">delete</span> <span class="hljs-operator">=</span> file.delete();
+            <span class="hljs-keyword">if</span> (!delete) {
+                log.error(<span class="hljs-string">"file delete error, filepath = {}"</span>, filepath);
+            }
+        }
+    }
+}
+</code></pre>
+<p>4）测试接口。</p>
+<p>使用 local 配置启动项目：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/c7ad639a-120f-41ec-8226-286632740e65.png" alt="image.png" class="medium-zoom-image"></p>
+<p>打开 Swagger 接口文档，测试文件上传：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ea0199a3-37c3-4aa3-9446-18c4d4c0bf80.png" alt="image.png" class="medium-zoom-image"></p>
+<h4 data-id="heading-13">4、文件下载</h4>
+<p>官方文档介绍了 2 种文件下载方式。一种是直接下载 COS 的文件到后端服务器（适合服务器端处理文件），另一种是获取到文件下载输入流（适合返回给前端用户）。</p>
+<p>参考官方文档：</p>
+<ul>
+<li><a href="https://cloud.tencent.com/document/product/436/65937">https://cloud.tencent.com/document/product/436/65937</a></li>
+<li><a href="https://cloud.tencent.com/document/product/436/10199#.E4.B8.8B.E8.BD.BD.E5.AF.B9.E8.B1.A1">https://cloud.tencent.com/document/product/436/10199#.E4.B8.8B.E8.BD.BD.E5.AF.B9.E8.B1.A1</a></li>
+</ul>
+<p>其实还有第三种“下载方式”，直接通过路径链接访问，适用于单一的、可以被用户公开访问的资源，比如用户头像、本项目中的代码生成器图片。</p>
+<p>但是对于本项目中的代码生成器产物包文件，更建议通过后端服务器从 COS 下载文件并返回给前端，这样可以在后端限制只有登录用户才能下载。</p>
+<p>1）首先在 <code>CosManager</code> 中新增对象下载方法，根据对象的 key 获取存储信息：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 下载对象
+ *
+ * <span class="hljs-doctag">@param</span> key 唯一键
+ * <span class="hljs-doctag">@return</span>
+ */</span>
+<span class="hljs-keyword">public</span> COSObject <span class="hljs-title function_">getObject</span><span class="hljs-params">(String key)</span> {
+    <span class="hljs-type">GetObjectRequest</span> <span class="hljs-variable">getObjectRequest</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">GetObjectRequest</span>(cosClientConfig.getBucket(), key);
+    <span class="hljs-keyword">return</span> cosClient.getObject(getObjectRequest);
+}
+</code></pre>
+<p>2）为了方便测试，在 <code>FileController</code> 中编写测试文件下载接口。</p>
+<p>核心流程是根据路径获取到 COS 文件对象，然后将文件对象转换为文件流，并写入到 Servlet 的 Response 对象中。注意要设置文件下载专属的响应头。</p>
+<p>同上，测试接口一定要加上管理员权限！防止任何用户随意上传文件。</p>
+<p>测试文件下载接口代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 测试文件下载
+ *
+ * <span class="hljs-doctag">@param</span> filepath
+ * <span class="hljs-doctag">@param</span> response
+ * <span class="hljs-doctag">@return</span>
+ */</span>
+<span class="hljs-meta">@AuthCheck(mustRole = UserConstant.ADMIN_ROLE)</span>
+<span class="hljs-meta">@GetMapping("/test/download/")</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">testDownloadFile</span><span class="hljs-params">(String filepath, HttpServletResponse response)</span> <span class="hljs-keyword">throws</span> IOException {
+    <span class="hljs-type">COSObjectInputStream</span> <span class="hljs-variable">cosObjectInput</span> <span class="hljs-operator">=</span> <span class="hljs-literal">null</span>;
+    <span class="hljs-keyword">try</span> {
+        <span class="hljs-type">COSObject</span> <span class="hljs-variable">cosObject</span> <span class="hljs-operator">=</span> cosManager.getObject(filepath);
+        cosObjectInput = cosObject.getObjectContent();
+        <span class="hljs-comment">// 处理下载到的流</span>
+        <span class="hljs-type">byte</span>[] bytes = IOUtils.toByteArray(cosObjectInput);
+        <span class="hljs-comment">// 设置响应头</span>
+        response.setContentType(<span class="hljs-string">"application/octet-stream;charset=UTF-8"</span>);
+        response.setHeader(<span class="hljs-string">"Content-Disposition"</span>, <span class="hljs-string">"attachment; filename="</span> + filepath);
+        <span class="hljs-comment">// 写入响应</span>
+        response.getOutputStream().write(bytes);
+        response.getOutputStream().flush();
+    } <span class="hljs-keyword">catch</span> (Exception e) {
+        log.error(<span class="hljs-string">"file download error, filepath = "</span> + filepath, e);
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.SYSTEM_ERROR, <span class="hljs-string">"下载失败"</span>);
+    } <span class="hljs-keyword">finally</span> {
+        <span class="hljs-keyword">if</span> (cosObjectInput != <span class="hljs-literal">null</span>) {
+            cosObjectInput.close();
+        }
+    }
+}
+</code></pre>
+<p>3）启动项目，打开 Swagger 接口文档，测试文件下载：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/84f97641-0b78-45e4-a1a7-daaea06066d0.png" alt="image.png" class="medium-zoom-image"></p>
+<p>至此，后端操作对象存储的代码已编写完成，下面写一个前端页面来测试文件的上传和下载。</p>
+<h3 data-id="heading-14">前端文件上传 / 下载</h3>
+<p>1）使用 openAPI 工具生成接口。</p>
+<p>可以看到工具为我们生成了文件上传请求函数，等会儿直接用就行，爽歪歪~</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/e58744db-0c21-49e2-9e27-dc1a827adcfa.png" alt="image.png" class="medium-zoom-image"></p>
+<p>2）新建文件上传下载测试页面，并添加路由：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes">{
+  <span class="hljs-attr">path</span>: <span class="hljs-string">'/test/file'</span>,
+  <span class="hljs-attr">icon</span>: <span class="hljs-string">'home'</span>,
+  <span class="hljs-attr">component</span>: <span class="hljs-string">'./Test/File'</span>,
+  <span class="hljs-attr">name</span>: <span class="hljs-string">'文件上传下载测试'</span>,
+  <span class="hljs-attr">hideInMenu</span>: <span class="hljs-literal">true</span>,
+},
+</code></pre>
+<p>新建的文件目录结构如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/9995c7a8-6e99-4a2b-878e-c92428b51cd2.png" alt="image.png" class="medium-zoom-image"></p>
+<p>3）新增对象存储相关常量。</p>
+<p>修改 <code>constants/index.ts</code> 文件，添加下列代码：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * COS 访问地址
+ */</span>
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> <span class="hljs-variable constant_">COS_HOST</span> = <span class="hljs-string">"https://yuzi-1256524210.cos.ap-shanghai.myqcloud.com"</span>;
+</code></pre>
+<p>4）开发页面。</p>
+<p>遵循 Flex 左右布局，左边上传文件，右边展示和下载文件。</p>
+<p>对于文件上传，直接使用 Ant Design 的拖拽文件上传组件。</p>
+<p>官方文档：<a href="https://ant.design/components/upload-cn#components-upload-demo-drag">https://ant.design/components/upload-cn#components-upload-demo-drag</a></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ac4928db-a049-4101-8a9f-77c2984ac9a2.png" alt="image.png" class="medium-zoom-image"></p>
+<p>参考代码如下，我们在 <code>customRequest</code> 字段中自定义了上传文件的请求逻辑：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">const</span> <span class="hljs-attr">props</span>: <span class="hljs-title class_">UploadProps</span> = {
+  <span class="hljs-attr">name</span>: <span class="hljs-string">'file'</span>,
+  <span class="hljs-attr">multiple</span>: <span class="hljs-literal">false</span>,
+  <span class="hljs-attr">maxCount</span>: <span class="hljs-number">1</span>,
+  <span class="hljs-attr">customRequest</span>: <span class="hljs-keyword">async</span> (<span class="hljs-attr">fileObj</span>: <span class="hljs-built_in">any</span>) =&gt; {
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">testUploadFileUsingPost</span>({}, fileObj.<span class="hljs-property">file</span>);
+      fileObj.<span class="hljs-title function_">onSuccess</span>(res.<span class="hljs-property">data</span>);
+      <span class="hljs-title function_">setValue</span>(res.<span class="hljs-property">data</span>);
+    } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">e</span>: <span class="hljs-built_in">any</span>) {
+      message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'上传失败，'</span> + e.<span class="hljs-property">message</span>);
+      fileObj.<span class="hljs-title function_">onError</span>(e);
+    }
+  },
+  <span class="hljs-title function_">onRemove</span>(<span class="hljs-params"></span>) {
+    <span class="hljs-title function_">setValue</span>(<span class="hljs-literal">undefined</span>);
+  },
+};
+
+<span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Card</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"文件上传"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">Dragger</span> {<span class="hljs-attr">...props</span>}&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">className</span>=<span class="hljs-string">"ant-upload-drag-icon"</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">InboxOutlined</span> /&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">className</span>=<span class="hljs-string">"ant-upload-text"</span>&gt;</span>Click or drag file to this area to upload<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">className</span>=<span class="hljs-string">"ant-upload-hint"</span>&gt;</span>
+      Support for a single or bulk upload. Strictly prohibited from uploading company data or
+      other banned files.
+    <span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">Dragger</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">Card</span>&gt;</span></span>
+</code></pre>
+<p>对于文件下载，使用 <code>img</code> 标签直接拼接图片地址并展示：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">&lt;div&gt;文件地址：{<span class="hljs-variable constant_">COS_HOST</span> + value}&lt;/div&gt;
+<span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Divider</span> /&gt;</span></span>
+<span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">img</span> <span class="hljs-attr">src</span>=<span class="hljs-string">{COS_HOST</span> + <span class="hljs-attr">value</span>} <span class="hljs-attr">height</span>=<span class="hljs-string">{280}</span> /&gt;</span></span>
+</code></pre>
+<p>使用 <code>file-saver</code> 库，可以下载后端返回的 blob 内容为文件。</p>
+<p>先安装 <code>file-saver</code> 库：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">bash</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-bash hljs" data-highlighted="yes">npm install file-saver
+npm i --save-dev @types/file-saver
+</code></pre>
+<p>下载文件代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> { saveAs } <span class="hljs-keyword">from</span> <span class="hljs-string">'file-saver'</span>;
+
+<span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Button</span>
+  <span class="hljs-attr">onClick</span>=<span class="hljs-string">{async</span> () =&gt;</span> {
+    const blob = await testDownloadFileUsingGet({
+      filepath: value,
+    }, {
+      responseType: "blob",
+    });
+    // 使用 file-saver 来保存文件
+    const fullPath = COS_HOST + value;
+    saveAs(blob, fullPath.substring(fullPath.lastIndexOf("/") + 1));
+  }}
+&gt;
+  点击下载文件
+<span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;</span></span>
+</code></pre>
+<p>由于后端下载文件接口不返回 <code>code</code> 状态码，所以需要修改响应拦截器，对于文件下载请求，直接返回 blob 对象。修改 <code>requestConfig.ts</code> 的部分代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes"><span class="hljs-comment">// 响应拦截器</span>
+<span class="hljs-attr">responseInterceptors</span>: [
+  <span class="hljs-function">(<span class="hljs-params">response</span>) =&gt;</span> {
+    <span class="hljs-comment">// 请求地址</span>
+    <span class="hljs-keyword">const</span> <span class="hljs-attr">requestPath</span>: string = response.<span class="hljs-property">config</span>.<span class="hljs-property">url</span> ?? <span class="hljs-string">''</span>;
+
+    <span class="hljs-comment">// 响应</span>
+    <span class="hljs-keyword">const</span> { data } = response <span class="hljs-keyword">as</span> unknown <span class="hljs-keyword">as</span> <span class="hljs-title class_">ResponseStructure</span>;
+    <span class="hljs-keyword">if</span> (!data) {
+      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">'服务异常'</span>);
+    }
+
+    <span class="hljs-comment">// 文件下载时，直接返回</span>
+    <span class="hljs-keyword">if</span> (requestPath.<span class="hljs-title function_">includes</span>(<span class="hljs-string">"download"</span>)) {
+      <span class="hljs-keyword">return</span> response;
+    }
+
+  	...
+  },
+]
+</code></pre>
+<p>页面的完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> { <span class="hljs-variable constant_">COS_HOST</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@/constants'</span>;
+<span class="hljs-keyword">import</span> {
+  testDownloadFileUsingGet,
+  testUploadFileUsingPost,
+} <span class="hljs-keyword">from</span> <span class="hljs-string">'@/services/backend/fileController'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">InboxOutlined</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/icons'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Button</span>, <span class="hljs-title class_">Card</span>, <span class="hljs-title class_">Divider</span>, <span class="hljs-title class_">Flex</span>, message, <span class="hljs-title class_">Upload</span>, <span class="hljs-title class_">UploadProps</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> { saveAs } <span class="hljs-keyword">from</span> <span class="hljs-string">'file-saver'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span>, { useState } <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-keyword">const</span> { <span class="hljs-title class_">Dragger</span> } = <span class="hljs-title class_">Upload</span>;
+
+<span class="hljs-comment">/**
+ * 文件上传下载测试页面
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">TestFilePage</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span> = <span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-keyword">const</span> [value, setValue] = useState&lt;<span class="hljs-built_in">string</span>&gt;();
+
+  <span class="hljs-keyword">const</span> <span class="hljs-attr">props</span>: <span class="hljs-title class_">UploadProps</span> = {
+    <span class="hljs-attr">name</span>: <span class="hljs-string">'file'</span>,
+    <span class="hljs-attr">multiple</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">maxCount</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-attr">customRequest</span>: <span class="hljs-keyword">async</span> (<span class="hljs-attr">fileObj</span>: <span class="hljs-built_in">any</span>) =&gt; {
+      <span class="hljs-keyword">try</span> {
+        <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">testUploadFileUsingPost</span>({}, fileObj.<span class="hljs-property">file</span>);
+        fileObj.<span class="hljs-title function_">onSuccess</span>(res.<span class="hljs-property">data</span>);
+        <span class="hljs-title function_">setValue</span>(res.<span class="hljs-property">data</span>);
+      } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">e</span>: <span class="hljs-built_in">any</span>) {
+        message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'上传失败，'</span> + e.<span class="hljs-property">message</span>);
+        fileObj.<span class="hljs-title function_">onError</span>(e);
+      }
+    },
+    <span class="hljs-title function_">onRemove</span>(<span class="hljs-params"></span>) {
+      <span class="hljs-title function_">setValue</span>(<span class="hljs-literal">undefined</span>);
+    },
+  };
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Flex</span> <span class="hljs-attr">gap</span>=<span class="hljs-string">{16}</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Card</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"文件上传"</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Dragger</span> {<span class="hljs-attr">...props</span>}&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">className</span>=<span class="hljs-string">"ant-upload-drag-icon"</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">InboxOutlined</span> /&gt;</span>
+          <span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">className</span>=<span class="hljs-string">"ant-upload-text"</span>&gt;</span>Click or drag file to this area to upload<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">className</span>=<span class="hljs-string">"ant-upload-hint"</span>&gt;</span>
+            Support for a single or bulk upload. Strictly prohibited from uploading company data or
+            other banned files.
+          <span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">Dragger</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Card</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Card</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"文件下载"</span> <span class="hljs-attr">loading</span>=<span class="hljs-string">{!value}</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">div</span>&gt;</span>文件地址：{COS_HOST + value}<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Divider</span> /&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">img</span> <span class="hljs-attr">src</span>=<span class="hljs-string">{COS_HOST</span> + <span class="hljs-attr">value</span>} <span class="hljs-attr">height</span>=<span class="hljs-string">{280}</span> /&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Divider</span> /&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Button</span>
+          <span class="hljs-attr">onClick</span>=<span class="hljs-string">{async</span> () =&gt;</span> {
+            const blob = await testDownloadFileUsingGet(
+              {
+                filepath: value,
+              },
+              {
+                responseType: 'blob',
+              },
+            );
+            // 使用 file-saver 来保存文件
+            const fullPath = COS_HOST + value;
+            saveAs(blob, fullPath.substring(fullPath.lastIndexOf('/') + 1));
+          }}
+        &gt;
+          点击下载文件
+        <span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Card</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">Flex</span>&gt;</span></span>
+  );
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">TestFilePage</span>;
+</code></pre>
+<p>5）打开页面，测试文件上传、显示和下载。页面效果如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/59095b20-cd24-4925-9547-51ae1a415799.png" alt="image.png" class="medium-zoom-image"></p>
+<p>至此，通用的文件上传和下载功能已开发完成。</p>
+<p>请大家思考：现在对象存储文件的安全性有没有问题？</p>
+<h2 data-id="heading-15">三、创建代码生成器功能</h2>
+<p>下面我们来开发创建代码生成器功能，允许用户创建发布代码生成器。</p>
+<p>先开发后端，创建代码生成器页面依赖的接口如下：</p>
+<ol>
+<li>创建代码生成器</li>
+<li>文件上传，包括上传代码生成器的图片和 dist 产物包</li>
+</ol>
+<p>第一个接口之前已经完成，主要开发文件上传接口。</p>
+<p>但是在那之前，我们要先解决一个问题。我们现在得到的代码生成器成品是一个 dist 目录，包含多个文件。想要上传和下载多文件都很不方便，所以需要对目录进行压缩打包。</p>
+<h3 data-id="heading-16">文件压缩打包</h3>
+<p>如何压缩打包文件呢？</p>
+<p>有 2 种方案：</p>
+<p>1）使用 COS 自带的能力，上传文件后执行压缩打包任务。参考官方文档：<a href="https://cloud.tencent.com/document/product/436/84614">https://cloud.tencent.com/document/product/436/84614</a></p>
+<p>但是不推荐这种方式，为什么不在本地处理好文件再上传呢？省点流量，岂不美哉！</p>
+<p>2）在制作工具生成代码生成器产物包时，同时得到一个压缩包文件。更推荐这种方式。</p>
+<hr>
+<p>首先修改制作工具 <code>maker</code> 项目的 <code>GenerateTemplate.java</code> 文件。新增一个制作压缩包的方法，可供子类调用。</p>
+<p>使用 Hutool 工具类可以轻松实现压缩，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 制作压缩包
+ *
+ * <span class="hljs-doctag">@param</span> outputPath
+ * <span class="hljs-doctag">@return</span> 压缩包路径
+ */</span>
+<span class="hljs-keyword">protected</span> String <span class="hljs-title function_">buildZip</span><span class="hljs-params">(String outputPath)</span> {
+    <span class="hljs-type">String</span> <span class="hljs-variable">zipPath</span> <span class="hljs-operator">=</span> outputPath + <span class="hljs-string">".zip"</span>;
+    ZipUtil.zip(outputPath, zipPath);
+    <span class="hljs-keyword">return</span> zipPath;
+}
+</code></pre>
+<p>然后修改模板类的 <code>buildDist</code> 方法，返回 dist 包的文件路径。代码如下：</p>
+<blockquote>
+<p>需要同步修改 MainGenerator 的返回值</p>
+</blockquote>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 生成精简版程序
+ *
+ * <span class="hljs-doctag">@param</span> outputPath
+ * <span class="hljs-doctag">@param</span> sourceCopyDestPath
+ * <span class="hljs-doctag">@param</span> jarPath
+ * <span class="hljs-doctag">@param</span> shellOutputFilePath
+ * <span class="hljs-doctag">@return</span> 产物包路径
+ */</span>
+<span class="hljs-keyword">protected</span> String <span class="hljs-title function_">buildDist</span><span class="hljs-params">(String outputPath, String sourceCopyDestPath, String jarPath, String shellOutputFilePath)</span> {
+    <span class="hljs-type">String</span> <span class="hljs-variable">distOutputPath</span> <span class="hljs-operator">=</span> outputPath + <span class="hljs-string">"-dist"</span>;
+    <span class="hljs-comment">// 拷贝 jar 包</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">targetAbsolutePath</span> <span class="hljs-operator">=</span> distOutputPath + File.separator + <span class="hljs-string">"target"</span>;
+    FileUtil.mkdir(targetAbsolutePath);
+    <span class="hljs-type">String</span> <span class="hljs-variable">jarAbsolutePath</span> <span class="hljs-operator">=</span> outputPath + File.separator + jarPath;
+    FileUtil.copy(jarAbsolutePath, targetAbsolutePath, <span class="hljs-literal">true</span>);
+    <span class="hljs-comment">// 拷贝脚本文件</span>
+    FileUtil.copy(shellOutputFilePath, distOutputPath, <span class="hljs-literal">true</span>);
+    <span class="hljs-comment">// 拷贝源模板文件</span>
+    FileUtil.copy(sourceCopyDestPath, distOutputPath, <span class="hljs-literal">true</span>);
+    <span class="hljs-keyword">return</span> distOutputPath;
+}
+</code></pre>
+<p>在 <code>maker.generator.main</code> 包下，新增压缩包生成器 <code>ZipGenerator</code> 子类，同时生成产物包和压缩包：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.maker.generator.main;
+
+<span class="hljs-comment">/**
+ * 生成代码生成器压缩包
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">ZipGenerator</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">GenerateTemplate</span> {
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">protected</span> String <span class="hljs-title function_">buildDist</span><span class="hljs-params">(String outputPath, String sourceCopyDestPath, String jarPath, String shellOutputFilePath)</span> {
+        <span class="hljs-type">String</span> <span class="hljs-variable">distPath</span> <span class="hljs-operator">=</span> <span class="hljs-built_in">super</span>.buildDist(outputPath, sourceCopyDestPath, jarPath, shellOutputFilePath);
+        <span class="hljs-keyword">return</span> <span class="hljs-built_in">super</span>.buildZip(distPath);
+    }
+}
+</code></pre>
+<p>最后修改主类的 main 方法，测试生成代码生成器的压缩包：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Main</span> {
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">main</span><span class="hljs-params">(String[] args)</span> <span class="hljs-keyword">throws</span> TemplateException, IOException, InterruptedException {
+<span class="hljs-comment">//        GenerateTemplate generateTemplate = new MainGenerator();</span>
+        <span class="hljs-type">GenerateTemplate</span> <span class="hljs-variable">generateTemplate</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ZipGenerator</span>();
+        generateTemplate.doGenerate();
+    }
+}
+</code></pre>
+<p>成功生成压缩包：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/d420f401-eb6b-42e5-a8eb-dd8370c8dd75.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-17">文件上传接口</h3>
+<p>在 <code>FileController</code> 中编写文件上传接口，代码如下：</p>
+<blockquote>
+<p>后端万用模板中已经整合了该方法，不用自己编写。</p>
+</blockquote>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 文件上传
+ *
+ * <span class="hljs-doctag">@param</span> multipartFile
+ * <span class="hljs-doctag">@param</span> uploadFileRequest
+ * <span class="hljs-doctag">@param</span> request
+ * <span class="hljs-doctag">@return</span>
+ */</span>
+<span class="hljs-meta">@PostMapping("/upload")</span>
+<span class="hljs-keyword">public</span> BaseResponse&lt;String&gt; <span class="hljs-title function_">uploadFile</span><span class="hljs-params">(<span class="hljs-meta">@RequestPart("file")</span> MultipartFile multipartFile,
+                                       UploadFileRequest uploadFileRequest, HttpServletRequest request)</span> {
+    <span class="hljs-type">String</span> <span class="hljs-variable">biz</span> <span class="hljs-operator">=</span> uploadFileRequest.getBiz();
+    <span class="hljs-type">FileUploadBizEnum</span> <span class="hljs-variable">fileUploadBizEnum</span> <span class="hljs-operator">=</span> FileUploadBizEnum.getEnumByValue(biz);
+    <span class="hljs-keyword">if</span> (fileUploadBizEnum == <span class="hljs-literal">null</span>) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.PARAMS_ERROR);
+    }
+    validFile(multipartFile, fileUploadBizEnum);
+    <span class="hljs-type">User</span> <span class="hljs-variable">loginUser</span> <span class="hljs-operator">=</span> userService.getLoginUser(request);
+    <span class="hljs-comment">// 文件目录：根据业务、用户来划分</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">uuid</span> <span class="hljs-operator">=</span> RandomStringUtils.randomAlphanumeric(<span class="hljs-number">8</span>);
+    <span class="hljs-type">String</span> <span class="hljs-variable">filename</span> <span class="hljs-operator">=</span> uuid + <span class="hljs-string">"-"</span> + multipartFile.getOriginalFilename();
+    <span class="hljs-type">String</span> <span class="hljs-variable">filepath</span> <span class="hljs-operator">=</span> String.format(<span class="hljs-string">"/%s/%s/%s"</span>, fileUploadBizEnum.getValue(), loginUser.getId(), filename);
+    <span class="hljs-type">File</span> <span class="hljs-variable">file</span> <span class="hljs-operator">=</span> <span class="hljs-literal">null</span>;
+    <span class="hljs-keyword">try</span> {
+        <span class="hljs-comment">// 上传文件</span>
+        file = File.createTempFile(filepath, <span class="hljs-literal">null</span>);
+        multipartFile.transferTo(file);
+        cosManager.putObject(filepath, file);
+        <span class="hljs-comment">// 返回可访问地址</span>
+        <span class="hljs-keyword">return</span> ResultUtils.success(filepath);
+    } <span class="hljs-keyword">catch</span> (Exception e) {
+        log.error(<span class="hljs-string">"file upload error, filepath = "</span> + filepath, e);
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.SYSTEM_ERROR, <span class="hljs-string">"上传失败"</span>);
+    } <span class="hljs-keyword">finally</span> {
+        <span class="hljs-keyword">if</span> (file != <span class="hljs-literal">null</span>) {
+            <span class="hljs-comment">// 删除临时文件</span>
+            <span class="hljs-type">boolean</span> <span class="hljs-variable">delete</span> <span class="hljs-operator">=</span> file.delete();
+            <span class="hljs-keyword">if</span> (!delete) {
+                log.error(<span class="hljs-string">"file delete error, filepath = {}"</span>, filepath);
+            }
+        }
+    }
+}
+</code></pre>
+<p>需要注意的一点是，我们要修改上述方法的返回值，不再拼接 <code>FileConstant.COS_HOST</code>，而是直接返回 filepath 相对路径，便于后续直接根据 filepath 下载。</p>
+<p>其实和我们之前编写的测试文件上传方法很像，只不过我们为了更方便地管理文件，引入了 <code>biz</code> 参数，用来区分业务，让不同业务的文件上传到不同的目录中。后面甚至还可以根据目录来设置不同的访问权限，提高安全性。</p>
+<p>根据我们的项目情况，还要修改 <code>FileUploadBizEnum</code> 枚举类，增加几种业务类型。代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">enum</span> <span class="hljs-title class_">FileUploadBizEnum</span> {
+
+    USER_AVATAR(<span class="hljs-string">"用户头像"</span>, <span class="hljs-string">"user_avatar"</span>),
+    GENERATOR_PICTURE(<span class="hljs-string">"生成器图片"</span>, <span class="hljs-string">"generator_picture"</span>),
+    GENERATOR_DIST(<span class="hljs-string">"生成器产物包"</span>, <span class="hljs-string">"generator_dist"</span>);
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> String text;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> String value;
+
+    FileUploadBizEnum(String text, String value) {
+        <span class="hljs-built_in">this</span>.text = text;
+        <span class="hljs-built_in">this</span>.value = value;
+    }
+
+    <span class="hljs-comment">/**
+     * 获取值列表
+     *
+     * <span class="hljs-doctag">@return</span>
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> List&lt;String&gt; <span class="hljs-title function_">getValues</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return</span> Arrays.stream(values()).map(item -&gt; item.value).collect(Collectors.toList());
+    }
+
+    <span class="hljs-comment">/**
+     * 根据 value 获取枚举
+     *
+     * <span class="hljs-doctag">@param</span> value
+     * <span class="hljs-doctag">@return</span>
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> FileUploadBizEnum <span class="hljs-title function_">getEnumByValue</span><span class="hljs-params">(String value)</span> {
+        <span class="hljs-keyword">if</span> (ObjectUtils.isEmpty(value)) {
+            <span class="hljs-keyword">return</span> <span class="hljs-literal">null</span>;
+        }
+        <span class="hljs-keyword">for</span> (FileUploadBizEnum anEnum : FileUploadBizEnum.values()) {
+            <span class="hljs-keyword">if</span> (anEnum.value.equals(value)) {
+                <span class="hljs-keyword">return</span> anEnum;
+            }
+        }
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">null</span>;
+    }
+
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">getValue</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return</span> value;
+    }
+
+    <span class="hljs-keyword">public</span> String <span class="hljs-title function_">getText</span><span class="hljs-params">()</span> {
+        <span class="hljs-keyword">return</span> text;
+    }
+}
+
+</code></pre>
+<h3 data-id="heading-18">通用文件上传组件</h3>
+<p>编写好接口后，下面我们要开发通用的文件上传组件，便于我们创建代码生成器表单页面直接引用。</p>
+<p>编写组件可是个技术活，首先我们要足够了解 Ant Design 组件库的运行机制，比如此处需要遵循自定义表单控件的规范。一定要阅读文档：<a href="https://ant.design/components/form-cn#components-form-demo-customized-form-controls">https://ant.design/components/form-cn#components-form-demo-customized-form-controls</a></p>
+<p>根据规范，我们要给组件指定 <code>value</code> 和 <code>onChange</code> 两个属性，明确这点后，就可以开发了。</p>
+<p>分别需要开发文件上传和图片上传 2 个组件。</p>
+<h4 data-id="heading-19">文件上传组件</h4>
+<p>参考我们之前编写的文件测试页代码，在 <code>components</code> 组件目录下新建 <code>FileUploader</code> 组件，目录结构如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/fd807a1b-a21a-4a3b-9dcc-691643b7ad31.png" alt="image.png" class="medium-zoom-image"></p>
+<p>组件接收的值类型为 UploadFile[] 文件列表，还可以接受外层传来的描述（description），让用户自定义描述信息。</p>
+<p>文件上传组件 <code>FileUploader</code> 的完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> { uploadFileUsingPost } <span class="hljs-keyword">from</span> <span class="hljs-string">'@/services/backend/fileController'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">InboxOutlined</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/icons'</span>;
+<span class="hljs-keyword">import</span> { message, <span class="hljs-title class_">UploadFile</span>, <span class="hljs-title class_">UploadProps</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">Dragger</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'antd/es/upload/Dragger'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span>, { useState } <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-keyword">interface</span> <span class="hljs-title class_">Props</span> {
+  <span class="hljs-attr">biz</span>: <span class="hljs-built_in">string</span>;
+  onChange?: <span class="hljs-function">(<span class="hljs-params">fileList: UploadFile[]</span>) =&gt;</span> <span class="hljs-built_in">void</span>;
+  value?: <span class="hljs-title class_">UploadFile</span>[];
+  description?: <span class="hljs-built_in">string</span>;
+}
+
+<span class="hljs-comment">/**
+ * 文件上传组件
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">FileUploader</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span>&lt;<span class="hljs-title class_">Props</span>&gt; = <span class="hljs-function">(<span class="hljs-params">props</span>) =&gt;</span> {
+  <span class="hljs-keyword">const</span> { biz, value, description, onChange } = props;
+  <span class="hljs-keyword">const</span> [loading, setLoading] = <span class="hljs-title function_">useState</span>(<span class="hljs-literal">false</span>);
+
+  <span class="hljs-keyword">const</span> <span class="hljs-attr">uploadProps</span>: <span class="hljs-title class_">UploadProps</span> = {
+    <span class="hljs-attr">name</span>: <span class="hljs-string">'file'</span>,
+    <span class="hljs-attr">listType</span>: <span class="hljs-string">'text'</span>,
+    <span class="hljs-attr">multiple</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">maxCount</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-attr">fileList</span>: value,
+    <span class="hljs-attr">disabled</span>: loading,
+    <span class="hljs-attr">onChange</span>: <span class="hljs-function">(<span class="hljs-params">{ fileList }</span>) =&gt;</span> {
+      onChange?.(fileList);
+    },
+    <span class="hljs-attr">customRequest</span>: <span class="hljs-keyword">async</span> (<span class="hljs-attr">fileObj</span>: <span class="hljs-built_in">any</span>) =&gt; {
+      <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">true</span>);
+      <span class="hljs-keyword">try</span> {
+        <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">uploadFileUsingPost</span>(
+          {
+            biz,
+          },
+          {},
+          fileObj.<span class="hljs-property">file</span>,
+        );
+        fileObj.<span class="hljs-title function_">onSuccess</span>(res.<span class="hljs-property">data</span>);
+      } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">e</span>: <span class="hljs-built_in">any</span>) {
+        message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'上传失败，'</span> + e.<span class="hljs-property">message</span>);
+        fileObj.<span class="hljs-title function_">onError</span>(e);
+      }
+      <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">false</span>);
+    },
+  };
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Dragger</span> {<span class="hljs-attr">...uploadProps</span>}&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">className</span>=<span class="hljs-string">"ant-upload-drag-icon"</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">InboxOutlined</span> /&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">className</span>=<span class="hljs-string">"ant-upload-text"</span>&gt;</span>点击或拖拽文件上传<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">className</span>=<span class="hljs-string">"ant-upload-hint"</span>&gt;</span>{description}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">Dragger</span>&gt;</span></span>
+  );
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">FileUploader</span>;
+
+</code></pre>
+<p>由于我们数据库中存储的是产物包的 key，而不是文件对象，所以需要注意，在外层使用该组件时，要将文件对象和 key（或者 url 地址）进行互转。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ee866519-1dff-444f-99d2-7501e28c63ab.png" alt="image.png" class="medium-zoom-image"></p>
+<p>组件效果如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/b61ec812-7351-4a7c-b83b-b56986cff11d.png" alt="image.png" class="medium-zoom-image"></p>
+<h4 data-id="heading-20">图片上传</h4>
+<p>和文件上传类似，我们可以参考 Ant Design 现有的图片上传组件和之前的文件上传代码。</p>
+<p>文档地址：<a href="https://ant.design/components/upload-cn#components-upload-demo-avatar">https://ant.design/components/upload-cn#components-upload-demo-avatar</a></p>
+<p>在 <code>components</code> 组件目录下新建 <code>PictureUploader</code> 组件，完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> { uploadFileUsingPost } <span class="hljs-keyword">from</span> <span class="hljs-string">'@/services/backend/fileController'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">LoadingOutlined</span>, <span class="hljs-title class_">PlusOutlined</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/icons'</span>;
+<span class="hljs-keyword">import</span> { message, <span class="hljs-title class_">Upload</span>, <span class="hljs-title class_">UploadProps</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span>, { useState } <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+<span class="hljs-keyword">import</span> {<span class="hljs-variable constant_">COS_HOST</span>} <span class="hljs-keyword">from</span> <span class="hljs-string">"@/constants"</span>;
+
+<span class="hljs-keyword">interface</span> <span class="hljs-title class_">Props</span> {
+  <span class="hljs-attr">biz</span>: <span class="hljs-built_in">string</span>;
+  onChange?: <span class="hljs-function">(<span class="hljs-params">url: <span class="hljs-built_in">string</span></span>) =&gt;</span> <span class="hljs-built_in">void</span>;
+  value?: <span class="hljs-built_in">string</span>;
+}
+
+<span class="hljs-comment">/**
+ * 图片上传组件
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">PictureUploader</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span>&lt;<span class="hljs-title class_">Props</span>&gt; = <span class="hljs-function">(<span class="hljs-params">props</span>) =&gt;</span> {
+  <span class="hljs-keyword">const</span> { biz, value, onChange } = props;
+  <span class="hljs-keyword">const</span> [loading, setLoading] = <span class="hljs-title function_">useState</span>(<span class="hljs-literal">false</span>);
+
+  <span class="hljs-keyword">const</span> <span class="hljs-attr">uploadProps</span>: <span class="hljs-title class_">UploadProps</span> = {
+    <span class="hljs-attr">name</span>: <span class="hljs-string">'file'</span>,
+    <span class="hljs-attr">listType</span>: <span class="hljs-string">'picture-card'</span>,
+    <span class="hljs-attr">multiple</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">maxCount</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-attr">showUploadList</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">customRequest</span>: <span class="hljs-keyword">async</span> (<span class="hljs-attr">fileObj</span>: <span class="hljs-built_in">any</span>) =&gt; {
+      <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">true</span>);
+      <span class="hljs-keyword">try</span> {
+        <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">uploadFileUsingPost</span>(
+          {
+            biz,
+          },
+          {},
+          fileObj.<span class="hljs-property">file</span>,
+        );
+        <span class="hljs-comment">// 拼接完整图片路径</span>
+        <span class="hljs-keyword">const</span> fullPath = <span class="hljs-variable constant_">COS_HOST</span> + res.<span class="hljs-property">data</span>;
+        onChange?.(fullPath ?? <span class="hljs-string">''</span>);
+        fileObj.<span class="hljs-title function_">onSuccess</span>(fullPath);
+      } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">e</span>: <span class="hljs-built_in">any</span>) {
+        message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'上传失败，'</span> + e.<span class="hljs-property">message</span>);
+        fileObj.<span class="hljs-title function_">onError</span>(e);
+      }
+      <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">false</span>);
+    },
+  };
+
+  <span class="hljs-keyword">const</span> uploadButton = (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span>&gt;</span>
+      {loading ? <span class="hljs-tag">&lt;<span class="hljs-name">LoadingOutlined</span> /&gt;</span> : <span class="hljs-tag">&lt;<span class="hljs-name">PlusOutlined</span> /&gt;</span>}
+      <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginTop:</span> <span class="hljs-attr">8</span> }}&gt;</span>上传<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span>
+  );
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Upload</span> {<span class="hljs-attr">...uploadProps</span>}&gt;</span>
+      {value ? <span class="hljs-tag">&lt;<span class="hljs-name">img</span> <span class="hljs-attr">src</span>=<span class="hljs-string">{value}</span> <span class="hljs-attr">alt</span>=<span class="hljs-string">"picture"</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">width:</span> '<span class="hljs-attr">100</span>%' }} /&gt;</span> : uploadButton}
+    <span class="hljs-tag">&lt;/<span class="hljs-name">Upload</span>&gt;</span></span>
+  );
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">PictureUploader</span>;
+</code></pre>
+<p>相比于文件上传组件，增加了一个展示用户已上传的图片的逻辑。需要注意，文件上传接口返回的是相对路径，要拼接上 <code>COS_HOST</code> 前缀，才能得到图片的完整路径。</p>
+<p>组件效果如图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/2533c6e1-4093-4efc-bb95-66ea631dc670.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-21">创建页面开发</h3>
+<p>有了通用的文件上传和图片上传组件后，我们就可以愉快地开发代码生成器创建页面了。</p>
+<p>由于创建代码生成器时，需要填写的字段较多，所以此处我们使用分步表单，官方文档已经给了非常成熟的 Demo。地址：<a href="https://procomponents.ant.design/components/steps-form">https://procomponents.ant.design/components/steps-form</a></p>
+<p>1）新建路由和对应的页面文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes">  {
+    <span class="hljs-attr">path</span>: <span class="hljs-string">'/generator/add'</span>,
+    <span class="hljs-attr">icon</span>: <span class="hljs-string">'plus'</span>,
+    <span class="hljs-attr">component</span>: <span class="hljs-string">'./Generator/Add'</span>,
+    <span class="hljs-attr">name</span>: <span class="hljs-string">'创建生成器'</span>,
+  },
+</code></pre>
+<p>目录结构如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ead3c219-565d-4e5d-8d4d-1064017a5175.png" alt="image.png" class="medium-zoom-image"></p>
+<p>2）先根据 Ant Design Procomponents 的分步表单组件，完成基本表单，实现基本的分步流程，并尝试输出用户填写的全部参数。</p>
+<p>这里我们假设用户已经有了制作好的代码生成器压缩包，先不编写 fileConfig 和 modelConfig 这些结构复杂的表单项。</p>
+<p>创建生成器页面代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> <span class="hljs-title class_">FileUploader</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/components/FileUploader'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">PictureUploader</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/components/PictureUploader'</span>;
+<span class="hljs-keyword">import</span> { addGeneratorUsingPost } <span class="hljs-keyword">from</span> <span class="hljs-string">'@/services/backend/generatorController'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-keyword">type</span> { <span class="hljs-title class_">ProFormInstance</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> {
+  <span class="hljs-title class_">ProCard</span>,
+  <span class="hljs-title class_">ProFormSelect</span>,
+  <span class="hljs-title class_">ProFormText</span>,
+  <span class="hljs-title class_">ProFormTextArea</span>,
+  <span class="hljs-title class_">StepsForm</span>,
+} <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">ProFormItem</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-form'</span>;
+<span class="hljs-keyword">import</span> { message } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span>, { useRef } <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-comment">/**
+ * 创建生成器页面
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">GeneratorAddPage</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span> = <span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-keyword">const</span> formRef = useRef&lt;<span class="hljs-title class_">ProFormInstance</span>&gt;();
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">ProCard</span>&gt;</span>
+      &lt;StepsForm<span class="hljs-tag">&lt;<span class="hljs-name">API.GeneratorAddRequest</span>&gt;</span> formRef={formRef}&gt;
+        <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span>
+          <span class="hljs-attr">name</span>=<span class="hljs-string">"base"</span>
+          <span class="hljs-attr">title</span>=<span class="hljs-string">"基本信息"</span>
+          <span class="hljs-attr">onFinish</span>=<span class="hljs-string">{async</span> () =&gt;</span> {
+            console.log(formRef.current?.getFieldsValue());
+            return true;
+          }}
+        &gt;
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"name"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"名称"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入名称"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormTextArea</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"description"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"描述"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入描述"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"basePackage"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"基础包"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入基础包"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"version"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"版本"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入版本"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"author"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"作者"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入作者"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormSelect</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"标签"</span> <span class="hljs-attr">mode</span>=<span class="hljs-string">"tags"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"tags"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入标签列表"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormItem</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"图片"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"picture"</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">PictureUploader</span> <span class="hljs-attr">biz</span>=<span class="hljs-string">"generator_picture"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;/<span class="hljs-name">ProFormItem</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"fileConfig"</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"文件配置"</span>&gt;</span>
+          {/*todo 待补充*/}
+        <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"modelConfig"</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"模型配置"</span>&gt;</span>
+          {/*todo 待补充*/}
+        <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"dist"</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"生成器文件"</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormItem</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"产物包"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"distPath"</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">FileUploader</span> <span class="hljs-attr">biz</span>=<span class="hljs-string">"generator_dist"</span> <span class="hljs-attr">description</span>=<span class="hljs-string">"请上传生成器文件压缩包"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;/<span class="hljs-name">ProFormItem</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">ProCard</span>&gt;</span>
+  );
+};
+
+export default GeneratorAddPage;
+</span></code></pre>
+<p>上述代码中，我们使用了前面开发的通用上传组件，并通过指定不同的 <code>biz</code> 参数，来控制不同类别的文件上传到不同的目录中。</p>
+<p>3）开发完基本页面后，编写提交函数，对用户填写的数据进行校验和转换（比如将文件列表转换为 url），然后请求后端来创建生成器，创建成功后跳转到详情页。</p>
+<p>完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> <span class="hljs-title class_">FileUploader</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/components/FileUploader'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">PictureUploader</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/components/PictureUploader'</span>;
+<span class="hljs-keyword">import</span> { addGeneratorUsingPost } <span class="hljs-keyword">from</span> <span class="hljs-string">'@/services/backend/generatorController'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-keyword">type</span> { <span class="hljs-title class_">ProFormInstance</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> {
+  <span class="hljs-title class_">ProCard</span>,
+  <span class="hljs-title class_">ProFormSelect</span>,
+  <span class="hljs-title class_">ProFormText</span>,
+  <span class="hljs-title class_">ProFormTextArea</span>,
+  <span class="hljs-title class_">StepsForm</span>,
+} <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">ProFormItem</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-form'</span>;
+<span class="hljs-keyword">import</span> { history } <span class="hljs-keyword">from</span> <span class="hljs-string">'@umijs/max'</span>;
+<span class="hljs-keyword">import</span> { message } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span>, { useRef } <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-comment">/**
+ * 创建生成器页面
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">GeneratorAddPage</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span> = <span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-keyword">const</span> formRef = useRef&lt;<span class="hljs-title class_">ProFormInstance</span>&gt;();
+
+  <span class="hljs-comment">/**
+   * 提交
+   * <span class="hljs-doctag">@param</span> <span class="hljs-variable">values</span>
+   */</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">doSubmit</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">values: API.GeneratorAddRequest</span>) =&gt; {
+    <span class="hljs-comment">// 数据转换</span>
+    <span class="hljs-keyword">if</span> (!values.<span class="hljs-property">fileConfig</span>) {
+      values.<span class="hljs-property">fileConfig</span> = {};
+    }
+    <span class="hljs-keyword">if</span> (!values.<span class="hljs-property">modelConfig</span>) {
+      values.<span class="hljs-property">modelConfig</span> = {};
+    }
+    <span class="hljs-comment">// 文件列表转 url</span>
+    <span class="hljs-keyword">if</span> (values.<span class="hljs-property">distPath</span> &amp;&amp; values.<span class="hljs-property">distPath</span>.<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
+      <span class="hljs-comment">// @ts-ignore</span>
+      values.<span class="hljs-property">distPath</span> = values.<span class="hljs-property">distPath</span>[<span class="hljs-number">0</span>].<span class="hljs-property">response</span>;
+    }
+
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">addGeneratorUsingPost</span>(values);
+      <span class="hljs-keyword">if</span> (res.<span class="hljs-property">data</span>) {
+        message.<span class="hljs-title function_">success</span>(<span class="hljs-string">'创建成功'</span>);
+        history.<span class="hljs-title function_">push</span>(<span class="hljs-string">`/generator/detail/<span class="hljs-subst">${res.data}</span>`</span>);
+      }
+    } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+      message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'创建失败，'</span> + error.<span class="hljs-property">message</span>);
+    }
+  };
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">ProCard</span>&gt;</span>
+      &lt;StepsForm<span class="hljs-tag">&lt;<span class="hljs-name">API.GeneratorAddRequest</span>&gt;</span> formRef={formRef} onFinish={doSubmit}&gt;
+        <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span>
+          <span class="hljs-attr">name</span>=<span class="hljs-string">"base"</span>
+          <span class="hljs-attr">title</span>=<span class="hljs-string">"基本信息"</span>
+          <span class="hljs-attr">onFinish</span>=<span class="hljs-string">{async</span> () =&gt;</span> {
+            console.log(formRef.current?.getFieldsValue());
+            return true;
+          }}
+        &gt;
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"name"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"名称"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入名称"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormTextArea</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"description"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"描述"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入描述"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"basePackage"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"基础包"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入基础包"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"version"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"版本"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入版本"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"author"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"作者"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入作者"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormSelect</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"标签"</span> <span class="hljs-attr">mode</span>=<span class="hljs-string">"tags"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"tags"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入标签列表"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormItem</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"图片"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"picture"</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">PictureUploader</span> <span class="hljs-attr">biz</span>=<span class="hljs-string">"generator_picture"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;/<span class="hljs-name">ProFormItem</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"fileConfig"</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"文件配置"</span>&gt;</span>
+          {/*todo 待补充*/}
+        <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"modelConfig"</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"模型配置"</span>&gt;</span>
+          {/*todo 待补充*/}
+        <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"dist"</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"生成器文件"</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">ProFormItem</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"产物包"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"distPath"</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">FileUploader</span> <span class="hljs-attr">biz</span>=<span class="hljs-string">"generator_dist"</span> <span class="hljs-attr">description</span>=<span class="hljs-string">"请上传生成器文件压缩包"</span> /&gt;</span>
+          <span class="hljs-tag">&lt;/<span class="hljs-name">ProFormItem</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">ProCard</span>&gt;</span>
+  );
+};
+
+export default GeneratorAddPage;
+</span></code></pre>
+<p>页面效果如图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/cf36be94-9690-4361-a14b-a58e5bb31e3b.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-22">修改页面开发</h3>
+<p>完成创建页面后，开发修改页面就很简单了，可以直接在创建页面的基础上支持读取老数据并修改的能力。</p>
+<p>1）新增修改页面路由，指向创建页面文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes">  {
+    <span class="hljs-attr">path</span>: <span class="hljs-string">'/generator/update'</span>,
+    <span class="hljs-attr">icon</span>: <span class="hljs-string">'plus'</span>,
+    <span class="hljs-attr">component</span>: <span class="hljs-string">'./Generator/Add'</span>,
+    <span class="hljs-attr">name</span>: <span class="hljs-string">'修改生成器'</span>,
+    <span class="hljs-attr">hideInMenu</span>: <span class="hljs-literal">true</span>,
+  },
+</code></pre>
+<p>2）创建页面增加逻辑：通过 url 的查询参数传递要修改的数据 id，并且根据 id 查询老数据。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">const</span> [searchParams] = <span class="hljs-title function_">useSearchParams</span>();
+<span class="hljs-keyword">const</span> id = searchParams.<span class="hljs-title function_">get</span>(<span class="hljs-string">'id'</span>);
+<span class="hljs-keyword">const</span> [oldData, setOldData] = useState&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorEditRequest</span>&gt;();
+<span class="hljs-keyword">const</span> formRef = useRef&lt;<span class="hljs-title class_">ProFormInstance</span>&gt;();
+
+<span class="hljs-comment">/**
+ * 加载数据
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">loadData</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params"></span>) =&gt; {
+  <span class="hljs-keyword">if</span> (!id) {
+    <span class="hljs-keyword">return</span>;
+  }
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getGeneratorVoByIdUsingGet</span>({
+      id,
+    });
+    
+    <span class="hljs-comment">// 处理文件路径</span>
+    <span class="hljs-keyword">if</span> (res.<span class="hljs-property">data</span>) {
+      <span class="hljs-keyword">const</span> { distPath } = res.<span class="hljs-property">data</span> ?? {};
+      <span class="hljs-keyword">if</span> (distPath) {
+        <span class="hljs-comment">// @ts-ignore</span>
+        res.<span class="hljs-property">data</span>.<span class="hljs-property">distPath</span> = [
+          {
+            <span class="hljs-attr">uid</span>: id,
+            <span class="hljs-attr">name</span>: <span class="hljs-string">'文件'</span> + id,
+            <span class="hljs-attr">status</span>: <span class="hljs-string">'done'</span>,
+            <span class="hljs-attr">url</span>: <span class="hljs-variable constant_">COS_HOST</span> + distPath,
+            <span class="hljs-attr">response</span>: distPath,
+          } <span class="hljs-keyword">as</span> <span class="hljs-title class_">UploadFile</span>,
+        ];
+      }
+      <span class="hljs-title function_">setOldData</span>(res.<span class="hljs-property">data</span>);
+    }
+  } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+    message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'加载数据失败，'</span> + error.<span class="hljs-property">message</span>);
+  }
+};
+
+<span class="hljs-title function_">useEffect</span>(<span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-keyword">if</span> (id) {
+    <span class="hljs-title function_">loadData</span>();
+  }
+}, [id]);
+</code></pre>
+<p>上述代码中，比较关键的是将 distPath 从路径转换为文件上传组件的 UploadFile 对象，用于将之前上传过的文件回显在文件上传组件中。其中，url（打开链接）要补充 COS_HOST 前缀，而 response（实际的值）不用补充。</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">res.<span class="hljs-property">data</span>.<span class="hljs-property">distPath</span> = [
+  {
+    <span class="hljs-attr">uid</span>: id,
+    <span class="hljs-attr">name</span>: <span class="hljs-string">'文件'</span> + id,
+    <span class="hljs-attr">status</span>: <span class="hljs-string">'done'</span>,
+    <span class="hljs-attr">url</span>: <span class="hljs-variable constant_">COS_HOST</span> + distPath,
+    <span class="hljs-attr">response</span>: distPath,
+  } <span class="hljs-keyword">as</span> <span class="hljs-title class_">UploadFile</span>,
+];
+</code></pre>
+<p>效果如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/55caf098-9eec-4df5-ad8a-7e5450790ff8.png" alt="image.png" class="medium-zoom-image"></p>
+<p>3）区分创建和修改。</p>
+<p>分别编写创建和更新两个函数，在提交代码中，根据 id 是否存在来判断执行创建还是更新。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-comment">/**
+ * 创建
+ * <span class="hljs-doctag">@param</span> <span class="hljs-variable">values</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">doAdd</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">values: API.GeneratorAddRequest</span>) =&gt; {
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">addGeneratorUsingPost</span>(values);
+    <span class="hljs-keyword">if</span> (res.<span class="hljs-property">data</span>) {
+      message.<span class="hljs-title function_">success</span>(<span class="hljs-string">'创建成功'</span>);
+      history.<span class="hljs-title function_">push</span>(<span class="hljs-string">`/generator/detail/<span class="hljs-subst">${res.data}</span>`</span>);
+    }
+  } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+    message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'创建失败，'</span> + error.<span class="hljs-property">message</span>);
+  }
+};
+
+<span class="hljs-comment">/**
+ * 更新
+ * <span class="hljs-doctag">@param</span> <span class="hljs-variable">values</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">doUpdate</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">values: API.GeneratorEditRequest</span>) =&gt; {
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">editGeneratorUsingPost</span>(values);
+    <span class="hljs-keyword">if</span> (res.<span class="hljs-property">data</span>) {
+      message.<span class="hljs-title function_">success</span>(<span class="hljs-string">'更新成功'</span>);
+      history.<span class="hljs-title function_">push</span>(<span class="hljs-string">`/generator/detail/<span class="hljs-subst">${id}</span>`</span>);
+    }
+  } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+    message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'更新失败，'</span> + error.<span class="hljs-property">message</span>);
+  }
+};
+
+<span class="hljs-comment">/**
+ * 提交
+ * <span class="hljs-doctag">@param</span> <span class="hljs-variable">values</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">doSubmit</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">values: API.GeneratorAddRequest</span>) =&gt; {
+  <span class="hljs-comment">// 数据转换</span>
+  <span class="hljs-keyword">if</span> (!values.<span class="hljs-property">fileConfig</span>) {
+    values.<span class="hljs-property">fileConfig</span> = {};
+  }
+  <span class="hljs-keyword">if</span> (!values.<span class="hljs-property">modelConfig</span>) {
+    values.<span class="hljs-property">modelConfig</span> = {};
+  }
+  <span class="hljs-comment">// 文件列表转 url</span>
+  <span class="hljs-keyword">if</span> (values.<span class="hljs-property">distPath</span> &amp;&amp; values.<span class="hljs-property">distPath</span>.<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
+    <span class="hljs-comment">// @ts-ignore</span>
+    values.<span class="hljs-property">distPath</span> = values.<span class="hljs-property">distPath</span>[<span class="hljs-number">0</span>].<span class="hljs-property">response</span>;
+  }
+
+  <span class="hljs-keyword">if</span> (id) {
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">doUpdate</span>({
+      id,
+      ...values,
+    });
+  } <span class="hljs-keyword">else</span> {
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">doAdd</span>(values);
+  }
+};
+</code></pre>
+<p>4）测试编写好的页面，会发现除了第一步之外的表单项，并没有回填默认值。</p>
+<p>因此，需要控制表单的渲染时机，等要更新的老数据加载完成后，才渲染表单。</p>
+<p>修改的代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">{<span class="hljs-comment">/* 创建或者已加载要更新的数据时，才渲染表单，顺利填充默认值 */</span>}
+{(!id || oldData) &amp;&amp; (
+  &lt;<span class="hljs-title class_">StepsForm</span>&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorAddRequest</span> | <span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorEditRequest</span>&gt;
+    formRef={formRef}
+    formProps={{
+      <span class="hljs-attr">initialValues</span>: oldData,
+    }}
+    onFinish={doSubmit}
+  &gt;
+</code></pre>
+<p>最后，得到的页面完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> <span class="hljs-title class_">FileUploader</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/components/FileUploader'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">PictureUploader</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/components/PictureUploader'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-variable constant_">COS_HOST</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@/constants'</span>;
+<span class="hljs-keyword">import</span> {
+  addGeneratorUsingPost,
+  editGeneratorUsingPost,
+  getGeneratorVoByIdUsingGet,
+} <span class="hljs-keyword">from</span> <span class="hljs-string">'@/services/backend/generatorController'</span>;
+<span class="hljs-keyword">import</span> { useSearchParams } <span class="hljs-keyword">from</span> <span class="hljs-string">'@@/exports'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-keyword">type</span> { <span class="hljs-title class_">ProFormInstance</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> {
+  <span class="hljs-title class_">ProCard</span>,
+  <span class="hljs-title class_">ProFormSelect</span>,
+  <span class="hljs-title class_">ProFormText</span>,
+  <span class="hljs-title class_">ProFormTextArea</span>,
+  <span class="hljs-title class_">StepsForm</span>,
+} <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">ProFormItem</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-form'</span>;
+<span class="hljs-keyword">import</span> { history } <span class="hljs-keyword">from</span> <span class="hljs-string">'@umijs/max'</span>;
+<span class="hljs-keyword">import</span> { message, <span class="hljs-title class_">UploadFile</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span>, { useEffect, useRef, useState } <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-comment">/**
+ * 创建生成器页面
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">GeneratorAddPage</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span> = <span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-keyword">const</span> [searchParams] = <span class="hljs-title function_">useSearchParams</span>();
+  <span class="hljs-keyword">const</span> id = searchParams.<span class="hljs-title function_">get</span>(<span class="hljs-string">'id'</span>);
+  <span class="hljs-keyword">const</span> [oldData, setOldData] = useState&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorEditRequest</span>&gt;();
+  <span class="hljs-keyword">const</span> formRef = useRef&lt;<span class="hljs-title class_">ProFormInstance</span>&gt;();
+
+  <span class="hljs-comment">/**
+   * 加载数据
+   */</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">loadData</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params"></span>) =&gt; {
+    <span class="hljs-keyword">if</span> (!id) {
+      <span class="hljs-keyword">return</span>;
+    }
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getGeneratorVoByIdUsingGet</span>({
+        id,
+      });
+
+      <span class="hljs-comment">// 处理文件路径</span>
+      <span class="hljs-keyword">if</span> (res.<span class="hljs-property">data</span>) {
+        <span class="hljs-keyword">const</span> { distPath } = res.<span class="hljs-property">data</span> ?? {};
+        <span class="hljs-keyword">if</span> (distPath) {
+          <span class="hljs-comment">// @ts-ignore</span>
+          res.<span class="hljs-property">data</span>.<span class="hljs-property">distPath</span> = [
+            {
+              <span class="hljs-attr">uid</span>: id,
+              <span class="hljs-attr">name</span>: <span class="hljs-string">'文件'</span> + id,
+              <span class="hljs-attr">status</span>: <span class="hljs-string">'done'</span>,
+              <span class="hljs-attr">url</span>: <span class="hljs-variable constant_">COS_HOST</span> + distPath,
+              <span class="hljs-attr">response</span>: distPath,
+            } <span class="hljs-keyword">as</span> <span class="hljs-title class_">UploadFile</span>,
+          ];
+        }
+        <span class="hljs-title function_">setOldData</span>(res.<span class="hljs-property">data</span>);
+      }
+    } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+      message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'加载数据失败，'</span> + error.<span class="hljs-property">message</span>);
+    }
+  };
+
+  <span class="hljs-title function_">useEffect</span>(<span class="hljs-function">() =&gt;</span> {
+    <span class="hljs-keyword">if</span> (id) {
+      <span class="hljs-title function_">loadData</span>();
+    }
+  }, [id]);
+
+  <span class="hljs-comment">/**
+   * 创建
+   * <span class="hljs-doctag">@param</span> <span class="hljs-variable">values</span>
+   */</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">doAdd</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">values: API.GeneratorAddRequest</span>) =&gt; {
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">addGeneratorUsingPost</span>(values);
+      <span class="hljs-keyword">if</span> (res.<span class="hljs-property">data</span>) {
+        message.<span class="hljs-title function_">success</span>(<span class="hljs-string">'创建成功'</span>);
+        history.<span class="hljs-title function_">push</span>(<span class="hljs-string">`/generator/detail/<span class="hljs-subst">${res.data}</span>`</span>);
+      }
+    } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+      message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'创建失败，'</span> + error.<span class="hljs-property">message</span>);
+    }
+  };
+
+  <span class="hljs-comment">/**
+   * 更新
+   * <span class="hljs-doctag">@param</span> <span class="hljs-variable">values</span>
+   */</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">doUpdate</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">values: API.GeneratorEditRequest</span>) =&gt; {
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">editGeneratorUsingPost</span>(values);
+      <span class="hljs-keyword">if</span> (res.<span class="hljs-property">data</span>) {
+        message.<span class="hljs-title function_">success</span>(<span class="hljs-string">'更新成功'</span>);
+        history.<span class="hljs-title function_">push</span>(<span class="hljs-string">`/generator/detail/<span class="hljs-subst">${id}</span>`</span>);
+      }
+    } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+      message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'更新失败，'</span> + error.<span class="hljs-property">message</span>);
+    }
+  };
+
+  <span class="hljs-comment">/**
+   * 提交
+   * <span class="hljs-doctag">@param</span> <span class="hljs-variable">values</span>
+   */</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">doSubmit</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">values: API.GeneratorAddRequest</span>) =&gt; {
+    <span class="hljs-comment">// 数据转换</span>
+    <span class="hljs-keyword">if</span> (!values.<span class="hljs-property">fileConfig</span>) {
+      values.<span class="hljs-property">fileConfig</span> = {};
+    }
+    <span class="hljs-keyword">if</span> (!values.<span class="hljs-property">modelConfig</span>) {
+      values.<span class="hljs-property">modelConfig</span> = {};
+    }
+    <span class="hljs-comment">// 文件列表转 url</span>
+    <span class="hljs-keyword">if</span> (values.<span class="hljs-property">distPath</span> &amp;&amp; values.<span class="hljs-property">distPath</span>.<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
+      <span class="hljs-comment">// @ts-ignore</span>
+      values.<span class="hljs-property">distPath</span> = values.<span class="hljs-property">distPath</span>[<span class="hljs-number">0</span>].<span class="hljs-property">response</span>;
+    }
+
+    <span class="hljs-keyword">if</span> (id) {
+      <span class="hljs-keyword">await</span> <span class="hljs-title function_">doUpdate</span>({
+        id,
+        ...values,
+      });
+    } <span class="hljs-keyword">else</span> {
+      <span class="hljs-keyword">await</span> <span class="hljs-title function_">doAdd</span>(values);
+    }
+  };
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">ProCard</span>&gt;</span>
+      {/* 创建或者已加载要更新的数据时，才渲染表单，顺利填充默认值 */}
+      {(!id || oldData) &amp;&amp; (
+        &lt;StepsForm<span class="hljs-tag">&lt;<span class="hljs-name">API.GeneratorAddRequest</span> | <span class="hljs-attr">API.GeneratorEditRequest</span>&gt;</span>
+          formRef={formRef}
+          formProps={{
+            initialValues: oldData,
+          }}
+          onFinish={doSubmit}
+        &gt;
+          <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"base"</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"基本信息"</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"name"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"名称"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入名称"</span> /&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">ProFormTextArea</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"description"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"描述"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入描述"</span> /&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"basePackage"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"基础包"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入基础包"</span> /&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"version"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"版本"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入版本"</span> /&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">ProFormText</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"author"</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"作者"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入作者"</span> /&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">ProFormSelect</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"标签"</span> <span class="hljs-attr">mode</span>=<span class="hljs-string">"tags"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"tags"</span> <span class="hljs-attr">placeholder</span>=<span class="hljs-string">"请输入标签列表"</span> /&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">ProFormItem</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"图片"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"picture"</span>&gt;</span>
+              <span class="hljs-tag">&lt;<span class="hljs-name">PictureUploader</span> <span class="hljs-attr">biz</span>=<span class="hljs-string">"generator_picture"</span> /&gt;</span>
+            <span class="hljs-tag">&lt;/<span class="hljs-name">ProFormItem</span>&gt;</span>
+          <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"fileConfig"</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"文件配置"</span>&gt;</span>
+            {/* todo 待补充 */}
+          <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"modelConfig"</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"模型配置"</span>&gt;</span>
+            {/* todo 待补充 */}
+          <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"dist"</span> <span class="hljs-attr">title</span>=<span class="hljs-string">"生成器文件"</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">ProFormItem</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"产物包"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"distPath"</span>&gt;</span>
+              <span class="hljs-tag">&lt;<span class="hljs-name">FileUploader</span> <span class="hljs-attr">biz</span>=<span class="hljs-string">"generator_dist"</span> <span class="hljs-attr">description</span>=<span class="hljs-string">"请上传生成器文件压缩包"</span> /&gt;</span>
+            <span class="hljs-tag">&lt;/<span class="hljs-name">ProFormItem</span>&gt;</span>
+          <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm</span>&gt;</span>
+      )}
+    <span class="hljs-tag">&lt;/<span class="hljs-name">ProCard</span>&gt;</span>
+  );
+};
+
+export default GeneratorAddPage;
+</span></code></pre>
+<p>页面效果如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/4a021202-742c-44a3-9891-0abdf2427f08.png" alt="image.png" class="medium-zoom-image"></p>
+<h2 data-id="heading-23">四、代码生成器详情页</h2>
+<p>完成了创建修改页面后，我们来开发详情页，能够展示代码生成器的详细信息，并且让用户下载生成器文件。</p>
+<p>详情页依赖的后端接口如下：</p>
+<ol>
+<li>根据 id 获取生成器详情</li>
+<li>根据 id 下载代码生成器文件</li>
+</ol>
+<p>第一个接口之前已经实现，还需要开发下载文件接口。</p>
+<h3 data-id="heading-24">下载生成器文件接口</h3>
+<p>1）在 <code>GeneratorController</code> 类中引入 cosManager 的 Bean：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Resource</span>
+<span class="hljs-keyword">private</span> CosManager cosManager;
+</code></pre>
+<p>2）新增下载接口，根据 id 获取到生成器的 distPath 并调用 <code>cosManager.getObject</code> 完成下载。</p>
+<p>可以直接复用之前的测试文件下载接口，注意做好权限控制（仅登录用户可下载），并打上下载日志。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 根据 id 下载
+ *
+ * <span class="hljs-doctag">@param</span> id
+ * <span class="hljs-doctag">@return</span>
+ */</span>
+<span class="hljs-meta">@GetMapping("/download")</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">downloadGeneratorById</span><span class="hljs-params">(<span class="hljs-type">long</span> id, HttpServletRequest request, HttpServletResponse response)</span> <span class="hljs-keyword">throws</span> IOException {
+    <span class="hljs-keyword">if</span> (id &lt;= <span class="hljs-number">0</span>) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.PARAMS_ERROR);
+    }
+    <span class="hljs-type">User</span> <span class="hljs-variable">loginUser</span> <span class="hljs-operator">=</span> userService.getLoginUser(request);
+    <span class="hljs-type">Generator</span> <span class="hljs-variable">generator</span> <span class="hljs-operator">=</span> generatorService.getById(id);
+    <span class="hljs-keyword">if</span> (generator == <span class="hljs-literal">null</span>) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.NOT_FOUND_ERROR);
+    }
+
+    <span class="hljs-type">String</span> <span class="hljs-variable">filepath</span> <span class="hljs-operator">=</span> generator.getDistPath();
+    <span class="hljs-keyword">if</span> (StrUtil.isBlank(filepath)) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.NOT_FOUND_ERROR, <span class="hljs-string">"产物包不存在"</span>);
+    }
+
+    <span class="hljs-comment">// 追踪事件</span>
+    log.info(<span class="hljs-string">"用户 {} 下载了 {}"</span>, loginUser, filepath);
+
+    <span class="hljs-type">COSObjectInputStream</span> <span class="hljs-variable">cosObjectInput</span> <span class="hljs-operator">=</span> <span class="hljs-literal">null</span>;
+    <span class="hljs-keyword">try</span> {
+        <span class="hljs-type">COSObject</span> <span class="hljs-variable">cosObject</span> <span class="hljs-operator">=</span> cosManager.getObject(filepath);
+        cosObjectInput = cosObject.getObjectContent();
+        <span class="hljs-comment">// 处理下载到的流</span>
+        <span class="hljs-type">byte</span>[] bytes = IOUtils.toByteArray(cosObjectInput);
+        <span class="hljs-comment">// 设置响应头</span>
+        response.setContentType(<span class="hljs-string">"application/octet-stream;charset=UTF-8"</span>);
+        response.setHeader(<span class="hljs-string">"Content-Disposition"</span>, <span class="hljs-string">"attachment; filename="</span> + filepath);
+        <span class="hljs-comment">// 写入响应</span>
+        response.getOutputStream().write(bytes);
+        response.getOutputStream().flush();
+    } <span class="hljs-keyword">catch</span> (Exception e) {
+        log.error(<span class="hljs-string">"file download error, filepath = "</span> + filepath, e);
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.SYSTEM_ERROR, <span class="hljs-string">"下载失败"</span>);
+    } <span class="hljs-keyword">finally</span> {
+        <span class="hljs-keyword">if</span> (cosObjectInput != <span class="hljs-literal">null</span>) {
+            cosObjectInput.close();
+        }
+    }
+}
+</code></pre>
+<h3 data-id="heading-25">详情页面开发</h3>
+<p>同主页一样，我们可以参考网上的页面进行开发。</p>
+<p>1）先定义路由，需要将路径指定为动态的，根据生成器的 id 加载不同的内容：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes">{
+  <span class="hljs-attr">path</span>: <span class="hljs-string">'/generator/detail/:id'</span>,
+  <span class="hljs-attr">icon</span>: <span class="hljs-string">'home'</span>,
+  <span class="hljs-attr">component</span>: <span class="hljs-string">'./Generator/Detail'</span>,
+  <span class="hljs-attr">name</span>: <span class="hljs-string">'生成器详情'</span>,
+  <span class="hljs-attr">hideInMenu</span>: <span class="hljs-literal">true</span>,
+},
+</code></pre>
+<p>新建详情页，结构如图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/e573a024-e187-4471-92e9-5fb83009c56a.png" alt="image.png" class="medium-zoom-image"></p>
+<p>2）在详情页中，可以通过 <code>useParams</code> 钩子函数获取到动态路由的 id：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">javascript</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-javascript hljs" data-highlighted="yes"><span class="hljs-keyword">const</span> { id } = <span class="hljs-title function_">useParams</span>();
+</code></pre>
+<p>就可以根据 id 获取到生成器的信息了，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">const</span> [loading, setLoading] = useState&lt;<span class="hljs-built_in">boolean</span>&gt;(<span class="hljs-literal">false</span>);
+<span class="hljs-keyword">const</span> [data, setData] = useState&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorVO</span>&gt;({});
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">loadData</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params"></span>) =&gt; {
+  <span class="hljs-keyword">if</span> (!id) {
+    <span class="hljs-keyword">return</span>;
+  }
+  <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">true</span>);
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getGeneratorVoByIdUsingGet</span>({
+      id,
+    });
+    <span class="hljs-title function_">setData</span>(res.<span class="hljs-property">data</span> || {});
+  } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+    message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'获取数据失败，'</span> + error.<span class="hljs-property">message</span>);
+  }
+  <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">false</span>);
+};
+
+<span class="hljs-title function_">useEffect</span>(<span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-title function_">loadData</span>();
+}, [id]);
+</code></pre>
+<p>3）自上而下开发页面，展示信息即可。</p>
+<p>可以先编写出基本的结构，具体下载功能的实现、详细配置等最后再写。</p>
+<p>页面上半部分展示生成器的基本信息、以及一些操作按钮，示例代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">jsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-jsx hljs language-javascript" data-highlighted="yes">&lt;<span class="hljs-title class_">Card</span>&gt;
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Row</span> <span class="hljs-attr">justify</span>=<span class="hljs-string">"space-between"</span> <span class="hljs-attr">gutter</span>=<span class="hljs-string">{[32,</span> <span class="hljs-attr">32</span>]}&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">Col</span> <span class="hljs-attr">flex</span>=<span class="hljs-string">"auto"</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Space</span> <span class="hljs-attr">size</span>=<span class="hljs-string">"large"</span> <span class="hljs-attr">align</span>=<span class="hljs-string">"center"</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Title</span> <span class="hljs-attr">level</span>=<span class="hljs-string">{4}</span>&gt;</span>{data.name}<span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Title</span>&gt;</span>
+        {tagListView(data.tags)}
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Space</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Paragraph</span>&gt;</span>{data.description}<span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Paragraph</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Paragraph</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"secondary"</span>&gt;</span>
+        创建时间：{moment(data.createTime).format('YYYY-MM-DD hh:mm:ss')}
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Paragraph</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Paragraph</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"secondary"</span>&gt;</span>基础包：{data.basePackage}<span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Paragraph</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Paragraph</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"secondary"</span>&gt;</span>版本：{data.version}<span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Paragraph</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Paragraph</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"secondary"</span>&gt;</span>作者：{data.author}<span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Paragraph</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">24</span> }} /&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Space</span> <span class="hljs-attr">size</span>=<span class="hljs-string">"middle"</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Button</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"primary"</span>&gt;</span>立即使用<span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Button</span> <span class="hljs-attr">icon</span>=<span class="hljs-string">{</span>&lt;<span class="hljs-attr">DownloadOutlined</span> /&gt;</span>}&gt;下载<span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Space</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">Col</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">Col</span> <span class="hljs-attr">flex</span>=<span class="hljs-string">"320px"</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Image</span> <span class="hljs-attr">src</span>=<span class="hljs-string">{data.picture}</span> /&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">Col</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">Row</span>&gt;</span></span>
+&lt;/<span class="hljs-title class_">Card</span>&gt;
+</code></pre>
+<p>下半部分展示详细配置和作者信息。总共有 3 个 tab 栏，可以分别将每个 tab 栏的内容定义为组件，这样父页面就很干净。</p>
+<p>分别定义 3 个组件：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/d0cf48f2-11da-4a4b-959f-eb91fe0f8717.png" alt="image.png" class="medium-zoom-image"></p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">&lt;<span class="hljs-title class_">Tabs</span>
+  size=<span class="hljs-string">"large"</span>
+  defaultActiveKey={<span class="hljs-string">'fileConfig'</span>}
+  onChange={<span class="hljs-function">() =&gt;</span> {}}
+  items={[
+    {
+      <span class="hljs-attr">key</span>: <span class="hljs-string">'fileConfig'</span>,
+      <span class="hljs-attr">label</span>: <span class="hljs-string">'文件配置'</span>,
+      <span class="hljs-attr">children</span>: <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">FileConfig</span> <span class="hljs-attr">data</span>=<span class="hljs-string">{data}</span> /&gt;</span></span>,
+    },
+    {
+      <span class="hljs-attr">key</span>: <span class="hljs-string">'modelConfig'</span>,
+      <span class="hljs-attr">label</span>: <span class="hljs-string">'模型配置'</span>,
+      <span class="hljs-attr">children</span>: <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">ModelConfig</span> <span class="hljs-attr">data</span>=<span class="hljs-string">{data}</span> /&gt;</span></span>,
+    },
+    {
+      <span class="hljs-attr">key</span>: <span class="hljs-string">'userInfo'</span>,
+      <span class="hljs-attr">label</span>: <span class="hljs-string">'作者信息'</span>,
+      <span class="hljs-attr">children</span>: <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">AuthorInfo</span> <span class="hljs-attr">data</span>=<span class="hljs-string">{data}</span> /&gt;</span></span>,
+    },
+  ]}
+/&gt;
+</code></pre>
+<p>效果如下图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/88b0e0f4-ad43-4dc9-bfb4-8cea79d3ef6f.png" alt="image.png" class="medium-zoom-image"></p>
+<p>4）开发详细信息组件。</p>
+<p>其实都是展示基本的信息，此处不多赘述，仅供参考。</p>
+<p>文件配置组件 <code>FileConfig</code>：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">FileOutlined</span>, <span class="hljs-title class_">InfoCircleOutlined</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/icons'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Descriptions</span>, <span class="hljs-title class_">DescriptionsProps</span>, <span class="hljs-title class_">Divider</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-keyword">interface</span> <span class="hljs-title class_">Props</span> {
+  <span class="hljs-attr">data</span>: <span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorVO</span>;
+}
+
+<span class="hljs-comment">/**
+ * 文件配置
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">FileConfig</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span>&lt;<span class="hljs-title class_">Props</span>&gt; = <span class="hljs-function">(<span class="hljs-params">props</span>) =&gt;</span> {
+  <span class="hljs-keyword">const</span> { data } = props;
+
+  <span class="hljs-keyword">const</span> fileConfig = data?.<span class="hljs-property">fileConfig</span>;
+  <span class="hljs-keyword">if</span> (!fileConfig) {
+    <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span></span>;
+  }
+
+  <span class="hljs-keyword">const</span> <span class="hljs-attr">items</span>: <span class="hljs-title class_">DescriptionsProps</span>[<span class="hljs-string">'items'</span>] = [
+    {
+      <span class="hljs-attr">key</span>: <span class="hljs-string">'inputRootPath'</span>,
+      <span class="hljs-attr">label</span>: <span class="hljs-string">'输入根路径'</span>,
+      <span class="hljs-attr">children</span>: <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{fileConfig.inputRootPath}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span></span>,
+    },
+    {
+      <span class="hljs-attr">key</span>: <span class="hljs-string">'outputRootPath'</span>,
+      <span class="hljs-attr">label</span>: <span class="hljs-string">'输出根路径'</span>,
+      <span class="hljs-attr">children</span>: <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{fileConfig.outputRootPath}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span></span>,
+    },
+    {
+      <span class="hljs-attr">key</span>: <span class="hljs-string">'sourceRootPath'</span>,
+      <span class="hljs-attr">label</span>: <span class="hljs-string">'项目根路径'</span>,
+      <span class="hljs-attr">children</span>: <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{fileConfig.sourceRootPath}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span></span>,
+    },
+    {
+      <span class="hljs-attr">key</span>: <span class="hljs-string">'type'</span>,
+      <span class="hljs-attr">label</span>: <span class="hljs-string">'文件类别'</span>,
+      <span class="hljs-attr">children</span>: <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{fileConfig.type}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span></span>,
+    },
+  ];
+
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">fileListView</span> = (<span class="hljs-params">files?: API.FileInfo[]</span>) =&gt; {
+    <span class="hljs-keyword">if</span> (!files) {
+      <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span></span>;
+    }
+
+    <span class="hljs-keyword">return</span> (
+      <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span>
+        {files.map((file, index) =&gt; {
+          // 是分组
+          if (file.groupKey) {
+            const groupFileItems: DescriptionsProps['items'] = [
+              {
+                key: 'groupKey',
+                label: '分组key',
+                children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{file.groupKey}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+              },
+              {
+                key: 'groupName',
+                label: '分组名',
+                children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{file.groupName}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+              },
+              {
+                key: 'condition',
+                label: '条件',
+                children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{file.condition}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+              },
+              {
+                key: 'files',
+                label: '组内文件',
+                children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{fileListView(file.files)}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+              },
+            ];
+
+            return (
+              <span class="hljs-tag">&lt;<span class="hljs-name">Descriptions</span> <span class="hljs-attr">key</span>=<span class="hljs-string">{index}</span> <span class="hljs-attr">column</span>=<span class="hljs-string">{1}</span> <span class="hljs-attr">title</span>=<span class="hljs-string">{file.groupName}</span> <span class="hljs-attr">items</span>=<span class="hljs-string">{groupFileItems}</span> /&gt;</span>
+            );
+          }
+
+          const fileItems: DescriptionsProps['items'] = [
+            {
+              key: 'inputPath',
+              label: '输入路径',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{file.inputPath}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+            },
+            {
+              key: 'outputPath',
+              label: '输出路径',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{file.outputPath}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+            },
+            {
+              key: 'type',
+              label: '文件类别',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{file.type}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+            },
+            {
+              key: 'generateType',
+              label: '文件生成类别',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{file.generateType}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+            },
+            {
+              key: 'condition',
+              label: '条件',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{file.condition}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+            },
+          ];
+
+          return (
+            <span class="hljs-tag">&lt;&gt;</span>
+              <span class="hljs-tag">&lt;<span class="hljs-name">Descriptions</span> <span class="hljs-attr">column</span>=<span class="hljs-string">{2}</span> <span class="hljs-attr">key</span>=<span class="hljs-string">{index}</span> <span class="hljs-attr">items</span>=<span class="hljs-string">{fileItems}</span> /&gt;</span>
+              <span class="hljs-tag">&lt;<span class="hljs-name">Divider</span> /&gt;</span>
+            <span class="hljs-tag">&lt;/&gt;</span></span>
+          );
+        })}
+      &lt;/&gt;
+    );
+  };
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Descriptions</span>
+        <span class="hljs-attr">title</span>=<span class="hljs-string">{</span>
+          &lt;&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">InfoCircleOutlined</span> /&gt;</span> 基本信息
+          <span class="hljs-tag">&lt;/&gt;</span>
+        }
+        column={2}
+        items={items}
+      /&gt;</span>
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">16</span> }} /&gt;</span></span>
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Descriptions</span>
+        <span class="hljs-attr">title</span>=<span class="hljs-string">{</span>
+          &lt;&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">FileOutlined</span> /&gt;</span> 文件列表
+          <span class="hljs-tag">&lt;/&gt;</span></span>
+        }
+      /&gt;
+      {<span class="hljs-title function_">fileListView</span>(fileConfig.<span class="hljs-property">files</span>)}
+    &lt;/div&gt;
+  );
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">FileConfig</span>;
+
+</code></pre>
+<p>模型配置组件 <code>ModelConfig</code>：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">FileOutlined</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/icons'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Descriptions</span>, <span class="hljs-title class_">DescriptionsProps</span>, <span class="hljs-title class_">Divider</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-keyword">interface</span> <span class="hljs-title class_">Props</span> {
+  <span class="hljs-attr">data</span>: <span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorVO</span>;
+}
+
+<span class="hljs-comment">/**
+ * 模型配置
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">ModelConfig</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span>&lt;<span class="hljs-title class_">Props</span>&gt; = <span class="hljs-function">(<span class="hljs-params">props</span>) =&gt;</span> {
+  <span class="hljs-keyword">const</span> { data } = props;
+
+  <span class="hljs-keyword">const</span> modelConfig = data?.<span class="hljs-property">modelConfig</span>;
+  <span class="hljs-keyword">if</span> (!modelConfig) {
+    <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span></span>;
+  }
+
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">modelListView</span> = (<span class="hljs-params">models?: API.ModelInfo[]</span>) =&gt; {
+    <span class="hljs-keyword">if</span> (!models) {
+      <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span></span>;
+    }
+
+    <span class="hljs-keyword">return</span> (
+      <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span>
+        {models.map((model, index) =&gt; {
+          // 是分组
+          if (model.groupKey) {
+            const groupModelItems: DescriptionsProps['items'] = [
+              {
+                key: 'groupKey',
+                label: '分组key',
+                children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{model.groupKey}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+              },
+              {
+                key: 'groupName',
+                label: '分组名',
+                children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{model.groupName}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+              },
+              {
+                key: 'condition',
+                label: '条件',
+                children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{model.condition}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+              },
+              {
+                key: 'models',
+                label: '组内模型',
+                children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{modelListView(model.models)}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+              },
+            ];
+
+            return (
+              <span class="hljs-tag">&lt;<span class="hljs-name">Descriptions</span>
+                <span class="hljs-attr">key</span>=<span class="hljs-string">{index}</span>
+                <span class="hljs-attr">column</span>=<span class="hljs-string">{1}</span>
+                <span class="hljs-attr">title</span>=<span class="hljs-string">{model.groupName}</span>
+                <span class="hljs-attr">items</span>=<span class="hljs-string">{groupModelItems}</span>
+              /&gt;</span>
+            );
+          }
+
+          const modelItems: DescriptionsProps['items'] = [
+            {
+              key: 'fieldName',
+              label: '字段名称',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{model.fieldName}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+            },
+            {
+              key: 'type',
+              label: '类型',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{model.type}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+            },
+            {
+              key: 'description',
+              label: '描述',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{model.description}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+            },
+            {
+              key: 'defaultValue',
+              label: '默认值',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{model.defaultValue as any}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+            },
+            {
+              key: 'abbr',
+              label: '缩写',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{model.abbr}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+            },
+            {
+              key: 'condition',
+              label: '条件',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>{model.condition}<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>,
+            },
+          ];
+
+          return (
+            <span class="hljs-tag">&lt;&gt;</span>
+              <span class="hljs-tag">&lt;<span class="hljs-name">Descriptions</span> <span class="hljs-attr">column</span>=<span class="hljs-string">{2}</span> <span class="hljs-attr">key</span>=<span class="hljs-string">{index}</span> <span class="hljs-attr">items</span>=<span class="hljs-string">{modelItems}</span> /&gt;</span>
+              <span class="hljs-tag">&lt;<span class="hljs-name">Divider</span> /&gt;</span>
+            <span class="hljs-tag">&lt;/&gt;</span></span>
+          );
+        })}
+      &lt;/&gt;
+    );
+  };
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Descriptions</span>
+        <span class="hljs-attr">title</span>=<span class="hljs-string">{</span>
+          &lt;&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">FileOutlined</span> /&gt;</span> 模型列表
+          <span class="hljs-tag">&lt;/&gt;</span>
+        }
+      /&gt;</span>
+      {<span class="hljs-title function_">modelListView</span>(modelConfig.<span class="hljs-property">models</span>)}
+    &lt;/div&gt;
+  );
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">ModelConfig</span>;
+
+</code></pre>
+<p>作者信息组件 <code>AuthorInfo</code>：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">Avatar</span>, <span class="hljs-title class_">Card</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-keyword">interface</span> <span class="hljs-title class_">Props</span> {
+  <span class="hljs-attr">data</span>: <span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorVO</span>;
+}
+
+<span class="hljs-comment">/**
+ * 作者信息
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">AuthorInfo</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span>&lt;<span class="hljs-title class_">Props</span>&gt; = <span class="hljs-function">(<span class="hljs-params">props</span>) =&gt;</span> {
+  <span class="hljs-keyword">const</span> { data } = props;
+
+  <span class="hljs-keyword">const</span> user = data?.<span class="hljs-property">user</span>;
+
+  <span class="hljs-keyword">if</span> (!user) {
+    <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span></span>;
+  }
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginTop:</span> <span class="hljs-attr">16</span> }}&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Card.Meta</span>
+        <span class="hljs-attr">avatar</span>=<span class="hljs-string">{</span>&lt;<span class="hljs-attr">Avatar</span> <span class="hljs-attr">size</span>=<span class="hljs-string">{64}</span> <span class="hljs-attr">src</span>=<span class="hljs-string">{user.userAvatar}</span> /&gt;</span>}
+        title={user.userName}
+        description={user.userProfile}
+      /&gt;
+    <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span>
+  );
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">AuthorInfo</span>;
+</code></pre>
+<h3 data-id="heading-26">下载功能实现</h3>
+<p>页面样式开发完成后，可以实现下载功能和编辑页跳转按钮。</p>
+<p>下载功能没什么好说的，参考之前测试文件下载页面的代码，调用下载生成器文件接口即可。</p>
+<p>需要注意按钮显隐的控制。比如只有存在 distPath 代码包，才能下载；只有本人才能修改。</p>
+<p>在详情页中编写这 2 个按钮组件，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-comment">/**
+ * 下载按钮
+ */</span>
+<span class="hljs-keyword">const</span> downloadButton = data.<span class="hljs-property">distPath</span> &amp;&amp; currentUser &amp;&amp; (
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Button</span>
+    <span class="hljs-attr">icon</span>=<span class="hljs-string">{</span>&lt;<span class="hljs-attr">DownloadOutlined</span> /&gt;</span>}
+    onClick={async () =&gt; {
+      const blob = await downloadGeneratorByIdUsingGet(
+        {
+          id: data.id,
+        },
+        {
+          responseType: 'blob',
+        },
+      );
+      // 使用 file-saver 来保存文件
+      const fullPath = data.distPath || '';
+      saveAs(blob, fullPath.substring(fullPath.lastIndexOf('/') + 1));
+    }}
+  &gt;
+    下载
+  <span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;</span></span>
+);
+
+<span class="hljs-comment">/**
+ * 编辑按钮
+ */</span>
+<span class="hljs-keyword">const</span> editButton = my &amp;&amp; (
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Link</span> <span class="hljs-attr">to</span>=<span class="hljs-string">{</span>`/<span class="hljs-attr">generator</span>/<span class="hljs-attr">update</span>?<span class="hljs-attr">id</span>=<span class="hljs-string">${data.id}</span>`}&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">Button</span> <span class="hljs-attr">icon</span>=<span class="hljs-string">{</span>&lt;<span class="hljs-attr">EditOutlined</span> /&gt;</span>}&gt;编辑<span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">Link</span>&gt;</span></span>
+);
+</code></pre>
+<p>然后就可以在详情页中引用这两个按钮组件。最终，详情页的完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> <span class="hljs-title class_">AuthorInfo</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/pages/Generator/Detail/components/AuthorInfo'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">FileConfig</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/pages/Generator/Detail/components/FileConfig'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">ModelConfig</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'@/pages/Generator/Detail/components/ModelConfig'</span>;
+<span class="hljs-keyword">import</span> {
+  downloadGeneratorByIdUsingGet,
+  getGeneratorVoByIdUsingGet,
+} <span class="hljs-keyword">from</span> <span class="hljs-string">'@/services/backend/generatorController'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Link</span>, useModel, useParams } <span class="hljs-keyword">from</span> <span class="hljs-string">'@@/exports'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">DownloadOutlined</span>, <span class="hljs-title class_">EditOutlined</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/icons'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">PageContainer</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-components'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Button</span>, <span class="hljs-title class_">Card</span>, <span class="hljs-title class_">Col</span>, <span class="hljs-title class_">Image</span>, message, <span class="hljs-title class_">Row</span>, <span class="hljs-title class_">Space</span>, <span class="hljs-title class_">Tabs</span>, <span class="hljs-title class_">Tag</span>, <span class="hljs-title class_">Typography</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import</span> { saveAs } <span class="hljs-keyword">from</span> <span class="hljs-string">'file-saver'</span>;
+<span class="hljs-keyword">import</span> moment <span class="hljs-keyword">from</span> <span class="hljs-string">'moment'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span>, { useEffect, useState } <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-comment">/**
+ * 生成器详情页
+ * <span class="hljs-doctag">@constructor</span>
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">GeneratorDetailPage</span>: <span class="hljs-title class_">React</span>.<span class="hljs-property">FC</span> = <span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-keyword">const</span> { id } = <span class="hljs-title function_">useParams</span>();
+
+  <span class="hljs-keyword">const</span> [loading, setLoading] = useState&lt;<span class="hljs-built_in">boolean</span>&gt;(<span class="hljs-literal">false</span>);
+  <span class="hljs-keyword">const</span> [data, setData] = useState&lt;<span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorVO</span>&gt;({});
+  <span class="hljs-keyword">const</span> { initialState } = <span class="hljs-title function_">useModel</span>(<span class="hljs-string">'@@initialState'</span>);
+  <span class="hljs-keyword">const</span> { currentUser } = initialState ?? {};
+  <span class="hljs-keyword">const</span> my = currentUser?.<span class="hljs-property">id</span> === data?.<span class="hljs-property">userId</span>;
+
+  <span class="hljs-comment">/**
+   * 加载数据
+   */</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">loadData</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params"></span>) =&gt; {
+    <span class="hljs-keyword">if</span> (!id) {
+      <span class="hljs-keyword">return</span>;
+    }
+    <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">true</span>);
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getGeneratorVoByIdUsingGet</span>({
+        id,
+      });
+      <span class="hljs-title function_">setData</span>(res.<span class="hljs-property">data</span> || {});
+    } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+      message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'获取数据失败，'</span> + error.<span class="hljs-property">message</span>);
+    }
+    <span class="hljs-title function_">setLoading</span>(<span class="hljs-literal">false</span>);
+  };
+
+  <span class="hljs-title function_">useEffect</span>(<span class="hljs-function">() =&gt;</span> {
+    <span class="hljs-title function_">loadData</span>();
+  }, [id]);
+
+  <span class="hljs-comment">/**
+   * 标签列表视图
+   * <span class="hljs-doctag">@param</span> <span class="hljs-variable">tags</span>
+   */</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">tagListView</span> = (<span class="hljs-params">tags?: <span class="hljs-built_in">string</span>[]</span>) =&gt; {
+    <span class="hljs-keyword">if</span> (!tags) {
+      <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span></span>;
+    }
+
+    <span class="hljs-keyword">return</span> (
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">8</span> }}&gt;</span>
+        {tags.map((tag: string) =&gt; {
+          return <span class="hljs-tag">&lt;<span class="hljs-name">Tag</span> <span class="hljs-attr">key</span>=<span class="hljs-string">{tag}</span>&gt;</span>{tag}<span class="hljs-tag">&lt;/<span class="hljs-name">Tag</span>&gt;</span>;
+        })}
+      <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span>
+    );
+  };
+
+  <span class="hljs-comment">/**
+   * 下载按钮
+   */</span>
+  <span class="hljs-keyword">const</span> downloadButton = data.<span class="hljs-property">distPath</span> &amp;&amp; currentUser &amp;&amp; (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Button</span>
+      <span class="hljs-attr">icon</span>=<span class="hljs-string">{</span>&lt;<span class="hljs-attr">DownloadOutlined</span> /&gt;</span>}
+      onClick={async () =&gt; {
+        const blob = await downloadGeneratorByIdUsingGet(
+          {
+            id: data.id,
+          },
+          {
+            responseType: 'blob',
+          },
+        );
+        // 使用 file-saver 来保存文件
+        const fullPath = data.distPath || '';
+        saveAs(blob, fullPath.substring(fullPath.lastIndexOf('/') + 1));
+      }}
+    &gt;
+      下载
+    <span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;</span></span>
+  );
+
+  <span class="hljs-comment">/**
+   * 编辑按钮
+   */</span>
+  <span class="hljs-keyword">const</span> editButton = my &amp;&amp; (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Link</span> <span class="hljs-attr">to</span>=<span class="hljs-string">{</span>`/<span class="hljs-attr">generator</span>/<span class="hljs-attr">update</span>?<span class="hljs-attr">id</span>=<span class="hljs-string">${data.id}</span>`}&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Button</span> <span class="hljs-attr">icon</span>=<span class="hljs-string">{</span>&lt;<span class="hljs-attr">EditOutlined</span> /&gt;</span>}&gt;编辑<span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">Link</span>&gt;</span></span>
+  );
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">PageContainer</span> <span class="hljs-attr">title</span>=<span class="hljs-string">{</span>&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span></span>} loading={loading}&gt;
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Card</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Row</span> <span class="hljs-attr">justify</span>=<span class="hljs-string">"space-between"</span> <span class="hljs-attr">gutter</span>=<span class="hljs-string">{[32,</span> <span class="hljs-attr">32</span>]}&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">Col</span> <span class="hljs-attr">flex</span>=<span class="hljs-string">"auto"</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">Space</span> <span class="hljs-attr">size</span>=<span class="hljs-string">"large"</span> <span class="hljs-attr">align</span>=<span class="hljs-string">"center"</span>&gt;</span>
+              <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Title</span> <span class="hljs-attr">level</span>=<span class="hljs-string">{4}</span>&gt;</span>{data.name}<span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Title</span>&gt;</span>
+              {tagListView(data.tags)}
+            <span class="hljs-tag">&lt;/<span class="hljs-name">Space</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Paragraph</span>&gt;</span>{data.description}<span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Paragraph</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Paragraph</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"secondary"</span>&gt;</span>
+              创建时间：{moment(data.createTime).format('YYYY-MM-DD hh:mm:ss')}
+            <span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Paragraph</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Paragraph</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"secondary"</span>&gt;</span>基础包：{data.basePackage}<span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Paragraph</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Paragraph</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"secondary"</span>&gt;</span>版本：{data.version}<span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Paragraph</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">Typography.Paragraph</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"secondary"</span>&gt;</span>作者：{data.author}<span class="hljs-tag">&lt;/<span class="hljs-name">Typography.Paragraph</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">24</span> }} /&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">Space</span> <span class="hljs-attr">size</span>=<span class="hljs-string">"middle"</span>&gt;</span>
+              <span class="hljs-tag">&lt;<span class="hljs-name">Button</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"primary"</span>&gt;</span>立即使用<span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;</span>
+              {downloadButton}
+              {editButton}
+            <span class="hljs-tag">&lt;/<span class="hljs-name">Space</span>&gt;</span>
+          <span class="hljs-tag">&lt;/<span class="hljs-name">Col</span>&gt;</span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">Col</span> <span class="hljs-attr">flex</span>=<span class="hljs-string">"320px"</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">Image</span> <span class="hljs-attr">src</span>=<span class="hljs-string">{data.picture}</span> /&gt;</span>
+          <span class="hljs-tag">&lt;/<span class="hljs-name">Col</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">Row</span>&gt;</span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Card</span>&gt;</span></span>
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{</span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">24</span> }} /&gt;</span></span>
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Card</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Tabs</span>
+          <span class="hljs-attr">size</span>=<span class="hljs-string">"large"</span>
+          <span class="hljs-attr">defaultActiveKey</span>=<span class="hljs-string">{</span>'<span class="hljs-attr">fileConfig</span>'}
+          <span class="hljs-attr">onChange</span>=<span class="hljs-string">{()</span> =&gt;</span> {}}
+          items={[
+            {
+              key: 'fileConfig',
+              label: '文件配置',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">FileConfig</span> <span class="hljs-attr">data</span>=<span class="hljs-string">{data}</span> /&gt;</span>,
+            },
+            {
+              key: 'modelConfig',
+              label: '模型配置',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">ModelConfig</span> <span class="hljs-attr">data</span>=<span class="hljs-string">{data}</span> /&gt;</span>,
+            },
+            {
+              key: 'userInfo',
+              label: '作者信息',
+              children: <span class="hljs-tag">&lt;<span class="hljs-name">AuthorInfo</span> <span class="hljs-attr">data</span>=<span class="hljs-string">{data}</span> /&gt;</span>,
+            },
+          ]}
+        /&gt;
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Card</span>&gt;</span></span>
+    &lt;/<span class="hljs-title class_">PageContainer</span>&gt;
+  );
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">GeneratorDetailPage</span>;
+</code></pre>
+<p>页面效果如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/7111c0af-89b6-4785-9fe6-7fff6ee0c66d.png" alt="image.png" class="medium-zoom-image"></p>
+<p>可以给主页的生成器卡片增加跳转到详情页的链接：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">&lt;<span class="hljs-title class_">Link</span> to={<span class="hljs-string">`/generator/detail/<span class="hljs-subst">${data.id}</span>`</span>}&gt;
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Card</span> <span class="hljs-attr">hoverable</span> <span class="hljs-attr">cover</span>=<span class="hljs-string">{</span>&lt;<span class="hljs-attr">Image</span> <span class="hljs-attr">alt</span>=<span class="hljs-string">{data.name}</span> <span class="hljs-attr">src</span>=<span class="hljs-string">{data.picture}</span> /&gt;</span>}&gt;
+    ...
+  <span class="hljs-tag">&lt;/<span class="hljs-name">Card</span>&gt;</span></span>
+&lt;/<span class="hljs-title class_">Link</span>&gt;
+</code></pre>
+<h2 data-id="heading-27">最后</h2>
+<p>以上就是本节教程，我们开发完成了在线代码生成器平台的创建页面、详情页面，用户已经可以使用平台上传和下载代码生成器了。下期教程中，我们将继续开发在线平台的更多功能。</p>
+<h2 data-id="heading-28">本期作业</h2>
+<p>1）理解对象存储的优点，参考官方文档自主实现一个对象存储工具类。</p>
+<p>2）掌握文件上传和下载功能的开发。</p>
+<p>3）自己编写代码实现本节项目，并且在自己的代码仓库完成一次提交。</p></div></div></div><div style="margin-bottom: 16px;"></div><div style="margin-bottom: 16px;"></div><div id="toggleArea" class="ant-row ant-row-no-wrap ant-row-space-between" style="margin-left: -10px; margin-right: -10px; margin-top: 40px; row-gap: 20px;"><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>上一节</div><a href="/course/1790980795074654209/section/1790996610649993217"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><span role="img" aria-label="double-left" class="anticon anticon-double-left" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-left" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M272.9 512l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L186.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H532c6.7 0 10.4-7.7 6.3-12.9L272.9 512zm304 0l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L490.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H836c6.7 0 10.4-7.7 6.3-12.9L576.9 512z"></path></svg></span></div><div class="ant-space-item"><div class="text-ellipsis">9. 云平台开发</div></div></div></a></div><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>下一节</div><a href="/course/1790980795074654209/section/1790996735464091649"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><div class="text-ellipsis">11. 在线使用</div></div><div class="ant-space-item"><span role="img" aria-label="double-right" class="anticon anticon-double-right" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-right" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M533.2 492.3L277.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H188c-6.7 0-10.4 7.7-6.3 12.9L447.1 512 181.7 851.1A7.98 7.98 0 00188 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5zm304 0L581.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H492c-6.7 0-10.4 7.7-6.3 12.9L751.1 512 485.7 851.1A7.98 7.98 0 00492 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5z"></path></svg></span></div></div></a></div></div></div>

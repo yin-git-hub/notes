@@ -1,0 +1,1375 @@
+<div class="ant-card-body"><h1 class="ant-typography" style="font-size: 30px;" data-id="">8. 模板项目生成</h1><div class="ant-space ant-space-horizontal ant-space-align-center" style="margin-bottom: 15px; gap: 8px;"><div class="ant-space-item" style=""><a class="text-gray-500" target="_blank" href="/user/1601072287388278786">程序员鱼皮</a></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item" style=""><span class="text-gray-500">2024-05-16 14:41</span></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item"><span class="text-gray-500">阅读 594</span></div></div><div style="margin-bottom: 16px;"></div><div class="course-container"><div class="md-viewer "><div class="markdown-body"><h2 data-id="heading-0">前情回顾</h2>
+<p>在上期教程中，我们开发了一个模板制作工具，通过生成模板文件和元信息配置文件，提高代码生成器的制作效率。</p>
+<p>经过了前几期的开发，我们的代码生成器制作工具的核心功能开发完成。本期教程，让我们来实现本项目第二阶段制定的目标，使用制作工具快速制作 Spring Boot 项目模板生成器。</p>
+<h2 data-id="heading-1">本节重点</h2>
+<p>本节教程属于项目的第二阶段 —— 开发代码生成器制作工具。</p>
+<p>本节主要是完善制作工具，并检验我们第二阶段的成果。</p>
+<p>重点内容：</p>
+<ol>
+<li>模板制作工具 - Bug 修复</li>
+<li>模板制作工具 - 易用性优化</li>
+<li>制作 Spring Boot 项目模板生成器</li>
+<li>测试成果</li>
+<li>扩展思路</li>
+</ol>
+<h2 data-id="heading-2">一、Bug 修复</h2>
+<p>目前，虽然我们的模板制作工具已经完成了核心功能的开发，但是并没有经过充分的测试验证。</p>
+<p>经过鱼皮的一番测试，发现了几个比较严重的 Bug，让我们一起来分析和修复下。</p>
+<h3 data-id="heading-3">1、同配置多次生成，强制变为静态生成</h3>
+<h4 data-id="heading-4">Bug 介绍</h4>
+<p>如果两次制作模板时，配置文件中使用了同一个文件（比如 application.yml）、以及相同的模型，那么第二次制作时会判断替换后的模板内容和第一次相同（因为第一次已经替换过了），导致该文件被识别为了静态生成，得到了错误的配置文件。</p>
+<h4 data-id="heading-5">Bug 复现</h4>
+<p>比如第一次生成时，指定如下输入配置：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 输入文件</span>
+<span class="hljs-type">String</span> <span class="hljs-variable">inputFilePath</span> <span class="hljs-operator">=</span> <span class="hljs-string">"src/main/resources/application.yml"</span>;
+
+<span class="hljs-comment">// 模型配置</span>
+TemplateMakerModelConfig.<span class="hljs-type">ModelInfoConfig</span> <span class="hljs-variable">modelInfoConfig1</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerModelConfig</span>.ModelInfoConfig();
+modelInfoConfig1.setFieldName(<span class="hljs-string">"url"</span>);
+modelInfoConfig1.setType(<span class="hljs-string">"String"</span>);
+modelInfoConfig1.setDefaultValue(<span class="hljs-string">"jdbc:mysql://localhost:3306/my_db"</span>);
+modelInfoConfig1.setReplaceText(<span class="hljs-string">"jdbc:mysql://localhost:3306/my_db"</span>);
+</code></pre>
+<p>生成 <code>meta.json</code> 文件，该文件信息如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">{
+    <span class="hljs-string">"inputPath"</span>: <span class="hljs-string">"src/main/resources/application.yml"</span>,
+    <span class="hljs-string">"outputPath"</span>: <span class="hljs-string">"src/main/resources/application.yml.ftl"</span>,
+    <span class="hljs-string">"type"</span>: <span class="hljs-string">"file"</span>,
+    <span class="hljs-string">"generateType"</span>: <span class="hljs-string">"dynamic"</span>
+}
+</code></pre>
+<p>第二次生成时，不修改任何的输入配置，直接再次执行制作工具，结果生成的文件信息如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/resources/application.yml"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/resources/application.yml"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"static"</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p><code>generateType</code> 被修改为了 <code>static</code> 类型，显然这是有问题的，因为 <code>application.yml</code> 已经被制作为了模板。</p>
+<h4 data-id="heading-6">解决方案</h4>
+<p>该 Bug 的解决方案很简单：如果后续制作时发现已有模板文件，则该文件不会被设置为静态生成。</p>
+<p>1）修复 <code>makeFileTemplate</code> 方法，抽象出 <code>hasTemplateFile</code> 布尔变量，用于判断是否已有模板文件。</p>
+<p>修改的代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 如果已有模板文件，说明不是第一次制作，则在模板基础上再次挖坑</span>
+<span class="hljs-type">boolean</span> <span class="hljs-variable">hasTemplateFile</span> <span class="hljs-operator">=</span> FileUtil.exist(fileOutputAbsolutePath);
+<span class="hljs-keyword">if</span> (hasTemplateFile) {
+    fileContent = FileUtil.readUtf8String(fileOutputAbsolutePath);
+} <span class="hljs-keyword">else</span> {
+    fileContent = FileUtil.readUtf8String(fileInputAbsolutePath);
+}
+</code></pre>
+<p>2）调整设置文件信息对象的逻辑，默认设置生成类型为动态。如果之前不存在模板文件，并且经过字符串替换后没有更改文件内容，才改为静态生成。如果已经存在模板文件，且字符串替换后模板需要更新，则需要更新已有的模板文件。</p>
+<p>修改的代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 文件配置信息</span>
+Meta.FileConfig.<span class="hljs-type">FileInfo</span> <span class="hljs-variable">fileInfo</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Meta</span>.FileConfig.FileInfo();
+fileInfo.setInputPath(fileInputPath);
+fileInfo.setOutputPath(fileOutputPath);
+fileInfo.setType(FileTypeEnum.FILE.getValue());
+fileInfo.setGenerateType(FileGenerateTypeEnum.DYNAMIC.getValue());
+
+<span class="hljs-comment">// 是否更改了文件内容</span>
+<span class="hljs-type">boolean</span> <span class="hljs-variable">contentEquals</span> <span class="hljs-operator">=</span> newFileContent.equals(fileContent);
+<span class="hljs-comment">// 之前不存在模板文件，并且没有更改文件内容，则为静态生成</span>
+<span class="hljs-keyword">if</span> (!hasTemplateFile) {
+    <span class="hljs-keyword">if</span> (contentEquals) {
+        <span class="hljs-comment">// 输出路径 = 输入路径</span>
+        fileInfo.setOutputPath(fileInputPath);
+        fileInfo.setGenerateType(FileGenerateTypeEnum.STATIC.getValue());
+    } <span class="hljs-keyword">else</span> {
+        <span class="hljs-comment">// 没有模板文件，需要挖坑，生成模板文件</span>
+        FileUtil.writeUtf8String(newFileContent, fileOutputAbsolutePath);
+    }
+} <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!contentEquals) {
+    <span class="hljs-comment">// 有模板文件，且增加了新坑，生成模板文件</span>
+    FileUtil.writeUtf8String(newFileContent, fileOutputAbsolutePath);
+}
+</code></pre>
+<h4 data-id="heading-7">测试验证</h4>
+<p>为了后续更方便地执行多次不同的测试，让我们新建一个模板制作工具的单元测试文件。</p>
+<p>在 <code>TemplateMaker</code> 类名上按 <code>Alt + Enter</code> 键，选中 <code>Create Test</code>，即可快速创建单元测试：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/95d6780f-db08-42d5-933d-e38a55d90795.png" alt="image.png" class="medium-zoom-image"></p>
+<p>选择正确的单元测试库，并勾选需要测试的方法：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/d35c780c-3d26-4aca-86f3-7d85eaa780de.png" alt="image.png" class="medium-zoom-image"></p>
+<p>得到一个干净的单元测试文件，然后我们就可以移除 <code>TemplateMaker</code> 类中的 main 方法，在单元测试中编写测试用例了。</p>
+<p>本次测试需要的代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 测试同配置多次生成时，强制变为静态生成
+ */</span>
+<span class="hljs-meta">@Test</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">testMakeTemplateBug1</span><span class="hljs-params">()</span> {
+    <span class="hljs-type">Meta</span> <span class="hljs-variable">meta</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Meta</span>();
+    meta.setName(<span class="hljs-string">"acm-template-generator"</span>);
+    meta.setDescription(<span class="hljs-string">"ACM 示例模板生成器"</span>);
+
+    <span class="hljs-type">String</span> <span class="hljs-variable">projectPath</span> <span class="hljs-operator">=</span> System.getProperty(<span class="hljs-string">"user.dir"</span>);
+    <span class="hljs-type">String</span> <span class="hljs-variable">originProjectPath</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(projectPath).getParent() + File.separator + <span class="hljs-string">"yuzi-generator-demo-projects/springboot-init"</span>;
+
+    <span class="hljs-comment">// 文件参数配置</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">inputFilePath1</span> <span class="hljs-operator">=</span> <span class="hljs-string">"src/main/resources/application.yml"</span>;
+    <span class="hljs-type">TemplateMakerFileConfig</span> <span class="hljs-variable">templateMakerFileConfig</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerFileConfig</span>();
+    TemplateMakerFileConfig.<span class="hljs-type">FileInfoConfig</span> <span class="hljs-variable">fileInfoConfig1</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerFileConfig</span>.FileInfoConfig();
+    fileInfoConfig1.setPath(inputFilePath1);
+    templateMakerFileConfig.setFiles(Arrays.asList(fileInfoConfig1));
+
+    <span class="hljs-comment">// 模型参数配置</span>
+    <span class="hljs-type">TemplateMakerModelConfig</span> <span class="hljs-variable">templateMakerModelConfig</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerModelConfig</span>();
+    TemplateMakerModelConfig.<span class="hljs-type">ModelInfoConfig</span> <span class="hljs-variable">modelInfoConfig1</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerModelConfig</span>.ModelInfoConfig();
+    modelInfoConfig1.setFieldName(<span class="hljs-string">"url"</span>);
+    modelInfoConfig1.setType(<span class="hljs-string">"String"</span>);
+    modelInfoConfig1.setDefaultValue(<span class="hljs-string">"jdbc:mysql://localhost:3306/my_db"</span>);
+    modelInfoConfig1.setReplaceText(<span class="hljs-string">"jdbc:mysql://localhost:3306/my_db"</span>);
+    List&lt;TemplateMakerModelConfig.ModelInfoConfig&gt; modelInfoConfigList = Arrays.asList(modelInfoConfig1);
+    templateMakerModelConfig.setModels(modelInfoConfigList);
+
+    <span class="hljs-type">long</span> <span class="hljs-variable">id</span> <span class="hljs-operator">=</span> TemplateMaker.makeTemplate(meta, originProjectPath, templateMakerFileConfig, templateMakerModelConfig, <span class="hljs-number">1735281524670181376L</span>);
+    System.out.println(id);
+}
+</code></pre>
+<p>连续执行两次方法，发现文件的生成类型符合预期，成功修复了 Bug：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/9156418b-9dda-4334-bbc6-b3aa8c83724a.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-8">2、错误处理了新生成的模板文件</h3>
+<h4 data-id="heading-9">Bug 介绍</h4>
+<p>如果多次制作时指定了相同的目录（如 common 包），那么后续制作时会扫描到之前生成的 FTL 模板文件，并尝试基于 FTL 文件再次制作模板，导致生成了错误的配置。</p>
+<h4 data-id="heading-10">Bug 复现</h4>
+<p>比如第一次生成时，指定如下输入配置：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 输入文件</span>
+<span class="hljs-type">String</span> <span class="hljs-variable">inputFilePath</span> <span class="hljs-operator">=</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/common"</span>;
+
+<span class="hljs-comment">// 模型配置</span>
+TemplateMakerModelConfig.<span class="hljs-type">ModelInfoConfig</span> <span class="hljs-variable">modelInfoConfig1</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerModelConfig</span>.ModelInfoConfig();
+modelInfoConfig1.setFieldName(<span class="hljs-string">"className"</span>);
+modelInfoConfig1.setType(<span class="hljs-string">"String"</span>);
+modelInfoConfig1.setReplaceText(<span class="hljs-string">"BaseResponse"</span>);
+</code></pre>
+<p>生成 <code>meta.json</code> 文件，部分文件信息如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/common/BaseResponse.java"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/common/BaseResponse.java.ftl"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"dynamic"</span>
+<span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+<span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/common/DeleteRequest.java"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/common/DeleteRequest.java"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"static"</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>第二次生成时，不修改任何的输入配置，直接再次执行制作工具，结果生成的文件信息如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/3706fe8c-ec29-4b0c-803a-caa0c9542c0d.png" alt="image.png" class="medium-zoom-image"></p>
+<p>显然，<code>BaseResponse.java.ftl</code> 模板文件，也以静态生成的方式出现在了配置文件中，实际上不应该再对该文件进行处理。</p>
+<h4 data-id="heading-11">解决方案</h4>
+<p>每次制作时，判断输入文件的后缀是否为 <code>.ftl</code>，如果是，则不处理该文件。</p>
+<p>修改 <code>makeTemplate</code> 方法中的代码，在文件过滤后补充移除 FTL 模板文件。代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 获取过滤后的文件列表（不会存在目录）</span>
+List&lt;File&gt; fileList = FileFilter.doFilter(inputFilePath, fileInfoConfig.getFilterConfigList());
+<span class="hljs-comment">// 不处理已生成的 FTL 模板文件</span>
+fileList = fileList.stream()
+        .filter(file -&gt; !file.getAbsolutePath().endsWith(<span class="hljs-string">".ftl"</span>))
+        .collect(Collectors.toList());
+</code></pre>
+<h4 data-id="heading-12">测试验证</h4>
+<p>编写单元测试代码：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 同文件目录多次生成时，会扫描新的 FTL 文件
+ */</span>
+<span class="hljs-meta">@Test</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">testMakeTemplateBug2</span><span class="hljs-params">()</span> {
+    <span class="hljs-type">Meta</span> <span class="hljs-variable">meta</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Meta</span>();
+    meta.setName(<span class="hljs-string">"acm-template-generator"</span>);
+    meta.setDescription(<span class="hljs-string">"ACM 示例模板生成器"</span>);
+
+    <span class="hljs-type">String</span> <span class="hljs-variable">projectPath</span> <span class="hljs-operator">=</span> System.getProperty(<span class="hljs-string">"user.dir"</span>);
+    <span class="hljs-type">String</span> <span class="hljs-variable">originProjectPath</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(projectPath).getParent() + File.separator + <span class="hljs-string">"yuzi-generator-demo-projects/springboot-init"</span>;
+
+    <span class="hljs-comment">// 文件参数配置，扫描目录</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">inputFilePath1</span> <span class="hljs-operator">=</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/common"</span>;
+    <span class="hljs-type">TemplateMakerFileConfig</span> <span class="hljs-variable">templateMakerFileConfig</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerFileConfig</span>();
+    TemplateMakerFileConfig.<span class="hljs-type">FileInfoConfig</span> <span class="hljs-variable">fileInfoConfig1</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerFileConfig</span>.FileInfoConfig();
+    fileInfoConfig1.setPath(inputFilePath1);
+    templateMakerFileConfig.setFiles(Arrays.asList(fileInfoConfig1));
+
+    <span class="hljs-comment">// 模型参数配置</span>
+    <span class="hljs-type">TemplateMakerModelConfig</span> <span class="hljs-variable">templateMakerModelConfig</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerModelConfig</span>();
+    TemplateMakerModelConfig.<span class="hljs-type">ModelInfoConfig</span> <span class="hljs-variable">modelInfoConfig1</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerModelConfig</span>.ModelInfoConfig();
+    modelInfoConfig1.setFieldName(<span class="hljs-string">"className"</span>);
+    modelInfoConfig1.setType(<span class="hljs-string">"String"</span>);
+    modelInfoConfig1.setReplaceText(<span class="hljs-string">"BaseResponse"</span>);
+    List&lt;TemplateMakerModelConfig.ModelInfoConfig&gt; modelInfoConfigList = Arrays.asList(modelInfoConfig1);
+    templateMakerModelConfig.setModels(modelInfoConfigList);
+
+    <span class="hljs-type">long</span> <span class="hljs-variable">id</span> <span class="hljs-operator">=</span> TemplateMaker.makeTemplate(meta, originProjectPath, templateMakerFileConfig, templateMakerModelConfig, <span class="hljs-number">1735281524670181376L</span>);
+    System.out.println(id);
+}
+</code></pre>
+<p>连续执行两次，并没有生成多余的文件配置，符合预期，成功修复了 Bug：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/d27a47a0-56e9-4896-825f-bd537d685b1f.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-13">3、文件输入和输出路径相反</h3>
+<h4 data-id="heading-14">Bug 介绍</h4>
+<p>在制作模板时，我们是根据原始文件得到 FTL 模板文件；但是在代码生成器的元信息中，其实是根据 FTL 模板文件来生成目标文件。</p>
+<h4 data-id="heading-15">Bug 复现</h4>
+<p>在我们之前自己编写的 <code>meta.json</code> 文件中，<code>inputPath</code> 是模板文件，<code>outputPath</code> 是目标生成的文件，示例配置如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/com/yupi/acm/MainTemplate.java.ftl"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/com/yupi/acm/MainTemplate.java"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"dynamic"</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>但我们现在通过模板制作工具生成的配置文件中， <code>inputPath</code> 和 <code>outputPath</code> 的值和预期正好相反：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/common/BaseResponse.java"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/common/BaseResponse.java.ftl"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"dynamic"</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 data-id="heading-16">解决方案</h4>
+<p>思路很简单，我们只需要在生成文件信息时，将 inputPath 和 outputPath 的值相互替换即可。</p>
+<p>1）在封装 <code>fileInfo</code> 对象时，对输入输出路径的值进行替换。保证输入路径是 FTL 模板文件、输出路径是预期生成的文件。</p>
+<p>注意，如果是静态生成，也要保证输入路径等于输出路径。</p>
+<p>修改 <code>makeFileTemplate</code> 文件的部分代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 文件配置信息</span>
+Meta.FileConfig.<span class="hljs-type">FileInfo</span> <span class="hljs-variable">fileInfo</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Meta</span>.FileConfig.FileInfo();
+<span class="hljs-comment">// 注意文件输入路径要和输出路径反转</span>
+fileInfo.setInputPath(fileOutputPath);
+fileInfo.setOutputPath(fileInputPath);
+fileInfo.setType(FileTypeEnum.FILE.getValue());
+fileInfo.setGenerateType(FileGenerateTypeEnum.DYNAMIC.getValue());
+
+<span class="hljs-comment">// 是否更改了文件内容</span>
+<span class="hljs-type">boolean</span> <span class="hljs-variable">contentEquals</span> <span class="hljs-operator">=</span> newFileContent.equals(fileContent);
+<span class="hljs-comment">// 之前不存在模板文件，并且没有更改文件内容，则为静态生成</span>
+<span class="hljs-keyword">if</span> (!hasTemplateFile) {
+    <span class="hljs-keyword">if</span> (contentEquals) {
+        <span class="hljs-comment">// 输入路径没有 FTL 后缀</span>
+        fileInfo.setInputPath(fileInputPath);
+        fileInfo.setGenerateType(FileGenerateTypeEnum.STATIC.getValue());
+    } <span class="hljs-keyword">else</span> {
+        <span class="hljs-comment">// 没有模板文件，且增加了新坑，生成模板文件</span>
+        FileUtil.writeUtf8String(newFileContent, fileOutputAbsolutePath);
+    }
+}
+<span class="hljs-keyword">return</span> fileInfo;
+</code></pre>
+<p>2）注意，文件去重方法 <code>distinctFiles</code> 也要同步修改，改为根据 <code>outputPath</code> 属性去重。</p>
+<p>修改的部分代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">List&lt;Meta.FileConfig.FileInfo&gt; newFileInfoList = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;(tempFileInfoList.stream()
+    .flatMap(fileInfo -&gt; fileInfo.getFiles().stream())
+    .collect(
+            Collectors.toMap(Meta.FileConfig.FileInfo::getOutputPath, o -&gt; o, (e, r) -&gt; r)
+    ).values());
+</code></pre>
+<h4 data-id="heading-17">测试验证</h4>
+<p>再次执行任一单元测试方法，这次生成的配置符合预期，成功修复了 Bug：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a6c93718-0288-404d-a145-23a21b92365d.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-18">4、调整配置文件生成路径</h3>
+<h4 data-id="heading-19">Bug 介绍</h4>
+<p>现在我们的 <code>meta.json</code> 文件会生成在工作空间内、项目的根目录下，如果我们指定的输入文件路径是项目的根目录，那么 <code>meta.json</code> 文件也会被当成项目文件被扫描处理。</p>
+<h4 data-id="heading-20">Bug 复现</h4>
+<p>设置输入文件路径为根目录：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">String</span> <span class="hljs-variable">inputFilePath</span> <span class="hljs-operator">=</span> <span class="hljs-string">"./"</span>;
+</code></pre>
+<p>然后连续执行制作 2 次，发现第二次制作模板时，把第一次制作得到的 <code>meta.json</code> 文件也当做了模板文件处理，滑天下之大稽：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/e11e6c3d-0d90-44f2-a6f8-5717ce5e4ef8.png" alt="image.png" class="medium-zoom-image"></p>
+<h4 data-id="heading-21">解决方案</h4>
+<p>非常简单，修改 <code>meta.json</code> 文件的生成路径即可，调整为工作空间根目录下，和项目目录平级。</p>
+<p>修改后的代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 三、生成配置文件</span>
+<span class="hljs-type">String</span> <span class="hljs-variable">metaOutputPath</span> <span class="hljs-operator">=</span> templatePath + File.separator + <span class="hljs-string">"meta.json"</span>;
+</code></pre>
+<h4 data-id="heading-22">测试验证</h4>
+<p>执行任一单元测试，生成的配置文件路径被正确修改了。后续制作模板时，也不会错误处理该文件。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/f23fb2b6-bbf7-403d-8e36-0b3f10719aaa.png" alt="image.png" class="medium-zoom-image"></p>
+<p>以上，几个严重影响使用的 Bug 被成功修复！</p>
+<p>接下来我们需要优化一下工具的易用性。</p>
+<h2 data-id="heading-23">二、参数封装 - 易用性优化</h2>
+<p>之前每次使用制作工具时，我们都要自主编写和封装各种配置对象，非常麻烦。</p>
+<p>有没有更简单的方式呢？</p>
+<p>我们可以把所有模板制作工具需要的参数统一封装为一个对象，这样就可以通过传递一个 JSON 配置文件（或者后续的 HTTP Post 请求）来快速填充参数。</p>
+<p>1）在 <code>template.model</code> 包下新建 <code>TemplateMakerConfig</code> 类，用于封装所有模板制作工具需要的参数。</p>
+<p>代码如下：</p>
+<blockquote>
+<p>注意要给对象指定默认值，防止 NPE</p>
+</blockquote>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.maker.template.model;
+
+<span class="hljs-keyword">import</span> com.yupi.maker.meta.Meta;
+<span class="hljs-keyword">import</span> lombok.Data;
+
+<span class="hljs-comment">/**
+ * 模板制作配置
+ */</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">TemplateMakerConfig</span> {
+
+    <span class="hljs-keyword">private</span> Long id;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-type">Meta</span> <span class="hljs-variable">meta</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Meta</span>();
+
+    <span class="hljs-keyword">private</span> String originProjectPath;
+
+    <span class="hljs-type">TemplateMakerFileConfig</span> <span class="hljs-variable">fileConfig</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerFileConfig</span>();
+
+    <span class="hljs-type">TemplateMakerModelConfig</span> <span class="hljs-variable">modelConfig</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerModelConfig</span>();
+}
+
+</code></pre>
+<p>2）然后在 <code>TemplateMaker</code> 制作工具类中新增接受该封装类的重载方法，不修改原方法。新增代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 制作模板
+ *
+ * <span class="hljs-doctag">@param</span> templateMakerConfig
+ * <span class="hljs-doctag">@return</span>
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-type">long</span> <span class="hljs-title function_">makeTemplate</span><span class="hljs-params">(TemplateMakerConfig templateMakerConfig)</span> {
+    <span class="hljs-type">Meta</span> <span class="hljs-variable">meta</span> <span class="hljs-operator">=</span> templateMakerConfig.getMeta();
+    <span class="hljs-type">String</span> <span class="hljs-variable">originProjectPath</span> <span class="hljs-operator">=</span> templateMakerConfig.getOriginProjectPath();
+    <span class="hljs-type">TemplateMakerFileConfig</span> <span class="hljs-variable">templateMakerFileConfig</span> <span class="hljs-operator">=</span> templateMakerConfig.getFileConfig();
+    <span class="hljs-type">TemplateMakerModelConfig</span> <span class="hljs-variable">templateMakerModelConfig</span> <span class="hljs-operator">=</span> templateMakerConfig.getModelConfig();
+    <span class="hljs-type">Long</span> <span class="hljs-variable">id</span> <span class="hljs-operator">=</span> templateMakerConfig.getId();
+
+    <span class="hljs-keyword">return</span> makeTemplate(meta, originProjectPath, templateMakerFileConfig, templateMakerModelConfig, id);
+}
+</code></pre>
+<p>3）在 <code>resources</code> 资源目录下新建临时 <code>templateMaker.json</code>，用于给封装对象设置参数：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"meta"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"name"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"acm-template-pro-generator"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"ACM 示例模板生成器"</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"originProjectPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"../../../yuzi-generator-demo-projects/springboot-init"</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"path"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/common"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"modelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"className"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"replaceText"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"BaseResponse"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>4）编写单元测试方法，读取 JSON 文件并转换为模板制作配置，然后制作模板。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 使用 JSON 制作模板
+ */</span>
+<span class="hljs-meta">@Test</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">testMakeTemplateWithJSON</span><span class="hljs-params">()</span> {
+    <span class="hljs-type">String</span> <span class="hljs-variable">configStr</span> <span class="hljs-operator">=</span> ResourceUtil.readUtf8Str(<span class="hljs-string">"templateMaker.json"</span>);
+    <span class="hljs-type">TemplateMakerConfig</span> <span class="hljs-variable">templateMakerConfig</span> <span class="hljs-operator">=</span> JSONUtil.toBean(configStr, TemplateMakerConfig.class);
+    <span class="hljs-type">long</span> <span class="hljs-variable">id</span> <span class="hljs-operator">=</span> TemplateMaker.makeTemplate(templateMakerConfig);
+    System.out.println(id);
+}
+</code></pre>
+<p>5）测试执行，生成了符合预期的代码。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/09975907-4cb2-4204-9199-2bf9d988d001.png" alt="image.png" class="medium-zoom-image"></p>
+<p>通过这种方式，以后我们就可以编写 JSON 配置文件来制作模板了。当然，后面还可以用前端界面来进一步简化操作。</p>
+<h2 data-id="heading-24">三、制作 Spring Boot 项目模板生成器</h2>
+<p>下面，让我们来实现本阶段的最终目标 —— 制作 Spring Boot 项目模板生成器。</p>
+<p>制作思路：通过一步一步编写模板制作工具所需的配置文件，自动生成模板和元信息文件，依次完成动态生成需求；然后再通过制作工具的生成能力，得到可执行的代码生成器文件。</p>
+<p>不过，在制作的过程中，可能并不会一帆风顺，如果遇到了问题或者需要补充功能，我们也要做对应的处理。</p>
+<h3 data-id="heading-25">1、项目基本信息</h3>
+<h4 data-id="heading-26">编写配置</h4>
+<p>首先我们要编写代码生成器的基本信息，在 <code>resources/examples/springboot-init</code> 目录下新建 <code>templateMaker.json</code> 模板配置文件。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"id"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"meta"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"name"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"springboot-init-generator"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Spring Boot 模板项目生成器"</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"originProjectPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"../../../yuzi-generator-demo-projects/springboot-init"</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 data-id="heading-27">测试执行</h4>
+<p>在 <code>TemplateMakerTest</code> 单测文件中新增制作 Spring Boot 模板的方法，加载上述模板配置文件。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 制作 SpringBoot 模板
+ */</span>
+<span class="hljs-meta">@Test</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">makeSpringBootTemplate</span><span class="hljs-params">()</span> {
+    <span class="hljs-type">String</span> <span class="hljs-variable">rootPath</span> <span class="hljs-operator">=</span> <span class="hljs-string">"examples/springboot-init/"</span>;
+    <span class="hljs-type">String</span> <span class="hljs-variable">configStr</span> <span class="hljs-operator">=</span> ResourceUtil.readUtf8Str(rootPath + <span class="hljs-string">"templateMaker.json"</span>);
+    <span class="hljs-type">TemplateMakerConfig</span> <span class="hljs-variable">templateMakerConfig</span> <span class="hljs-operator">=</span> JSONUtil.toBean(configStr, TemplateMakerConfig.class);
+    <span class="hljs-type">long</span> <span class="hljs-variable">id</span> <span class="hljs-operator">=</span> TemplateMaker.makeTemplate(templateMakerConfig);
+    System.out.println(id);
+}
+</code></pre>
+<p>运行，结果报错啦！</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/bad331a2-7776-4caa-8542-f669daa4d9c0.png" alt="image.png" class="medium-zoom-image"></p>
+<p>提示对象为空？哦，原来是因为我们现在的模板配置中，除了项目基本信息外，文件和模型配置都没有。</p>
+<p>所以我们需要优化下代码，增加对象的非空校验。</p>
+<h4 data-id="heading-28">增加对象非空校验</h4>
+<p>主要是增加文件和模型配置对象的非空校验。</p>
+<p>1）补充文件非空校验</p>
+<p>只要判断文件配置为空，不做任何处理，直接执行后续逻辑即可。</p>
+<p>最好是将制作文件模板的逻辑抽象为一个方法，便于使用 return 语句提前返回，减少代码嵌套。</p>
+<p>抽象出的 <code>makeFileTemplates</code> 方法代码如下，返回新增的文件信息列表：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> List&lt;Meta.FileConfig.FileInfo&gt; makeFileTemplates(TemplateMakerFileConfig templateMakerFileConfig, TemplateMakerModelConfig templateMakerModelConfig, String sourceRootPath) {
+    List&lt;Meta.FileConfig.FileInfo&gt; newFileInfoList = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
+    
+    <span class="hljs-comment">// 生成文件模板</span>
+    <span class="hljs-comment">// 遍历输入文件</span>
+    <span class="hljs-keyword">for</span> (TemplateMakerFileConfig.FileInfoConfig fileInfoConfig : fileConfigInfoList) {
+        <span class="hljs-type">String</span> <span class="hljs-variable">inputFilePath</span> <span class="hljs-operator">=</span> fileInfoConfig.getPath();
+
+        <span class="hljs-comment">// 如果填的是相对路径，要改为绝对路径</span>
+        <span class="hljs-keyword">if</span> (!inputFilePath.startsWith(sourceRootPath)) {
+            inputFilePath = sourceRootPath + File.separator + inputFilePath;
+        }
+
+        <span class="hljs-comment">// 获取过滤后的文件列表（不会存在目录）</span>
+        List&lt;File&gt; fileList = FileFilter.doFilter(inputFilePath, fileInfoConfig.getFilterConfigList());
+        fileList = fileList.stream()
+                .filter(file -&gt; !file.getAbsolutePath().endsWith(<span class="hljs-string">".ftl"</span>))
+                .collect(Collectors.toList());
+        <span class="hljs-keyword">for</span> (File file : fileList) {
+            Meta.FileConfig.<span class="hljs-type">FileInfo</span> <span class="hljs-variable">fileInfo</span> <span class="hljs-operator">=</span> makeFileTemplate(templateMakerModelConfig, sourceRootPath, file);
+            newFileInfoList.add(fileInfo);
+        }
+    }
+
+    <span class="hljs-comment">// 如果是文件组</span>
+    TemplateMakerFileConfig.<span class="hljs-type">FileGroupConfig</span> <span class="hljs-variable">fileGroupConfig</span> <span class="hljs-operator">=</span> templateMakerFileConfig.getFileGroupConfig();
+    <span class="hljs-keyword">if</span> (fileGroupConfig != <span class="hljs-literal">null</span>) {
+        <span class="hljs-type">String</span> <span class="hljs-variable">condition</span> <span class="hljs-operator">=</span> fileGroupConfig.getCondition();
+        <span class="hljs-type">String</span> <span class="hljs-variable">groupKey</span> <span class="hljs-operator">=</span> fileGroupConfig.getGroupKey();
+        <span class="hljs-type">String</span> <span class="hljs-variable">groupName</span> <span class="hljs-operator">=</span> fileGroupConfig.getGroupName();
+
+        <span class="hljs-comment">// 新增分组配置</span>
+        Meta.FileConfig.<span class="hljs-type">FileInfo</span> <span class="hljs-variable">groupFileInfo</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Meta</span>.FileConfig.FileInfo();
+        groupFileInfo.setType(FileTypeEnum.GROUP.getValue());
+        groupFileInfo.setCondition(condition);
+        groupFileInfo.setGroupKey(groupKey);
+        groupFileInfo.setGroupName(groupName);
+        <span class="hljs-comment">// 文件全放到一个分组内</span>
+        groupFileInfo.setFiles(newFileInfoList);
+        newFileInfoList = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
+        newFileInfoList.add(groupFileInfo);
+    }
+    <span class="hljs-keyword">return</span> newFileInfoList;
+}
+</code></pre>
+<p>然后在方法开头补充文件非空校验，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">List&lt;Meta.FileConfig.FileInfo&gt; newFileInfoList = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
+<span class="hljs-comment">// 非空校验</span>
+<span class="hljs-keyword">if</span> (templateMakerFileConfig == <span class="hljs-literal">null</span>) {
+    <span class="hljs-keyword">return</span> newFileInfoList;
+}
+
+List&lt;TemplateMakerFileConfig.FileInfoConfig&gt; fileConfigInfoList = templateMakerFileConfig.getFiles();
+<span class="hljs-keyword">if</span> (CollUtil.isEmpty(fileConfigInfoList)) {
+    <span class="hljs-keyword">return</span> newFileInfoList;
+}
+
+<span class="hljs-comment">// 生成文件模板</span>
+...
+</code></pre>
+<p>2）补充模型非空校验</p>
+<p>和文件非空校验一样，为了更好地组织代码，将获取模型配置列表的逻辑抽象为独立的方法 <code>getModelInfoList</code>，返回值为模型配置列表。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> List&lt;Meta.ModelConfig.ModelInfo&gt; getModelInfoList(TemplateMakerModelConfig templateMakerModelConfig) {
+    <span class="hljs-comment">// 本次新增的模型配置列表</span>
+    List&lt;Meta.ModelConfig.ModelInfo&gt; newModelInfoList = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
+
+    List&lt;TemplateMakerModelConfig.ModelInfoConfig&gt; models = templateMakerModelConfig.getModels();
+    
+    <span class="hljs-comment">// 处理模型信息</span>
+    <span class="hljs-comment">// - 转换为配置接受的 ModelInfo 对象</span>
+    List&lt;Meta.ModelConfig.ModelInfo&gt; inputModelInfoList = models.stream().map(modelInfoConfig -&gt; {
+        Meta.ModelConfig.<span class="hljs-type">ModelInfo</span> <span class="hljs-variable">modelInfo</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Meta</span>.ModelConfig.ModelInfo();
+        BeanUtil.copyProperties(modelInfoConfig, modelInfo);
+        <span class="hljs-keyword">return</span> modelInfo;
+    }).collect(Collectors.toList());
+    
+    <span class="hljs-comment">// - 如果是模型组</span>
+    TemplateMakerModelConfig.<span class="hljs-type">ModelGroupConfig</span> <span class="hljs-variable">modelGroupConfig</span> <span class="hljs-operator">=</span> templateMakerModelConfig.getModelGroupConfig();
+    <span class="hljs-keyword">if</span> (modelGroupConfig != <span class="hljs-literal">null</span>) {
+        <span class="hljs-type">String</span> <span class="hljs-variable">condition</span> <span class="hljs-operator">=</span> modelGroupConfig.getCondition();
+        <span class="hljs-type">String</span> <span class="hljs-variable">groupKey</span> <span class="hljs-operator">=</span> modelGroupConfig.getGroupKey();
+        <span class="hljs-type">String</span> <span class="hljs-variable">groupName</span> <span class="hljs-operator">=</span> modelGroupConfig.getGroupName();
+        Meta.ModelConfig.<span class="hljs-type">ModelInfo</span> <span class="hljs-variable">groupModelInfo</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Meta</span>.ModelConfig.ModelInfo();
+        groupModelInfo.setGroupKey(groupKey);
+        groupModelInfo.setGroupName(groupName);
+        groupModelInfo.setCondition(condition);
+
+        <span class="hljs-comment">// 模型全放到一个分组内</span>
+        groupModelInfo.setModels(inputModelInfoList);
+        newModelInfoList.add(groupModelInfo);
+    } <span class="hljs-keyword">else</span> {
+        <span class="hljs-comment">// 不分组，添加所有的模型信息到列表</span>
+        newModelInfoList.addAll(inputModelInfoList);
+    }
+    <span class="hljs-keyword">return</span> newModelInfoList;
+}
+</code></pre>
+<p>然后在方法开头补充非空校验逻辑，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 本次新增的模型配置列表</span>
+List&lt;Meta.ModelConfig.ModelInfo&gt; newModelInfoList = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
+<span class="hljs-keyword">if</span> (templateMakerModelConfig == <span class="hljs-literal">null</span>) {
+    <span class="hljs-keyword">return</span> newModelInfoList;
+}
+
+List&lt;TemplateMakerModelConfig.ModelInfoConfig&gt; models = templateMakerModelConfig.getModels();
+<span class="hljs-keyword">if</span> (CollUtil.isEmpty(models)) {
+    <span class="hljs-keyword">return</span> newModelInfoList;
+}
+
+<span class="hljs-comment">// 处理模型信息</span>
+...
+</code></pre>
+<p>3）同步修改原 <code>makeTemplate</code> 方法，调用抽象出的方法。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 二、制作文件模板</span>
+List&lt;Meta.FileConfig.FileInfo&gt; newFileInfoList = makeFileTemplates(templateMakerFileConfig, templateMakerModelConfig, sourceRootPath);
+
+<span class="hljs-comment">// 处理模型信息</span>
+List&lt;Meta.ModelConfig.ModelInfo&gt; newModelInfoList = getModelInfoList(templateMakerModelConfig);
+</code></pre>
+<hr>
+<p>然后再次制作模板，成功生成包含项目基本信息的元信息配置文件。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/d17b8494-d6a1-4337-9ccb-572c8801898f.png" alt="image.png" class="medium-zoom-image"></p>
+<p>接下来，我们依次实现之前梳理的 7 个需求。</p>
+<h3 data-id="heading-29">2、需求：替换生成的代码包名</h3>
+<h4 data-id="heading-30">明确需求</h4>
+<p>允许用户传入 <code>basePackage</code> 模型参数，对 Spring Boot 模板项目代码中所有出现包名的地方进行替换。</p>
+<p>由于用到包名的代码非常多，如果都要自己 “挖坑” 并制作 FTL 动态模板，不仅成本高、而且也容易出现遗漏（比如 @MapperScan 注解里也有包名）。</p>
+<p>所以我们需要利用模板制作工具来自动 “挖坑” 并生成模板文件。</p>
+<h4 data-id="heading-31">持久化项目路径</h4>
+<p>在编写新的模板制作配置文件前，我们要先完善一下配置追加的能力。如果非首次制作，其实配置文件中肯定已经存在了 <code>originProjectPath</code> 参数，那么后续制作时，不需要再在配置文件中指定该参数。</p>
+<p>修改方法很简单，制作工具代码中只有获取 <code>sourceRootPath</code>时用到了 <code>originProjectPath</code>，修改该变量的获取方式，自动读取工作空间下的第一个目录（项目根目录）即可。</p>
+<p>修改后的代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 一、输入信息</span>
+<span class="hljs-comment">// 输入文件信息，获取到项目根目录</span>
+<span class="hljs-type">String</span> <span class="hljs-variable">sourceRootPath</span> <span class="hljs-operator">=</span> FileUtil.loopFiles(<span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(templatePath), <span class="hljs-number">1</span>, <span class="hljs-literal">null</span>)
+        .stream()
+        .filter(File::isDirectory)
+        .findFirst()
+        .orElseThrow(RuntimeException::<span class="hljs-keyword">new</span>)
+        .getAbsolutePath();
+</code></pre>
+<p>注意，获取第一个目录时，需要设置层级为 1、且必须读取目录而不是文件。否则可能会因为 <code>.DS_Store</code> 等系统临时生成的文件干扰结果。</p>
+<h4 data-id="heading-32">编写配置</h4>
+<p>编写替换生成代码包名的配置文件，全局替换 <code>springboot-init</code> 目录下的所有文件的 <code>com.yupi</code> 字符串为 <code>basePackage</code> 模型参数。</p>
+<p>在 <code>resources/examples/springboot-init</code> 目录下新建 <code>templateMaker1.json</code> 模板配置文件，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"id"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"path"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">""</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"modelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"basePackage"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"基础包名"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"com.yupi"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"replaceText"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"com.yupi"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 data-id="heading-33">测试执行</h4>
+<p>在 <code>TemplateMakerTest</code> 单测文件的 <code>makeSpringBootTemplate</code> 方法中新增代码，读取上述配置并执行模板制作。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Test</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">makeSpringBootTemplate</span><span class="hljs-params">()</span> {
+    <span class="hljs-type">String</span> <span class="hljs-variable">rootPath</span> <span class="hljs-operator">=</span> <span class="hljs-string">"examples/springboot-init/"</span>;
+    <span class="hljs-type">String</span> <span class="hljs-variable">configStr</span> <span class="hljs-operator">=</span> ResourceUtil.readUtf8Str(rootPath + <span class="hljs-string">"templateMaker.json"</span>);
+    <span class="hljs-type">TemplateMakerConfig</span> <span class="hljs-variable">templateMakerConfig</span> <span class="hljs-operator">=</span> JSONUtil.toBean(configStr, TemplateMakerConfig.class);
+    <span class="hljs-type">long</span> <span class="hljs-variable">id</span> <span class="hljs-operator">=</span> TemplateMaker.makeTemplate(templateMakerConfig);
+
+    configStr = ResourceUtil.readUtf8Str(rootPath + <span class="hljs-string">"templateMaker1.json"</span>);
+    templateMakerConfig = JSONUtil.toBean(configStr, TemplateMakerConfig.class);
+    TemplateMaker.makeTemplate(templateMakerConfig);
+    System.out.println(id);
+}
+</code></pre>
+<p>执行成功，生成的模板和元信息配置文件符合预期：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/9c534b6c-6f31-4b7c-830a-472ef4420256.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-34">3、需求：控制是否生成帖子相关功能</h3>
+<h4 data-id="heading-35">明确需求</h4>
+<p>允许用户传入 <code>needPost</code> 模型参数，控制帖子功能相关的文件是否生成，比如 PostController、PostService、PostMapper、PostMapper.xml、Post 实体类等。</p>
+<h4 data-id="heading-36">编写配置</h4>
+<p>由于帖子相关的文件分散到不同的目录下，为了简化配置，我们可以使用文件过滤器，只保留文件名包含 <code>Post</code> 的文件。并且将这些文件设置为同一个文件组，<code>needPost</code> 模型参数为 true 时才会生成。</p>
+<p>在 <code>resources/examples/springboot-init</code> 目录下新建 <code>templateMaker2.json</code> 模板配置文件，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"id"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"fileGroupConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"groupKey"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"post"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"groupName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"帖子文件组"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needPost"</span>
+    <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"path"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"filterConfigList"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+          <span class="hljs-punctuation">{</span>
+            <span class="hljs-attr">"range"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"fileName"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"rule"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"contains"</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">"value"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Post"</span>
+          <span class="hljs-punctuation">}</span>
+        <span class="hljs-punctuation">]</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"modelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needPost"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"boolean"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"是否开启帖子功能"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 data-id="heading-37">测试执行</h4>
+<p>和之前的测试方法一样，在单元测试方法内补充读取新配置并制作模板的代码，如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">configStr = ResourceUtil.readUtf8Str(rootPath + <span class="hljs-string">"templateMaker2.json"</span>);
+templateMakerConfig = JSONUtil.toBean(configStr, TemplateMakerConfig.class);
+TemplateMaker.makeTemplate(templateMakerConfig);
+</code></pre>
+<p>执行成功，查看生成的元信息配置，发现文件分组正确生成：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a6ca3aff-e181-4081-8755-3a7894859ae9.png" alt="image.png" class="medium-zoom-image"></p>
+<p>但有个问题，我们在前面制作时已经生成过帖子相关的模板文件了，而现在分组内新增了相同文件，导致同一个文件在外层和分组内多次重复出现，如下图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/da125758-ca6a-4e4c-acaa-39e04b61b67e.png" alt="image.png" class="medium-zoom-image"></p>
+<p>如何解决这个问题呢？</p>
+<h4 data-id="heading-38">自定义去重</h4>
+<p>比较简单粗暴的方式是直接从未分组文件配置中移除和已分组文件同名的配置。</p>
+<p>但如果用户就是想同时保留组内外相同的配置呢？</p>
+<p>所以，比较友好的方式是，支持让用户自己选择是否去重。</p>
+<p>这个时候，我们最初设计模板制作工具时提到的第 4 个输入项就有用了，也就是 <strong>输出配置</strong> 。</p>
+<p>1）在 <code>template.model</code> 包下新建 <code>TemplateMakerOutputConfig</code> 输出配置类，并定义一个控制分组去重的属性。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.maker.template.model;
+
+<span class="hljs-keyword">import</span> lombok.Data;
+
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">TemplateMakerOutputConfig</span> {
+
+    <span class="hljs-comment">// 从未分组文件中移除组内的同名文件</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-type">boolean</span> <span class="hljs-variable">removeGroupFilesFromRoot</span> <span class="hljs-operator">=</span> <span class="hljs-literal">true</span>;
+}
+
+</code></pre>
+<p>2）然后在封装配置类 <code>TemplateMakerConfig</code> 中补充输出配置属性，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">TemplateMakerConfig</span> {
+
+    <span class="hljs-keyword">private</span> Long id;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-type">Meta</span> <span class="hljs-variable">meta</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Meta</span>();
+
+    <span class="hljs-keyword">private</span> String originProjectPath;
+
+    <span class="hljs-type">TemplateMakerFileConfig</span> <span class="hljs-variable">fileConfig</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerFileConfig</span>();
+
+    <span class="hljs-type">TemplateMakerModelConfig</span> <span class="hljs-variable">modelConfig</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerModelConfig</span>();
+    
+    <span class="hljs-type">TemplateMakerOutputConfig</span> <span class="hljs-variable">outputConfig</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">TemplateMakerOutputConfig</span>();
+}
+</code></pre>
+<p>3）编写分组去重的实现代码。</p>
+<p>由于去重逻辑比较复杂，而且算是一个额外的能力，所以建议单独编写一个工具类实现。</p>
+<p>大致的去重流程是：</p>
+<ol>
+<li>获取到所有的分组</li>
+<li>获取到所有分组内的文件列表</li>
+<li>获取所有分组内的文件输入路径集合</li>
+<li>利用上述集合，移除所有输入路径在集合中的外层文件</li>
+</ol>
+<p>在 <code>template</code> 包下新建 <code>TemplateMakerUtils</code> 类，实现上述流程，完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.maker.template;
+
+<span class="hljs-keyword">import</span> cn.hutool.core.util.StrUtil;
+<span class="hljs-keyword">import</span> com.yupi.maker.meta.Meta;
+
+<span class="hljs-keyword">import</span> java.util.List;
+<span class="hljs-keyword">import</span> java.util.Set;
+<span class="hljs-keyword">import</span> java.util.stream.Collectors;
+
+<span class="hljs-comment">/**
+ * 模板制作工具类
+ */</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">TemplateMakerUtils</span> {
+
+    <span class="hljs-comment">/**
+     * 从未分组文件中移除组内的同名文件
+     *
+     * <span class="hljs-doctag">@param</span> fileInfoList
+     * <span class="hljs-doctag">@return</span>
+     */</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> List&lt;Meta.FileConfig.FileInfo&gt; removeGroupFilesFromRoot(List&lt;Meta.FileConfig.FileInfo&gt; fileInfoList) {
+        <span class="hljs-comment">// 先获取到所有分组</span>
+        List&lt;Meta.FileConfig.FileInfo&gt; groupFileInfoList = fileInfoList.stream()
+                .filter(fileInfo -&gt; StrUtil.isNotBlank(fileInfo.getGroupKey()))
+                .collect(Collectors.toList());
+
+        <span class="hljs-comment">// 获取所有分组内的文件列表</span>
+        List&lt;Meta.FileConfig.FileInfo&gt; groupInnerFileInfoList = groupFileInfoList.stream()
+                .flatMap(fileInfo -&gt; fileInfo.getFiles().stream())
+                .collect(Collectors.toList());
+
+        <span class="hljs-comment">// 获取所有分组内文件输入路径集合</span>
+        Set&lt;String&gt; fileInputPathSet = groupInnerFileInfoList.stream()
+                .map(Meta.FileConfig.FileInfo::getInputPath)
+                .collect(Collectors.toSet());
+
+        <span class="hljs-comment">// 移除所有名称在 set 中的外层文件</span>
+        <span class="hljs-keyword">return</span> fileInfoList.stream()
+                .filter(fileInfo -&gt; !fileInputPathSet.contains(fileInfo.getInputPath()))
+                .collect(Collectors.toList());
+    }
+}
+</code></pre>
+<p>4）在模板制作方法中，增加输出配置参数，并根据配置执行文件分组合并。</p>
+<p>修改后的 <code>makeTemplate</code> 方法定义如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-type">long</span> <span class="hljs-title function_">makeTemplate</span><span class="hljs-params">(
+    Meta newMeta, 
+    String originProjectPath, 
+    TemplateMakerFileConfig templateMakerFileConfig, 
+    TemplateMakerModelConfig templateMakerModelConfig, 
+    TemplateMakerOutputConfig templateMakerOutputConfig, 
+    Long id)</span> {
+}
+</code></pre>
+<p>在 <code>makeTemplate</code> 方法中，追加调用工具类的分组去重方法：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 2. 额外的输出配置</span>
+<span class="hljs-keyword">if</span> (templateMakerOutputConfig != <span class="hljs-literal">null</span>) {
+    <span class="hljs-comment">// 文件外层和分组去重</span>
+    <span class="hljs-keyword">if</span> (templateMakerOutputConfig.isRemoveGroupFilesFromRoot()) {
+        List&lt;Meta.FileConfig.FileInfo&gt; fileInfoList = newMeta.getFileConfig().getFiles();
+        newMeta.getFileConfig().setFiles(TemplateMakerUtils.removeGroupFilesFromRoot(fileInfoList));
+    }
+}
+
+<span class="hljs-comment">// 3. 输出元信息文件</span>
+FileUtil.writeUtf8String(JSONUtil.toJsonPrettyStr(newMeta), metaOutputPath);
+</code></pre>
+<hr>
+<p>再次执行测试，分组内的文件不会在外层文件中重复出现了，符合预期：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5a87f38a-1a6e-43f6-8d6f-700b4d288107.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-39">4、需求：控制是否需要开启跨域</h3>
+<h4 data-id="heading-40">明确需求</h4>
+<p>允许用户传入 <code>needCors</code> 模型参数，控制跨域相关的文件 <code>CorsConfig.java</code> 是否生成。</p>
+<h4 data-id="heading-41">编写配置</h4>
+<p>设置文件路径为 <code>CorsConfig.java</code>、新增模型参数 <code>needCors</code>，注意还要给文件配置指定一个生成条件。</p>
+<p>在 <code>resources/examples/springboot-init</code> 目录下新建 <code>templateMaker3.json</code> 模板配置文件，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"id"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"path"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/config/CorsConfig.java"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needCors"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"modelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needCors"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"boolean"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"是否开启跨域功能"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 data-id="heading-42">支持给单文件指定条件</h4>
+<p>由于之前我们只支持给文件分组设置生成条件，无法满足现在的需求，所以还需要支持给单个文件设置生成条件。</p>
+<p>1）修改文件配置类 <code>TemplateMakerFileConfig.FileInfoConfig</code>，补充  <code>condition</code> 条件参数：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@NoArgsConstructor</span>
+<span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">FileInfoConfig</span> {
+
+    <span class="hljs-keyword">private</span> String path;
+
+    <span class="hljs-keyword">private</span> String condition;
+
+    <span class="hljs-keyword">private</span> List&lt;FileFilterConfig&gt; filterConfigList;
+}
+</code></pre>
+<p>2）<code>makeFileTemplate</code> 方法新增 <code>fileConfig</code> 对象的传递，支持从配置中取出 <code>condition</code> 并填充 <code>fileInfo</code> 对象。</p>
+<p>修改的部分代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> Meta.FileConfig.FileInfo <span class="hljs-title function_">makeFileTemplate</span><span class="hljs-params">(
+    TemplateMakerModelConfig templateMakerModelConfig,
+    String sourceRootPath,
+    File inputFile,
+    TemplateMakerFileConfig.FileInfoConfig fileInfoConfig)</span> {
+    ...
+    <span class="hljs-comment">// 文件配置信息</span>
+    Meta.FileConfig.<span class="hljs-type">FileInfo</span> <span class="hljs-variable">fileInfo</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Meta</span>.FileConfig.FileInfo();
+    <span class="hljs-comment">// 注意文件输入路径要和输出路径反转</span>
+    fileInfo.setInputPath(fileOutputPath);
+    fileInfo.setOutputPath(fileInputPath);
+    fileInfo.setCondition(fileInfoConfig.getCondition());
+    fileInfo.setType(FileTypeEnum.FILE.getValue());
+    fileInfo.setGenerateType(FileGenerateTypeEnum.DYNAMIC.getValue());
+	...
+}
+</code></pre>
+<h4 data-id="heading-43">测试执行</h4>
+<p>和之前的测试方法一样，在单元测试方法内补充读取新配置并制作模板的代码，如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">configStr = ResourceUtil.readUtf8Str(rootPath + <span class="hljs-string">"templateMaker3.json"</span>);
+templateMakerConfig = JSONUtil.toBean(configStr, TemplateMakerConfig.class);
+TemplateMaker.makeTemplate(templateMakerConfig);
+</code></pre>
+<p>执行成功，查看生成的元信息配置，发现跨域文件和模型配置正确生成：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/80d8c3b5-d267-4eba-bf5e-ff27d36a4f13.png" alt="image.png" class="medium-zoom-image"></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a98fa08a-2132-4a77-ac8a-721aed3c2f35.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-44">5、需求：自定义 Knife4jConfig 接口文档配置</h3>
+<h4 data-id="heading-45">明确需求</h4>
+<p>先让用户输入 <code>needDocs</code> 参数，决定是否需要开启接口文档配置；如果要开启，再让用户输入一组参数，能够修改 Knife4jConfig 文件中的配置，比如</p>
+<p>由于要支持用户输入的参数较多，可以用一个参数控制是否要开启接口文档配置。如果开启，再让用户输入 <strong>一组</strong> 配置参数。</p>
+<p>实现思路：修改 Knife4jConfig 文件中的配置，比如接口文档的标题、描述、版本号等。</p>
+<h4 data-id="heading-46">完善模型分组配置</h4>
+<p>要实现这个需求，我们还要给模型分组配置增加一些字段，比如分组的类型、描述：</p>
+<p>1）修改 <code>TemplateMakerModelConfig.ModelGroupConfig</code>，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Data</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">ModelGroupConfig</span> {
+
+    <span class="hljs-keyword">private</span> String condition;
+
+    <span class="hljs-keyword">private</span> String groupKey;
+
+    <span class="hljs-keyword">private</span> String groupName;
+
+    <span class="hljs-keyword">private</span> String type;
+
+    <span class="hljs-keyword">private</span> String description;
+}
+</code></pre>
+<p>2）在模板制作类中，获取模型信息列表时，需要将配置中指定的分组信息传递给 <code>groupModelInfo</code> 对象。</p>
+<p>修改 <code>getModelInfoList</code> 方法，通过 <code>BeanUtil.copyProperties</code> 拷贝对象的属性值，修改的代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// - 如果是模型组</span>
+TemplateMakerModelConfig.<span class="hljs-type">ModelGroupConfig</span> <span class="hljs-variable">modelGroupConfig</span> <span class="hljs-operator">=</span> templateMakerModelConfig.getModelGroupConfig();
+<span class="hljs-keyword">if</span> (modelGroupConfig != <span class="hljs-literal">null</span>) {
+    <span class="hljs-comment">// 复制变量</span>
+    Meta.ModelConfig.<span class="hljs-type">ModelInfo</span> <span class="hljs-variable">groupModelInfo</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Meta</span>.ModelConfig.ModelInfo();
+    BeanUtil.copyProperties(modelGroupConfig, groupModelInfo);
+
+    <span class="hljs-comment">// 模型全放到一个分组内</span>
+    groupModelInfo.setModels(inputModelInfoList);
+    newModelInfoList.add(groupModelInfo);
+} <span class="hljs-keyword">else</span> {
+    <span class="hljs-comment">// 不分组，添加所有的模型信息到列表</span>
+    newModelInfoList.addAll(inputModelInfoList);
+}
+</code></pre>
+<h4 data-id="heading-47">编写配置</h4>
+<p>由于需求是先控制接口文档文件是否生成、再指定修改接口文档内容的参数。所以我们需要分为 2 步去制作模板，不要让每次制作的模型参数混在同一组，会更清晰一些。</p>
+<p>1）先控制文件是否生成。</p>
+<p>在 <code>resources/examples/springboot-init</code> 目录下新建 <code>templateMaker4.json</code> 模板配置文件，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"id"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"path"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/config/Knife4jConfig.java"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needDocs"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"modelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needDocs"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"boolean"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"是否开启接口文档功能"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>2）再定义一组配置，控制接口文档文件的内容。</p>
+<p>在 <code>resources/examples/springboot-init</code> 目录下新建 <code>templateMaker5.json</code> 模板配置文件，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"id"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"path"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/config/Knife4jConfig.java"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needDocs"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"modelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"modelGroupConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"groupKey"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"docsConfig"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"groupName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"接口文档配置"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"DocsConfig"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"用于生成接口文档配置"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needDocs"</span>
+    <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"title"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"接口文档标题"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"接口文档"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"replaceText"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"接口文档"</span>
+      <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"description"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"接口文档描述"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"springboot-init"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"replaceText"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"springboot-init"</span>
+      <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"version"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"接口文档版本"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"1.0"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"replaceText"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"1.0"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 data-id="heading-48">测试执行</h4>
+<p>和之前的测试方法一样，在单元测试方法内补充读取新配置并制作模板的代码，如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">configStr = ResourceUtil.readUtf8Str(rootPath + <span class="hljs-string">"templateMaker4.json"</span>);
+templateMakerConfig = JSONUtil.toBean(configStr, TemplateMakerConfig.class);
+TemplateMaker.makeTemplate(templateMakerConfig);
+
+configStr = ResourceUtil.readUtf8Str(rootPath + <span class="hljs-string">"templateMaker5.json"</span>);
+templateMakerConfig = JSONUtil.toBean(configStr, TemplateMakerConfig.class);
+TemplateMaker.makeTemplate(templateMakerConfig);
+</code></pre>
+<p>执行成功，查看生成的元信息配置，发现模型分组正确生成：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/bdf8fb67-0b81-469f-ba27-84b945d1adce.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-49">6、需求：自定义 MySQL 配置信息</h3>
+<h4 data-id="heading-50">明确需求</h4>
+<p>允许用户传入一组 MySQL 数据库模型参数，修改 <code>application.yml</code> 配置文件中 MySQL 的 url、username、password 的值。</p>
+<h4 data-id="heading-51">配置文件</h4>
+<p>有了上一个需求的支持，这一步就很简单了。</p>
+<p>在 <code>resources/examples/springboot-init</code> 目录下新建 <code>templateMaker6.json</code> 模板配置文件，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"id"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"path"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/resources/application.yml"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"modelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"modelGroupConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"groupKey"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"mysqlConfig"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"groupName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"MySQL数据库配置"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"MysqlConfig"</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"用于生成MySQL数据库配置"</span>
+    <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"url"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"地址"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"jdbc:mysql://localhost:3306/my_db"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"replaceText"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"jdbc:mysql://localhost:3306/my_db"</span>
+      <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"username"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"用户名"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"root"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"replaceText"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"root"</span>
+      <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"password"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"String"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"密码"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"123456"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"replaceText"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"123456"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 data-id="heading-52">测试执行</h4>
+<p>和之前的测试方法一样，在单元测试方法内补充读取新配置并制作模板的代码，如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">configStr = ResourceUtil.readUtf8Str(rootPath + <span class="hljs-string">"templateMaker6.json"</span>);
+templateMakerConfig = JSONUtil.toBean(configStr, TemplateMakerConfig.class);
+TemplateMaker.makeTemplate(templateMakerConfig);
+</code></pre>
+<p>执行成功，查看生成的元信息配置，发现模型分组正确生成：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/7a33cb1d-4106-428f-a07a-4afd188ef34c.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-53">7、需求：控制是否开启 Redis</h3>
+<h4 data-id="heading-54">明确需求</h4>
+<p>允许用户传入 <code>needRedis</code> 模型参数，控制是否开启和 Redis 相关的代码。需要修改 application.yml、pom.xml、MainApplication.java 等多个用到 Redis 的文件的部分代码。</p>
+<h4 data-id="heading-55">实现</h4>
+<p>这个需求比较定制化，因为每个文件和 Redis 有关的代码都不一样，所以建议人工修改模板文件并“挖坑”。</p>
+<p>如果一定要用模板制作工具实现，那么可以考虑使用同一个参数控制多个文件中不同的指定内容。但是每个文件要替换的内容都不同，编写配置的成本太高了，反而化简为繁。</p>
+<p>让我们依次在工作空间中找到以下模板文件并修改：</p>
+<p>1）application.yml.ftl 文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">&lt;#<span class="hljs-keyword">if</span> needRedis&gt;
+  # Redis 配置
+  redis:
+    database: <span class="hljs-number">1</span>
+    host: localhost
+    port: <span class="hljs-number">6379</span>
+    timeout: <span class="hljs-number">5000</span>
+    password: <span class="hljs-number">123456</span>
+&lt;/#<span class="hljs-keyword">if</span>&gt;
+</code></pre>
+<p>2）MainApplication.java.ftl 文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@SpringBootApplication</span>&lt;#<span class="hljs-keyword">if</span> !needRedis&gt;(exclude = {RedisAutoConfiguration.class})&lt;/#<span class="hljs-keyword">if</span>&gt;
+</code></pre>
+<p>3）pom.xml.ftl 文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">&lt;#<span class="hljs-keyword">if</span> needRedis&gt;
+&lt;!-- redis --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-data-redis&lt;/artifactId&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.session&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-session-data-redis&lt;/artifactId&gt;
+&lt;/dependency&gt;
+&lt;/#<span class="hljs-keyword">if</span>&gt;
+</code></pre>
+<h4 data-id="heading-56">编写配置</h4>
+<p>编写好模板后，我们依然可以使用模板制作工具来生成元信息配置。</p>
+<p>在 <code>resources/examples/springboot-init</code> 目录下新建 <code>templateMaker7.json</code> 模板配置文件，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"id"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"path"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/resources/application.yml"</span>
+      <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"path"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/MainApplication.java"</span>
+      <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"path"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"pom.xml"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"modelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needRedis"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"boolean"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"是否开启Redis功能"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 data-id="heading-57">测试执行</h4>
+<p>和之前的测试方法一样，在单元测试方法内补充读取新配置并制作模板的代码，如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">configStr = ResourceUtil.readUtf8Str(rootPath + <span class="hljs-string">"templateMaker7.json"</span>);
+templateMakerConfig = JSONUtil.toBean(configStr, TemplateMakerConfig.class);
+TemplateMaker.makeTemplate(templateMakerConfig);
+</code></pre>
+<p>执行成功，查看生成的元信息配置，发现控制 Redis 的模型参数正确生成：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a871154c-e4c4-4f7e-a52c-fee879b5caf8.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-58">8、需求：控制是否开启 Elasticsearch</h3>
+<h4 data-id="heading-59">明确需求</h4>
+<p>允许用户传入 <code>needEs</code> 模型参数，控制是否开启和 Elasticsearch 相关的代码。需要修改和 Elasticsearch 相关的代码，比如 PostController、PostService、PostServiceImpl、application.yml 等多个文件的部分代码。还要用 <code>needEs</code> 模型参数控制 PostEsDTO 整个文件是否生成。</p>
+<h4 data-id="heading-60">实现</h4>
+<p>这个需求比控制 Redis 是否生成更复杂，也需要自己修改模板文件。</p>
+<p>让我们依次在工作空间中找到以下模板文件并修改：</p>
+<p>1）PostController.java.ftl 文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">&lt;#<span class="hljs-keyword">if</span> needEs&gt;
+<span class="hljs-comment">/**
+ * 分页搜索（从 ES 查询）
+ *
+ * <span class="hljs-doctag">@param</span> postQueryRequest
+ * <span class="hljs-doctag">@return</span>
+ */</span>
+<span class="hljs-meta">@PostMapping("/search/page")</span>
+<span class="hljs-keyword">public</span> BaseResponse&lt;Page&lt;Post&gt;&gt; <span class="hljs-title function_">searchPostByPage</span><span class="hljs-params">(<span class="hljs-meta">@RequestBody</span> PostQueryRequest postQueryRequest)</span> {
+    <span class="hljs-type">long</span> <span class="hljs-variable">size</span> <span class="hljs-operator">=</span> postQueryRequest.getPageSize();
+    <span class="hljs-comment">// 限制爬虫</span>
+    ThrowUtils.throwIf(size &gt; <span class="hljs-number">20</span>, ErrorCode.PARAMS_ERROR);
+    Page&lt;Post&gt; postPage = postService.searchFromEs(postQueryRequest);
+    <span class="hljs-keyword">return</span> ResultUtils.success(postPage);
+}    
+&lt;/#<span class="hljs-keyword">if</span>&gt;
+</code></pre>
+<p>2）PostServiceImpl.java.ftl 文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">&lt;#<span class="hljs-keyword">if</span> needEs&gt;
+<span class="hljs-meta">@Override</span>
+<span class="hljs-keyword">public</span> Page&lt;Post&gt; <span class="hljs-title function_">searchFromEs</span><span class="hljs-params">(PostQueryRequest postQueryRequest)</span> {
+    <span class="hljs-type">Long</span> <span class="hljs-variable">id</span> <span class="hljs-operator">=</span> postQueryRequest.getId();
+    <span class="hljs-type">Long</span> <span class="hljs-variable">notId</span> <span class="hljs-operator">=</span> postQueryRequest.getNotId();
+    <span class="hljs-type">String</span> <span class="hljs-variable">searchText</span> <span class="hljs-operator">=</span> postQueryRequest.getSearchText();
+    <span class="hljs-type">String</span> <span class="hljs-variable">title</span> <span class="hljs-operator">=</span> postQueryRequest.getTitle();
+    <span class="hljs-type">String</span> <span class="hljs-variable">content</span> <span class="hljs-operator">=</span> postQueryRequest.getContent();
+    List&lt;String&gt; tagList = postQueryRequest.getTags();
+    List&lt;String&gt; orTagList = postQueryRequest.getOrTags();
+    <span class="hljs-type">Long</span> <span class="hljs-variable">userId</span> <span class="hljs-operator">=</span> postQueryRequest.getUserId();
+    <span class="hljs-comment">// es 起始页为 0</span>
+    <span class="hljs-type">long</span> <span class="hljs-variable">current</span> <span class="hljs-operator">=</span> postQueryRequest.getCurrent() - <span class="hljs-number">1</span>;
+    <span class="hljs-type">long</span> <span class="hljs-variable">pageSize</span> <span class="hljs-operator">=</span> postQueryRequest.getPageSize();
+    <span class="hljs-type">BoolQueryBuilder</span> <span class="hljs-variable">boolQueryBuilder</span> <span class="hljs-operator">=</span> QueryBuilders.boolQuery();
+    <span class="hljs-comment">// 过滤</span>
+    boolQueryBuilder.filter(QueryBuilders.termQuery(<span class="hljs-string">"isDelete"</span>, <span class="hljs-number">0</span>));
+    <span class="hljs-keyword">if</span> (id != <span class="hljs-literal">null</span>) {
+        boolQueryBuilder.filter(QueryBuilders.termQuery(<span class="hljs-string">"id"</span>, id));
+    }
+    <span class="hljs-keyword">if</span> (notId != <span class="hljs-literal">null</span>) {
+        boolQueryBuilder.mustNot(QueryBuilders.termQuery(<span class="hljs-string">"id"</span>, notId));
+    }
+    <span class="hljs-keyword">if</span> (userId != <span class="hljs-literal">null</span>) {
+        boolQueryBuilder.filter(QueryBuilders.termQuery(<span class="hljs-string">"userId"</span>, userId));
+    }
+    <span class="hljs-comment">// 必须包含所有标签</span>
+    <span class="hljs-keyword">if</span> (CollectionUtil.isNotEmpty(tagList)) {
+        <span class="hljs-keyword">for</span> (String tag : tagList) {
+            boolQueryBuilder.filter(QueryBuilders.termQuery(<span class="hljs-string">"tags"</span>, tag));
+        }
+    }
+    <span class="hljs-comment">// 包含任何一个标签即可</span>
+    <span class="hljs-keyword">if</span> (CollectionUtil.isNotEmpty(orTagList)) {
+        <span class="hljs-type">BoolQueryBuilder</span> <span class="hljs-variable">orTagBoolQueryBuilder</span> <span class="hljs-operator">=</span> QueryBuilders.boolQuery();
+        <span class="hljs-keyword">for</span> (String tag : orTagList) {
+            orTagBoolQueryBuilder.should(QueryBuilders.termQuery(<span class="hljs-string">"tags"</span>, tag));
+        }
+        orTagBoolQueryBuilder.minimumShouldMatch(<span class="hljs-number">1</span>);
+        boolQueryBuilder.filter(orTagBoolQueryBuilder);
+    }
+    <span class="hljs-comment">// 按关键词检索</span>
+    <span class="hljs-keyword">if</span> (StringUtils.isNotBlank(searchText)) {
+        boolQueryBuilder.should(QueryBuilders.matchQuery(<span class="hljs-string">"title"</span>, searchText));
+        boolQueryBuilder.should(QueryBuilders.matchQuery(<span class="hljs-string">"description"</span>, searchText));
+        boolQueryBuilder.should(QueryBuilders.matchQuery(<span class="hljs-string">"content"</span>, searchText));
+        boolQueryBuilder.minimumShouldMatch(<span class="hljs-number">1</span>);
+    }
+    <span class="hljs-comment">// 按标题检索</span>
+    <span class="hljs-keyword">if</span> (StringUtils.isNotBlank(title)) {
+        boolQueryBuilder.should(QueryBuilders.matchQuery(<span class="hljs-string">"title"</span>, title));
+        boolQueryBuilder.minimumShouldMatch(<span class="hljs-number">1</span>);
+    }
+    <span class="hljs-comment">// 按内容检索</span>
+    <span class="hljs-keyword">if</span> (StringUtils.isNotBlank(content)) {
+        boolQueryBuilder.should(QueryBuilders.matchQuery(<span class="hljs-string">"content"</span>, content));
+        boolQueryBuilder.minimumShouldMatch(<span class="hljs-number">1</span>);
+    }
+    <span class="hljs-comment">// 分页</span>
+    <span class="hljs-type">PageRequest</span> <span class="hljs-variable">pageRequest</span> <span class="hljs-operator">=</span> PageRequest.of((<span class="hljs-type">int</span>) current, (<span class="hljs-type">int</span>) pageSize);
+    <span class="hljs-comment">// 构造查询</span>
+    <span class="hljs-type">NativeSearchQuery</span> <span class="hljs-variable">searchQuery</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">NativeSearchQueryBuilder</span>().withQuery(boolQueryBuilder)
+            .withPageable(pageRequest).build();
+    SearchHits&lt;PostEsDTO&gt; searchHits = elasticsearchRestTemplate.search(searchQuery, PostEsDTO.class);
+    Page&lt;Post&gt; page = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Page</span>&lt;&gt;();
+    page.setTotal(searchHits.getTotalHits());
+    List&lt;Post&gt; resourceList = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
+    <span class="hljs-comment">// 查出结果后，从 db 获取最新动态数据（比如点赞数）</span>
+    <span class="hljs-keyword">if</span> (searchHits.hasSearchHits()) {
+        List&lt;SearchHit&lt;PostEsDTO&gt;&gt; searchHitList = searchHits.getSearchHits();
+        List&lt;Long&gt; postIdList = searchHitList.stream().map(searchHit -&gt; searchHit.getContent().getId())
+                .collect(Collectors.toList());
+        List&lt;Post&gt; postList = baseMapper.selectBatchIds(postIdList);
+        <span class="hljs-keyword">if</span> (postList != <span class="hljs-literal">null</span>) {
+            Map&lt;Long, List&lt;Post&gt;&gt; idPostMap = postList.stream().collect(Collectors.groupingBy(Post::getId));
+            postIdList.forEach(postId -&gt; {
+                <span class="hljs-keyword">if</span> (idPostMap.containsKey(postId)) {
+                    resourceList.add(idPostMap.get(postId).get(<span class="hljs-number">0</span>));
+                } <span class="hljs-keyword">else</span> {
+                    <span class="hljs-comment">// 从 es 清空 db 已物理删除的数据</span>
+                    <span class="hljs-type">String</span> <span class="hljs-variable">delete</span> <span class="hljs-operator">=</span> elasticsearchRestTemplate.delete(String.valueOf(postId), PostEsDTO.class);
+                    log.info(<span class="hljs-string">"delete post {}"</span>, delete);
+                }
+            });
+        }
+    }
+    page.setRecords(resourceList);
+    <span class="hljs-keyword">return</span> page;
+}
+&lt;/#<span class="hljs-keyword">if</span>&gt;
+</code></pre>
+<p>3）PostService.java.ftl 文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">&lt;#<span class="hljs-keyword">if</span> needEs&gt;
+<span class="hljs-comment">/**
+ * 从 ES 查询
+ *
+ * <span class="hljs-doctag">@param</span> postQueryRequest
+ * <span class="hljs-doctag">@return</span>
+ */</span>
+Page&lt;Post&gt; <span class="hljs-title function_">searchFromEs</span><span class="hljs-params">(PostQueryRequest postQueryRequest)</span>;
+&lt;/#<span class="hljs-keyword">if</span>&gt;
+</code></pre>
+<p>4）application.yml.ftl 文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">&lt;#<span class="hljs-keyword">if</span> needEs&gt;
+  # Elasticsearch 配置
+  elasticsearch:
+    uris: http:<span class="hljs-comment">//localhost:9200</span>
+    username: root
+    password: <span class="hljs-number">123456</span>
+&lt;/#<span class="hljs-keyword">if</span>&gt;
+</code></pre>
+<h4 data-id="heading-61">编写配置</h4>
+<p>编写好模板后，我们依然可以使用模板制作工具来生成元信息配置。</p>
+<p>在 <code>resources/examples/springboot-init</code> 目录下新建 <code>templateMaker8.json</code> 模板配置文件，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"id"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"fileConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"files"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"path"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/model/dto/post/PostEsDTO.java"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needPost &amp;&amp; needEs"</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"modelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"models"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"fieldName"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needEs"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"boolean"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"description"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"是否开启ES功能"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defaultValue"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h4 data-id="heading-62">测试执行</h4>
+<p>和之前的测试方法一样，在单元测试方法内补充读取新配置并制作模板的代码，如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">configStr = ResourceUtil.readUtf8Str(rootPath + <span class="hljs-string">"templateMaker8.json"</span>);
+templateMakerConfig = JSONUtil.toBean(configStr, TemplateMakerConfig.class);
+TemplateMaker.makeTemplate(templateMakerConfig);
+</code></pre>
+<p>执行成功，查看生成的元信息配置，发现控制 Elasticsearch 的模型参数正确生成：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/c1030592-d54f-4375-8fd3-77788c96c280.png" alt="image.png" class="medium-zoom-image"></p>
+<p>但是，<code>PostEsDTO</code> 文件配置却没有 <code>condition</code> 条件：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/866bb801-a6fc-4974-92c0-f3fc3fc8e0bb.png" alt="image.png" class="medium-zoom-image"></p>
+<p>这是因为 PostEsDTO 文件已经属于 Post 组，会被组内已有的配置覆盖。</p>
+<p>所以我们要手动调整下 PostEsDTO 的生成策略，将它移动到组外，并指定 condition 条件，同时开启 Post 和 Es 时才生成。</p>
+<p>修改生成的 <code>meta.json</code> 文件，将组内的文件移到组外：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">json</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-json hljs" data-highlighted="yes"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"inputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/model/dto/post/PostEsDTO.java.ftl"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"outputPath"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"src/main/java/com/yupi/springbootinit/model/dto/post/PostEsDTO.java"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"type"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"file"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"generateType"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"dynamic"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"condition"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"needPost &amp;&amp; needEs"</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<h2 data-id="heading-63">四、测试成果</h2>
+<p>至此，我们所有的需求都已经实现，接下来到了激动人心的时刻，努力了这么多期，终于可以验证成果了！！！</p>
+<h3 data-id="heading-64">制作生成器</h3>
+<p>首先复制已生成的 <code>meta.json</code> 文件，复制为 <code>resource</code> 目录下的 <code>springboot-init-meta.json</code>。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/40d073d8-c7e7-42e4-b65d-f45c1b4520ab.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后修改 <code>MetaManager</code> 类，加载该文件，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> Meta <span class="hljs-title function_">initMeta</span><span class="hljs-params">()</span> {
+<span class="hljs-comment">//  String metaJson = ResourceUtil.readUtf8Str("meta.json");</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">metaJson</span> <span class="hljs-operator">=</span> ResourceUtil.readUtf8Str(<span class="hljs-string">"springboot-init-meta.json"</span>);
+    <span class="hljs-type">Meta</span> <span class="hljs-variable">newMeta</span> <span class="hljs-operator">=</span> JSONUtil.toBean(metaJson, Meta.class);
+    <span class="hljs-comment">// 校验和处理默认值</span>
+    MetaValidator.doValidAndFill(newMeta);
+    <span class="hljs-keyword">return</span> newMeta;
+}
+</code></pre>
+<p>最后执行制作工具的 main 方法，制作代码生成器！</p>
+<p>结果，呕豁。首次执行报错，CommandLine 对象冲突啦！</p>
+<p>如下图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/cd7a5eea-4768-49a7-86e8-bd393a845385.png" alt="image.png" class="medium-zoom-image"></p>
+<p>这是之前遗留的小 Bug，让我们修改 <code>GenerateCommand.java.ftl</code> 的命令调用生成代码，根据模型的 <code>groupKey</code> 生成命令行对象的名称：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">&lt;#-- 生成命令调用 --&gt;
+&lt;#macro generateCommand indent modelInfo&gt;
+${indent}System.out.println(<span class="hljs-string">"输入${modelInfo.groupName}配置："</span>);
+${indent}CommandLine ${modelInfo.groupKey}CommandLine = <span class="hljs-keyword">new</span> <span class="hljs-title class_">CommandLine</span>(${modelInfo.type}Command.class);
+${indent}${modelInfo.groupKey}CommandLine.execute(${modelInfo.allArgsStr});
+&lt;/#macro&gt;
+</code></pre>
+<p>再次执行 main 方法，呕豁，怎么还有错？！</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/9cdf4dc8-8df7-4465-af2d-48e3d4af6f4d.png" alt="image.png" class="medium-zoom-image"></p>
+<p>大家千万不要害怕遇到报错，首先我们通过关键的错误信息定位到异常代码，发现是输入路径错误：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/2dc13f06-025c-4acf-8bd9-0384ecb6c465.png" alt="image.png" class="medium-zoom-image"></p>
+<p>哦，原来是因为这次的配置文件我们没有手动指定 <code>inputRootPath</code>，在 <code>MetaValidator</code> 校验器中自动生成了，而生成的逻辑有一些错误。</p>
+<p>需要修改默认生成的路径，确保使用 <code>/</code> 符号分隔目录，修改的代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// inputRootPath：.source + sourceRootPath 的最后一个层级路径</span>
+<span class="hljs-type">String</span> <span class="hljs-variable">inputRootPath</span> <span class="hljs-operator">=</span> fileConfig.getInputRootPath();
+<span class="hljs-type">String</span> <span class="hljs-variable">defaultInputRootPath</span> <span class="hljs-operator">=</span> <span class="hljs-string">".source/"</span> + FileUtil.getLastPathEle(Paths.get(sourceRootPath)).getFileName().toString();
+<span class="hljs-keyword">if</span> (StrUtil.isEmpty(inputRootPath)) {
+    fileConfig.setInputRootPath(defaultInputRootPath);
+}
+</code></pre>
+<p>在非 Windows 的系统下，应该是不会遇到上述问题的。</p>
+<p>修改之后，这次打包成功！得到了一个 Spring Boot 项目模板生成器，生成的文件如下图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/f0b17763-9178-45b9-8f4b-af088c3880e6.png" alt="image.png" class="medium-zoom-image"></p>
+<h3 data-id="heading-65">测试使用</h3>
+<p>接下来我们进入终端，依次测试脚本命令。</p>
+<p>1）查看生成命令的帮助手册：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/d70578e9-f03e-4201-8399-ff11db591d8d.png" alt="image.png" class="medium-zoom-image"></p>
+<p>2）查看模型参数：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/3d15593d-be89-45cb-b178-b3df6683aa2c.png" alt="image.png" class="medium-zoom-image"></p>
+<p>3）查看模型列表文件：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a6dea4c9-654f-48ae-acc1-70309a86aaca.png" alt="image.png" class="medium-zoom-image"></p>
+<p>4）生成文件</p>
+<p>首先运行如下命令，指定 <code>needPost=false</code>：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">shell</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-shell hljs" data-highlighted="yes">./generator generate --needPost=false
+</code></pre>
+<p>运行结果如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/f90b08fa-0ba1-475f-8d3f-3aba50ad5b30.png" alt="image.png" class="medium-zoom-image"></p>
+<p>查看生成的代码，没有产生 Post 相关文件，符合预期：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/dbfdfa4f-2564-4a42-8c26-2b8a6ac3b7ae.png" alt="image.png" class="medium-zoom-image"></p>
+<p>然后指定 <code>needRedis=false</code>，<code>needPost</code> 为默认值 true：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">shell</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-shell hljs" data-highlighted="yes">./generator generate --needRedis=false
+</code></pre>
+<p>结果生成报错，PostMapper.xml 文件错误：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/16828240-11f4-45de-a199-9dcae6cfcd22.png" alt="image.png" class="medium-zoom-image"></p>
+<p>分析这个文件，原因是 MyBatis 动态参数语法字符串和 FreeMarker 模板的参数替换语法冲突：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/8e4f9a02-c731-478f-939b-2c530e913b80.png" alt="image.png" class="medium-zoom-image"></p>
+<p>使用 <code>&lt;#noparse&gt;</code> 语法可以设置某些字符串不被 FreeMarker 解析，修改代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">xml</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-xml hljs" data-highlighted="yes"><span class="hljs-tag">&lt;<span class="hljs-name">select</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"listPostWithDelete"</span> <span class="hljs-attr">resultType</span>=<span class="hljs-string">"${basePackage}.springbootinit.model.entity.Post"</span>&gt;</span>
+    select *
+    from post
+    where updateTime &gt;= &lt;#noparse&gt;#{minUpdateTime}&lt;/#noparse&gt;
+<span class="hljs-tag">&lt;/<span class="hljs-name">select</span>&gt;</span>
+</code></pre>
+<p>再次运行命令，这次可以成功生成。</p>
+<p>当然还可以进行更多的命令测试，比如：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">shell</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-shell hljs" data-highlighted="yes">./generator generate --needEs=false
+</code></pre>
+<p>将不会生成 Elasticsearch 相关代码。</p>
+<p>还可以控制文档是否生成：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">shell</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-shell hljs" data-highlighted="yes">./generator generate --needDocs=false
+</code></pre>
+<p>将不会引导用户输入文档相关的配置：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5be5c0a5-80e6-4e05-88c0-a00929a5235b.png" alt="image.png" class="medium-zoom-image"></p>
+<p>至此，我们的 Spring Boot 项目模板生成器制作和测试完成！</p>
+<blockquote>
+<p>感兴趣的同学可以运行下试试，如果有其他的错误可以自行修复。</p>
+</blockquote>
+<h2 data-id="heading-66">五、扩展思路</h2>
+<p>最后再补充 2 点和核心流程无关的扩展思路吧，帮助大家发散思维，但是不太建议大家实现，会消耗比较多的时间，对学习来说性价比不高。</p>
+<p>1）增加更多模板处理机制，比如用某个变量控制是否生成某段代码。</p>
+<p>2）支持根据传入的模型参数替换生成的文件夹目录名称。</p>
+<h2 data-id="heading-67">最后</h2>
+<p>以上就是本节教程，我们修复了模板制作工具的 Bug，并且一步步地完成了我们 Spring Boot 项目模板生成器的所有需求，最终利用制作工具，通过编写配置 + 人工微调的方式完成了复杂的项目生成器。</p>
+<p>虽然还是要人工编写配置，但相比于所有的模板都自己制作、参数都自己编写来说，已经能够大大提高制作效率了。有时间的同学也可以对比一下纯手工制作和用工具制作的时间成本。</p>
+<p>本节教程涉及到大量的编码，在编码中，其实蕴含了很多小技巧，比如 Lambda 表达式编程、复用变量、抽象封装方法等。建议大家自己实现这些代码，锻炼一下自己的逻辑思维能力。</p>
+<p>在下节教程中，我们将进入项目的第三阶段，制作在线的代码生成器平台，将我们本地开发好的代码生成器和制作工具“上云”，提高项目的价值。</p>
+<h2 data-id="heading-68">本期作业</h2>
+<p>1）掌握本节代码用到的 API，尤其是 Lambda 表达式编程，能自己编写出同样的代码。</p>
+<p>2）自己编写代码实现本节项目，并且在自己的代码仓库完成一次提交。</p>
+<p>3）完成本节项目后，试着制作一个属于自己的复杂代码生成器。</p></div></div></div><div style="margin-bottom: 16px;"></div><div style="margin-bottom: 16px;"></div><div id="toggleArea" class="ant-row ant-row-no-wrap ant-row-space-between" style="margin-left: -10px; margin-right: -10px; margin-top: 40px; row-gap: 20px;"><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>上一节</div><a href="/course/1790980795074654209/section/1790995984192942082"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><span role="img" aria-label="double-left" class="anticon anticon-double-left" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-left" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M272.9 512l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L186.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H532c6.7 0 10.4-7.7 6.3-12.9L272.9 512zm304 0l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L490.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H836c6.7 0 10.4-7.7 6.3-12.9L576.9 512z"></path></svg></span></div><div class="ant-space-item"><div class="text-ellipsis">7. 模板制作工具</div></div></div></a></div><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>下一节</div><a href="/course/1790980795074654209/section/1790996610649993217"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><div class="text-ellipsis">9. 云平台开发</div></div><div class="ant-space-item"><span role="img" aria-label="double-right" class="anticon anticon-double-right" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-right" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M533.2 492.3L277.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H188c-6.7 0-10.4 7.7-6.3 12.9L447.1 512 181.7 851.1A7.98 7.98 0 00188 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5zm304 0L581.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H492c-6.7 0-10.4 7.7-6.3 12.9L751.1 512 485.7 851.1A7.98 7.98 0 00492 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5z"></path></svg></span></div></div></a></div></div></div>

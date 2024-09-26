@@ -65,7 +65,7 @@
 color: rgb(255,0,0);/* 不透明色 */
 color: rgba(199, 123, 123, 0.5);/* 半透明色 */
 color: rgba(199, 123, 123, 50%);/* 半透明色 */
-color: #ffffff;/* 白色 */
+color: #ffffff; /* 白色 */
 ~~~
 
 ### 字体
@@ -118,6 +118,7 @@ bold 。
 ~~~css
 letter-spacing: 20px;/* 字母间距 */
 word-spacing: 20px;/* 单词间距 */
+word-wrap: break-word; /* 文本自动换行 */
 ~~~
 
 #### 文本修饰
@@ -464,6 +465,8 @@ margin		规律同 padding
 #### 内容溢出
 给内容增加滚动条
 
+添加滚动条
+
 ~~~css
 overflow: auto;
 overflow-x: visible;
@@ -522,6 +525,7 @@ visibility: hidden;
 
 ~~~css
 float: left
+
 left : 设置左浮动
 right : 设置右浮动
 none ：不浮动，默认值
@@ -601,7 +605,7 @@ left: 10px;
 4. 相对定位的元素，也能继续浮动，但**不推荐**这样做。
 5. 相对定位的元素，也能通过 margin 调整位置，但**不推荐**这样做。
 
-**注意：绝大多数情况下，相对定位，会与绝对定位配合使用。**
+**注意：绝大多数情况下，相对定位，会与绝对定位配合使用。这样绝对定位就会相对于父元素进行定位**
 
 ~~~css
 .father{ 
@@ -1028,6 +1032,7 @@ column-span 指定是否跨列；值: none 、 all 。
 **属性名：** flex-direction 
 
 ~~~css
+flex-direction: row;
 1. row ：主轴方向水平从左到右 —— 默认值
 2. row-reverse ：主轴方向水平从右到左。
 3. column ：主轴方向垂直从上到下。
@@ -1208,3 +1213,23 @@ flex 是复合属性，复合了： flex-grow 、 flex-shrink 、 flex-basis 三
 
 - 通过 align-self 属性，可以单独调整某个伸缩项目的对齐方式 
 - 默认值为 auto ，表示继承父元素的 align-items 属性。
+
+~~~html
+   <div class="sort-third-box-total"> 
+        <div class="all-in-alert-data">
+          <div class="sort-third-box-item sort-third-box-total-label">
+            全部待处理
+          </div>
+          <!--全部待处理数量-->
+          <div class="sort-third-box-item  sort-third-box-total-count">
+            10
+          </div>
+        </div>
+      </div>
+sort-third-box-total的高度为100%，要使all-in-alert-data垂直居中，该怎么写
+~~~
+
+
+
+
+

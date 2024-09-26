@@ -1,0 +1,727 @@
+<div class="ant-card-body"><h1 class="ant-typography" style="font-size: 30px;" data-id="">14. 存储优化</h1><div class="ant-space ant-space-horizontal ant-space-align-center" style="margin-bottom: 15px; gap: 8px;"><div class="ant-space-item" style=""><a class="text-gray-500" target="_blank" href="/user/1601072287388278786">程序员鱼皮</a></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item" style=""><span class="text-gray-500">2024-05-16 14:45</span></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item"><span class="text-gray-500">阅读 363</span></div></div><div style="margin-bottom: 16px;"></div><div class="course-container"><div class="md-viewer "><div class="markdown-body"><h2 data-id="heading-0">前情回顾</h2>
+<p>目前，我们进入了项目的优化阶段。上期教程中，我们首先对项目核心功能的性能进行优化，学习了通用的性能优化思路并实践了 7 种性能优化的方法。</p>
+<p>除了性能优化外，还有很多项目优化的方法，比如存储优化、可用性优化、稳定性优化、易用性优化、体验优化、成本优化、安全性优化等等。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1912139520341083</span></p>
+<p>由于我们的项目涉及了大量的文件上传 / 下载操作，并且用到了额外计费的第三方对象存储（腾讯云 COS），所以存储优化是一个重点的优化项。</p>
+<p>存储优化也是有很大学问的，思考这样几个问题：如何保证代码生成器的存储空间不超出限制？如何降低存储成本？如何保证存储数据的安全？</p>
+<p>本节教程中，我们将带大家全面系统地学习存储优化的思路、并在代码生成项目中实践。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7314050542614605</span></p>
+<h2 data-id="heading-1">本节重点</h2>
+<p>本节教程属于项目的第三阶段 —— 开发在线代码生成器平台。</p>
+<p>本节重点内容是存储优化，包括：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.011188451701425572</span></p>
+<ol>
+<li>存储优化思路和通用方法</li>
+<li>存储空间优化（包含分布式任务调度系统的讲解）</li>
+<li>存储成本优化<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.804215008395144</span></li>
+<li>存储安全性优化</li>
+</ol>
+<p>注意，虽然本节的存储优化更多的是后端优化，但是优化的思想是所有程序员都需要学习的。</p>
+<h2>一、存储优化思路<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5604334176837313</span></h2>
+<p>存储是一个很广泛的概念，有很多种存储技术，比如数据库存储、内存存储、对象存储、块存储、文件存储等。</p>
+<p>可以从多个不同的角度进行存储优化，比如</p>
+<ul>
+<li>存储空间优化</li>
+<li>存储成本优化</li>
+<li>存储安全性优化<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.612600191632543</span></li>
+<li>存储可用性优化</li>
+<li>存储可靠性优化</li>
+<li>存储性能优化<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.25061372831257533</span></li>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2787748107925996</span></ul>
+<p>下面分别介绍每一点，分享一些通用的存储优化手段（不仅仅局限于对象存储这一种存储技术）。</p>
+<h3 data-id="heading-3">通用存储优化手段</h3>
+<h4>存储空间优化<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9433591319430676</span></h4>
+<p>主要的目标是减少存储空间的占用，常用的方法有：</p>
+<ol>
+<li>压缩：使用压缩算法对数据进行压缩，减小存储空间的占用。常见的压缩算法有 gzip、zstd 等。</li>
+<li>分区分表：常用于数据库和大数据存储，将大量数据分别存放于不同的分区和表中，从而提高单表查询性能，并减小单表数据量。</li>
+<li>数据清理（归档）：定期清理过期或不再需要的数据。或者将不常用的数据归档到其他存储中。就像我们管理自己的电脑一样，多余的文件可以拷贝到单独的硬盘里。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9949970583443912</span></li>
+<li>数据去重：去除重复的数据或者复用数据，常用于网盘系统的实现（比如秒传功能）。</li>
+</ol>
+<h4>存储成本优化<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13386442396436116</span></h4>
+<p>顾名思义，减少存储消耗的成本。</p>
+<p>存储空间优化一般情况下也会带来存储成本的优化，但是二者的概念不完全相同。</p>
+<p>存储成本优化除了空间方面的考虑外，还要考虑存储管理和维护成本、设备成本、使用成本等，目标是在提供足够性能和可用性的前提下，降低整个存储系统的总体成本。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8363024047199918</span></p>
+<p>常用的优化方法有：</p>
+<ol>
+<li>选择合适的存储技术：专业的存储服务特定的业务，比如用图数据库存储关联数据、向量数据库存储向量数据，往往“事半功倍”。</li>
+<li>合理采购存储资源： 从需求和业务出发，评估存储用量，避免过度购买存储资源。</li>
+</ol>
+<p>此外，不同存储的成本优化方式不尽相同，比如本节要讲到的 COS 对象存储，官方提供了一些成本优化的建议。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.03708946573500538</span></p>
+<h4 data-id="heading-6">存储安全性优化</h4>
+<p>存储安全性优化的目标是保护存储数据的完整、安全，防止数据泄露等。</p>
+<p>常用方法有：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2722769504667142</span></p>
+<ol>
+<li>数据加密：使用合适的加密算法确保数据在存储过程、存储对象上的安全性。</li>
+<li>备份恢复：定期备份数据，以便在数据丢失或损坏时能够迅速恢复。</li>
+<li>访问控制：设置合适的权限和访问控制策略，确保只有授权用户能够访问存储的数据。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.40475668540469845</span></li>
+<li>日志审计：记录关键操作的日志，便于出现问题后的故障定位。还可以通过定期查阅日志，提前发现一些潜在的问题。</li>
+</ol>
+<p>此外，不同存储的安全性优化方式不尽相同。比如本节要讲到的 COS 对象存储，官方提供了很多安全优化的建议，后文会带大家实践。</p>
+<h4>其他优化<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4484842200220014</span></h4>
+<p>前文提到的几种优化方式是对于开发者来说相对可干预的，此外，还有一些其他的存储优化角度，比如：</p>
+<ol>
+<li>存储可用性优化：保证存储系统在任何时候都能正常提供服务，常用方法有容错、冗余备份、故障转移、快速故障检测恢复等。</li>
+<li>存储可靠性优化：保证数据的完整性和系统地稳定性。可以通过在底层选用高可靠的硬件设备来实现。</li>
+<li>存储性能优化：提高存储系统的读写速度、降低响应延迟等。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5394137647362063</span></li>
+<li>存储管理优化：提高操作存储、配置和监控存储资源的有效性，可以通过自动化管理工具实现。</li>
+<li>存储可观测性优化：更好地检测存储系统的运行状态、资源占用和行为。可以通过可视化监控看板、完备的日志和告警系统实现。</li>
+</ol>
+<p>对于开发方向的同学，其他优化角度仅做了解即可。实际开发中，我们一般会选用第三方云服务提供的存储，比如腾讯云的 COS 对象存储，已经为我们提供了可用性、可靠性、性能、存储管理、可观测性的支持保障。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6566523689598074</span></p>
+<hr>
+<p>所以接下来，以使用 COS 对象存储为前提，主要从以下几个角度对我们的代码生成项目进行存储优化。</p>
+<ul>
+<li>存储空间优化</li>
+<li>存储成本优化</li>
+<li>存储安全性优化<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8843598069655427</span></li>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7841786755033349</span></ul>
+<h2 data-id="heading-8">二、存储空间优化</h2>
+<h3 data-id="heading-9">分析</h3>
+<p>结合我们的项目来分析存储空间优化的方法：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4758878140880076</span></p>
+<p>1）文件压缩：可以将多个模板文件压缩打包后上传，这点之前我们已经实现了。</p>
+<p>还可以对单个文件进行压缩，比如用户头像、代码生成器封面等。这也是 <a href="https://cloud.tencent.com/document/product/436/50201#.E4.BC.98.E5.8C.96.E4.B8.89.EF.BC.9A.E9.80.9A.E8.BF.87.E6.96.87.E4.BB.B6.E5.8E.8B.E7.BC.A9.E5.87.8F.E5.B0.91.E5.AD.98.E5.82.A8.E5.AE.B9.E9.87.8F">COS 官方强烈推荐的方式</a>。</p>
+<p>官方自带了图像自动压缩处理的功能（数据万象），点几下配置即可。如下图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9144078919104979</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5790dd74-82a4-4a65-a6c1-e5165a88c92d.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>2）文件瘦身：除了压缩文件减少文件体积外，还可以精简文件本身的体积。比如制作工具项目中，我们额外生成了一个 dist 目录作为产物包，移除了不必要的源码文件。</p>
+<p>3）数据去重：可以通过文件的 MD5 值判断是否已存在相同的文件，如果重复就不再上传，而是将新文件的路径指向已有文件。类似秒传的实现原理，但是实现成本比较高，仅做了解即可。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13378223123924227</span></p>
+<p>4）文件清理：定期清理项目中不需要的文件。这是业务开发中最常用的一种方式，下面我们重点来实现。</p>
+<h3 data-id="heading-10">文件清理机制设计</h3>
+<p>开发之前，要先明确需求，进行一些简单的设计。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3312184349123366</span></p>
+<p>首先明确我们的需求，大家可以感受下 2 种需求描述的差异：</p>
+<ul>
+<li>需求 1：定期清理无用文件</li>
+<li>需求 2： <strong>每天</strong> 清理所有无用的文件， <strong>包括</strong> 用户上传的模板制作文件（generator_make_template）、已删除的代码生成器对应的产物包文件（generator_dist）。</li>
+</ul>
+<p>显然，第二个需求会更准确，明确了清理的周期和文件范围。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7599874383222722</span></p>
+<p>然后再进行方案设计，关键要考虑 2 个问题：</p>
+<ol>
+<li>如何触发任务的定时执行？</li>
+<li>如何高效删除文件？</li>
+</ol>
+<p>对于第一个问题，可以通过定时任务实现，比如 Spring Scheduler。但如果将项目同时部署到多个服务器上，同一时间每个机器都会触发定时任务，会导致重复执行和可能的冲突。所以我们写定时任务时，尽量兼容分布式场景，同一时间只有一个任务执行。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5085418319426183</span></p>
+<p>在伙伴匹配系统中，鱼皮已经讲过多种实现分布式定时任务的方式，比如分布式锁、限定指定机器执行等。</p>
+<p>本节教程，我们会选用一种更优雅的实现方式 —— 分布式任务调度系统。</p>
+<p>如何高效删除文件呢？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5078907919310374</span></p>
+<p>一个个删除的性能往往是很低的，要多次请求对象存储，所以选用批量删除的方式。</p>
+<ul>
+<li>对于用户上传的模板制作文件，可以整体删除模板制作文件目录。</li>
+<li>对于代码生成器对应的产物包文件，先找到要清理的文件列表，然后进行批量删除。</li>
+</ul>
+<blockquote>
+<p>扩展：思考定时批量删除会不会有什么问题？比如刚上传就删了。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.21219053420818978</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8996907854548752</span></blockquote>
+<p>下面让我们先来学习下分布式任务调度系统，再进行文件清理机制的开发。</p>
+<h3 data-id="heading-11">分布式任务调度系统</h3>
+<h4>什么是分布式任务调度系统？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8978133452315873</span></h4>
+<p>分布式任务调度系统是专用于协调和执行分布式场景中任务的系统。相当于一家公司的老大，给员工分配任务、通知员工执行任务，保证大家不会做重复的工作，并提高任务执行的效率和可靠性。</p>
+<p>主流的分布式任务调度系统有 XXL-JOB、Elastic Job 等。下面我们以相对更简单易用的 XXL-JOB 为例，带大家掌握分布式任务调度系统的用法。</p>
+<h4>XXL-JOB 介绍<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.43041794638501973</span></h4>
+<p>XXL-JOB 是一个非常成熟的开源定时任务调度系统，有几万个 star，它的优点是易学易用、易部署、易扩展，经过多家知名公司生产环境的验证。</p>
+<p>XXL-JOB 的官方文档写得非常好，强烈推荐大家阅读。</p>
+<p>官方文档：<a href="https://www.xuxueli.com/xxl-job/">分布式任务调度平台XXL-JOB</a><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5666163093215415</span></p>
+<p>GitHub 开源：<a href="https://github.com/xuxueli/xxl-job">GitHub - xuxueli/xxl-job: A distributed task scheduling framework.（分布式任务调度平台XXL-JOB）</a></p>
+<p>下面，鱼皮带大家快速入门。</p>
+<h4>XXL-JOB 安装<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18227634650938973</span></h4>
+<p>参考官方入门教程：<a href="https://www.xuxueli.com/xxl-job/#%E4%BA%8C%E3%80%81%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8">https://www.xuxueli.com/xxl-job/#%E4%BA%8C%E3%80%81%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8</a></p>
+<p>1）下载项目源码</p>
+<p>xxl-job-master 压缩包阿里云盘：<a href="https://www.alipan.com/s/USLx7QYBwwt">https://www.alipan.com/s/USLx7QYBwwt</a>
+提取码: 28gu<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1522273539384107</span></p>
+<p>如果 GitHub 访问不了，可以使用 Gitee：<a href="https://gitee.com/xuxueli0323/xxl-job.git">https://gitee.com/xuxueli0323/xxl-job.git</a></p>
+<p>2）执行初始化数据库脚本</p>
+<p>在项目根路径下找到 <code>/doc/db/tables_xxl_job.sql</code> 文件，通过 IDEA 配置 MySQL 数据源，然后执行脚本，创建 XXL-JOB 需要的库表。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.48669748976276384</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/9dcc893d-ee7b-4bae-92b3-bde1bef8202a.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>3）修改数据库配置信息</p>
+<p>修改 xxl-job-admin 目录下的 <code>application.properties</code> 配置文件，如下图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.47431697093373293</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/c0cb2a91-88b7-441c-8cee-e89ab60a858e.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>4）启动项目</p>
+<p>找到 xxl-job-admin 的入口类并运行，如下图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.27277365332814996</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/1431e5e9-0c18-4636-b894-3507cd01b090.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>Mac 电脑上可能的报错如果出现下面的报错：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/aae4494f-20db-4a2c-9a38-7f76fad9ce9e.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>这是因为 Mac 电脑没有这个目录，Windows 实测不会出现这个问题。</p>
+<p>解决方案：只需要找到 xxl-job-admin 的 logback.xml 文件，将图中圈出的部分去掉第一个 / 即可。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/b6696323-6b8d-401c-9b2e-c2ef39df9f2b.png" alt="image.png" width="100%" class="medium-zoom-image"><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/0c67ebdd-c778-495b-afd5-9586885bd8fd.png" alt="image.png" width="100%" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7622770069213192</span></p>
+<p>5）运行成功后，访问地址：<a href="http://localhost:8080/xxl-job-admin">http://localhost:8080/xxl-job-admin</a></p>
+<p>默认登录账号：admin，密码：123456</p>
+<p>可以看到任务调度中心的页面：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8815733675699204</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/b7b7fb62-adef-4750-a4de-7164c924b5b2.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>进入任务管理页面，可以看到已经注册并等待定时执行的任务：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/698ced35-dd97-4e47-a867-9cb313aac8fe.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>进入执行器管理页面，可以看到已注册的执行器。执行器相当于实际执行业务逻辑的代码，跟随项目部署在服务器上，对于分布式项目，同一个执行器会部署在多个机器上。</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/bf5f48ab-ec90-4375-83fb-576cd6396dfe.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>下面演示如何使用 XXL-JOB 来管理和触发项目中的定时任务。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9669803180846364</span></p>
+<h4 data-id="heading-15">入门 Demo</h4>
+<p>为了方便，我们直接使用 XXL-JOB 源码包的 <code>xxl-job-executor-sample-springboot</code> 进行入门学习。</p>
+<p>1）首先要引入 XXL-JOB 依赖。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8807754476306089</span></p>
+<p>该项目已经为我们引入 Maven 依赖，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">&lt;!-- xxl-job-core --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.xuxueli&lt;/groupId&gt;
+    &lt;artifactId&gt;xxl-job-core&lt;/artifactId&gt;
+    &lt;version&gt;<span class="hljs-number">2.4</span><span class="hljs-number">.1</span>-SNAPSHOT&lt;/version&gt;
+&lt;/dependency&gt;
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8328846119710918</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6901444971358492</span></pre>
+<p>2）配置执行器<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.83788737091045</span></p>
+<p>需要手动创建一个 XXL-JOB 执行器的 Bean，项目已经帮我们写好了配置类 <code>XxlJobConfig</code>，无需自己编写。</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Bean</span>
+<span class="hljs-keyword">public</span> XxlJobSpringExecutor <span class="hljs-title function_">xxlJobExecutor<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7435728850577845</span></span><span class="hljs-params">()</span> {
+    logger.info(<span class="hljs-string">"&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; xxl-job config init."</span>);
+    <span class="hljs-type">XxlJobSpringExecutor<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.29899358661096387</span></span> <span class="hljs-variable">xxlJobSpringExecutor</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.506380757501919</span></span> <span class="hljs-title class_">XxlJobSpringExecutor</span>();
+    xxlJobSpringExecutor.setAdminAddresses(adminAddresses);
+    xxlJobSpringExecutor.setAppname(appname);
+    xxlJobSpringExecutor.setAddress(address);
+    xxlJobSpringExecutor.setIp(ip);
+    xxlJobSpringExecutor.setPort(port);
+    xxlJobSpringExecutor.setAccessToken(accessToken);
+    xxlJobSpringExecutor.setLogPath(logPath);
+    xxlJobSpringExecutor.setLogRetentionDays(logRetentionDays);
+
+    <span class="hljs-keyword">return</span> xxlJobSpringExecutor;
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.049970520610397084</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7551507661585963</span></pre>
+<p>然后找到项目的 <code>application.properties</code> 配置文件，该项目默认写好了执行器配置，直接使用即可。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.30528641468078055</span></p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">properties</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-properties hljs" data-highlighted="yes"><span class="hljs-comment">### xxl-job admin address list, such as "http://address" or "http://address01,http://address02"</span>
+<span class="hljs-attr">xxl.job.admin.addresses</span>=<span class="hljs-string">http://127.0.0.1:8080/xxl-job-admin<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.11124924988508456</span></span>
+<span class="hljs-comment">
+### xxl-job, access token</span>
+<span class="hljs-attr">xxl.job.accessToken</span>=<span class="hljs-string">default_token<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.638266533938838</span></span>
+<span class="hljs-comment">
+### xxl-job executor appname</span>
+<span class="hljs-attr">xxl.job.executor.appname</span>=<span class="hljs-string">xxl-job-executor-sample<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08681352862650549</span></span>
+<span class="hljs-comment">### xxl-job executor registry-address: default use address to registry , otherwise use ip:port if address is null</span>
+<span class="hljs-attr">xxl.job.executor.address</span>=<span class="hljs-string"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5442451527632812</span></span>
+<span class="hljs-comment">### xxl-job executor server-info</span>
+<span class="hljs-attr">xxl.job.executor.ip</span>=<span class="hljs-string"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9927089676651624</span></span>
+<span class="hljs-attr">xxl.job.executor.port</span>=<span class="hljs-string">9999</span>
+<span class="hljs-comment">### xxl-job executor log-path<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6321018732285038</span></span>
+<span class="hljs-attr">xxl.job.executor.logpath</span>=<span class="hljs-string">/data/applogs/xxl-job/jobhandler</span>
+<span class="hljs-comment">### xxl-job executor log-retention-days<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.42953660433240404</span></span>
+<span class="hljs-attr">xxl.job.executor.logretentiondays</span>=<span class="hljs-string">30</span>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49872673053787797</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23116266199296454</span></pre>
+<p>实际项目中请根据自己的要求修改。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9701696878657746</span></p>
+<p>3）开发任务</p>
+<p>示例项目中已经内置了一个 <code>SampleXxlJob</code> 任务类，编写了多个基础任务，我们照猫画虎即可，注意要给每个任务方法添加 <code>@XxlJob</code> 注解，才会被 XXL-JOB 识别。</p>
+<p>在 <code>service.jobhandler</code> 包下新建 <code>MyJobHandler</code> 类，示例代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07742566171776777</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.xxl.job.executor.service.jobhandler;
+
+<span class="hljs-keyword">import</span> com.xxl.job.core.handler.annotation.XxlJob;
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7171766970979128</span></span> org.springframework.stereotype.Component;
+
+<span class="hljs-comment">/**
+ * 示例任务
+ */</span>
+<span class="hljs-meta">@Component</span>
+<span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7881765537468632</span></span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MyJobHandler</span> {
+    
+    <span class="hljs-meta">@XxlJob("myJobHandler")<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8923272612494502</span></span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">myJobHandler<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8958484870313015</span></span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> InterruptedException {
+        Thread.sleep(<span class="hljs-number">3000<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1319470559220992</span></span>);
+        System.out.println(<span class="hljs-string">"你好，我是鱼皮"</span>);
+    }
+    
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3543382333381959</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7522555790429162</span></pre>
+<p>4）启动 <code>xxl-job-executor-sample-springboot</code> 项目</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/f12e2368-5626-4765-a77c-be47a57f2a76.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>启动成功后，进入执行器管理页面，可以查看到已注册的执行器：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/4a606cea-f3b9-49ef-a2b5-4f9451a362a4.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>现在执行器是通过我们初始化数据库表脚本创建的，也可以手动新增或者让框架自动注册。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6923538994440397</span></p>
+<p>5）创建任务</p>
+<p>开发好任务后，还需要进入平台的任务管理页面，手动新增任务。</p>
+<p>在配置中，可以指定任务执行周期（Cron）和执行的 JobHandler（和开发任务时注解内的值一致）。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5721483242255869</span></p>
+<p>配置如下：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/c04a9c5e-6a98-4a11-a2fb-6eed56dfa8b2.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>6）启动任务<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.40779701393917356</span></p>
+<p>点击启动即可，调试阶段也可以选择“执行一次”。</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/e5a6040a-ac85-4e0c-95a8-095dbbf37ff9.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>任务正常启动，控制台中会持续输出内容：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4362593394252958</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/c43abc59-6358-4441-aea2-ce21aae1f9a5.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>在“运行报表”页面，可以查看任务的执行记录统计信息，从中可以分析出任务的成功率、阻塞情况等。</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/d0f9a08b-0300-4386-979b-8444f009aee4.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>测试发现，如果有已经触发但是没有执行完成的任务（比如线程阻塞了），哪怕这时关闭任务，也会把积压的请求完成。如果这时候 XXL-JOB 管理系统挂了，这时客户端不再执行定时任务，但客户端会不断重连 XXL-JOB 管理系统，等管理系统重新上线后，仍然会继续运行积压的请求。这是 XXL-JOB 为我们提供的能力之一，相比于自己开发一套任务调度系统，使用 XXL-JOB 更省时省心。</p>
+<p>除了编写代码外，XXL-JOB 也支持直接在界面编写任务代码。如下图，运行模式设置为 <code>GLUE</code> 即可：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/1fe38465-0829-4222-8e67-6ff10b63ad9b.png" alt="image.png" width="100%" class="medium-zoom-image"> 
+<p>但是并不推荐这种方式，不利于维护。</p>
+<h4 data-id="heading-16">核心原理</h4>
+<p>官方文档已经给了详细的设计说明，推荐阅读：<a href="https://www.xuxueli.com/xxl-job/#%E4%BA%94%E3%80%81%E6%80%BB%E4%BD%93%E8%AE%BE%E8%AE%A1">https://www.xuxueli.com/xxl-job/#%E4%BA%94%E3%80%81%E6%80%BB%E4%BD%93%E8%AE%BE%E8%AE%A1</a><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9734927411136718</span></p>
+<p>了解项目原理，先看整体的架构设计，如下图：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/4d9a36e0-66d1-415d-aa34-6438815d92e3.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>从整体到局部，XXL-JOB 分为调度中心和执行器。调度中心相当于管理者，管理分配任务；执行器相当于员工，执行任务。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2918190789287969</span></p>
+<p>员工首先要在公司完成注册（注册线程调用注册服务），然后调度中心就可以通过调度器来调用执行器，执行器负责完成任务并且向调度中心汇报进度和情况（日志），调度中心可以管理任务的执行情况并提供可视化监控面板。</p>
+<h3 data-id="heading-17"><strong>文件清理机制开发</strong></h3>
+<p>掌握了 XXL-JOB 的基础用法和原理后，我们来实战开发文件清理机制。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06674309194975203</span></p>
+<h4 data-id="heading-18">1、引入 XXL-JOB</h4>
+<p>首先给 <code>yuzi-generator-web-backend</code> 项目引入 XXL-JOB。</p>
+<p><code>pom.xml</code> 引入 Maven 依赖：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5745335559881306</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">xml</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-xml hljs" data-highlighted="yes"><span class="hljs-comment">&lt;!-- xxl-job-core --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6538637707927955</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6904211056291367</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4235513786283782</span></span>com.xuxueli<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7447277765981557</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6070688113742613</span></span>xxl-job-core<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7075749118468315</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.01529254653971801</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6556208213424399</span></span>2.4.0<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.45545575797609605</span></span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9658219982194285</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5427054209692141</span></span>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08322416978523228</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4135990049170184</span></pre>
+<p>从上述官方提供的示例项目中，复制 XXL-JOB 配置类 <code>XxlJobConfig</code>，到 <code>web.config</code> 包下，用于创建执行器 Bean。</p>
+<p>代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08616941218803098</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.web.config;
+
+<span class="hljs-keyword">import</span> com.xxl.job.core.executor.impl.XxlJobSpringExecutor;
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07916539632414055</span></span> lombok.extern.slf4j.Slf4j;
+<span class="hljs-keyword">import</span> org.springframework.beans.factory.annotation.Value;
+<span class="hljs-keyword">import</span> org.springframework.context.annotation.Bean;
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6902771012740172</span></span> org.springframework.context.annotation.Configuration;
+
+<span class="hljs-comment">/**
+ * xxl-job config
+ */</span>
+<span class="hljs-meta">@Configuration</span>
+<span class="hljs-meta">@Slf4j<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.161499089405863</span></span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">XxlJobConfig<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.297560552954794</span></span> {
+
+    <span class="hljs-meta">@Value("${xxl.job.admin.addresses}")</span>
+    <span class="hljs-keyword">private</span> String adminAddresses;
+
+    <span class="hljs-meta">@Value("${xxl.job.accessToken}")<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49321128205296927</span></span>
+    <span class="hljs-keyword">private</span> String accessToken;
+
+    <span class="hljs-meta">@Value("${xxl.job.executor.appname}")</span>
+    <span class="hljs-keyword">private<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4098437253931593</span></span> String appname;
+
+    <span class="hljs-meta">@Value("${xxl.job.executor.address}")</span>
+    <span class="hljs-keyword">private</span> String address;
+
+    <span class="hljs-meta">@Value("${xxl.job.executor.ip}")<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.055041920742368466</span></span>
+    <span class="hljs-keyword">private</span> String ip;
+
+    <span class="hljs-meta">@Value("${xxl.job.executor.port}")</span>
+    <span class="hljs-keyword">private<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9445925462866627</span></span> <span class="hljs-type">int</span> port;
+
+    <span class="hljs-meta">@Value("${xxl.job.executor.logpath}")</span>
+    <span class="hljs-keyword">private<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.04532718116589618</span></span> String logPath;
+
+    <span class="hljs-meta">@Value("${xxl.job.executor.logretentiondays}")</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-type">int<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16050801582820107</span></span> logRetentionDays;
+
+
+    <span class="hljs-meta">@Bean</span>
+    <span class="hljs-keyword">public</span> XxlJobSpringExecutor <span class="hljs-title function_">xxlJobExecutor<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6245579409561832</span></span><span class="hljs-params">()</span> {
+        log.info(<span class="hljs-string">"&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; xxl-job config init."</span>);
+        <span class="hljs-type">XxlJobSpringExecutor<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15850706324223096</span></span> <span class="hljs-variable">xxlJobSpringExecutor</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0691810430824853</span></span> <span class="hljs-title class_">XxlJobSpringExecutor</span>();
+        xxlJobSpringExecutor.setAdminAddresses(adminAddresses);
+        xxlJobSpringExecutor.setAppname(appname);
+        xxlJobSpringExecutor.setAddress(address);
+        xxlJobSpringExecutor.setIp(ip);
+        xxlJobSpringExecutor.setPort(port);
+        xxlJobSpringExecutor.setAccessToken(accessToken);
+        xxlJobSpringExecutor.setLogPath(logPath);
+        xxlJobSpringExecutor.setLogRetentionDays(logRetentionDays);
+
+        <span class="hljs-keyword">return</span> xxlJobSpringExecutor;
+    }
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6538287961679226</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7859303158829227</span></pre>
+<p>在 <code>application.yml</code> 中补充执行器配置信息，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">yaml</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-yaml hljs" data-highlighted="yes"><span class="hljs-comment"># xxl-job 配置</span>
+<span class="hljs-attr">xxl:</span>
+  <span class="hljs-attr">job:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.47061238017943174</span></span>
+    <span class="hljs-attr">admin:</span>
+      <span class="hljs-comment"># xxl-job admin address list, such as "http://address" or "http://address01,http://address02"</span>
+      <span class="hljs-attr">addresses:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8280609912972636</span></span> <span class="hljs-string">http://127.0.0.1:8080/xxl-job-admin</span>
+    <span class="hljs-comment"># xxl-job, access token</span>
+    <span class="hljs-attr">accessToken:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16276079517256914</span></span> <span class="hljs-string">default_token</span>
+    <span class="hljs-attr">executor:</span>
+      <span class="hljs-comment"># xxl-job executor appname<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.024768231447920286</span></span>
+      <span class="hljs-attr">appname:</span> <span class="hljs-string">yuzi-generator-web-backend</span>
+      <span class="hljs-comment"># xxl-job executor registry-address: default use address to registry , otherwise use ip:port if address is null<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.75246655166159</span></span>
+      <span class="hljs-attr">address:</span>
+      <span class="hljs-comment"># xxl-job executor server-info</span>
+      <span class="hljs-attr">ip:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8578091152128888</span></span>
+      <span class="hljs-attr">port:</span> <span class="hljs-number">9999</span>
+      <span class="hljs-comment"># xxl-job executor log-path<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.19069238526101495</span></span>
+      <span class="hljs-attr">logpath:</span> <span class="hljs-string">logs/jobhandler</span>
+      <span class="hljs-comment"># xxl-job executor log-retention-days<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7188729435441454</span></span>
+      <span class="hljs-attr">logretentiondays:</span> <span class="hljs-number">30</span>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6478598933695219</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10686065372481313</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3528150108384698</span></pre>
+<p>验证项目能否正常启动：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/daa9e270-0ad0-4352-aacb-f33644bde970.png" alt="image.png" width="100%" class="medium-zoom-image">
+<h4>2、任务管理平台新增执行器<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9265652966733464</span></h4>
+<p>保证 AppName 的填写和配置文件一致，注册方式选择“自动注册”，XXL-JOB 会自动寻找执行器的地址。</p>
+<p>如图：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/b45a6cd1-df3a-4d44-817a-b8810b5ecd91.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>新增成功后，稍等片刻然后刷新（重新搜索），能够看到执行器成功接入。</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/e2d99c19-fba4-4b5b-8672-8633bf00b59e.png" alt="image.png" width="100%" class="medium-zoom-image">
+<h4>3、对象存储支持删除操作<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5840137167265342</span></h4>
+<p>我们需要给 <code>CosManager</code> 补充删除对象、批量删除、删除目录功能。</p>
+<p>参考官方文档：<a href="https://cloud.tencent.com/document/product/436/65939">https://cloud.tencent.com/document/product/436/65939</a></p>
+<p>删除对象方法，代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.389550102429411</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 删除对象
+ *
+ * <span class="hljs-doctag">@param</span> key
+ * <span class="hljs-doctag">@throws</span> CosClientException
+ * <span class="hljs-doctag">@throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9290695303209497</span></span> CosServiceException
+ */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.32881254701712725</span></span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.475475758434331</span></span> <span class="hljs-title function_">deleteObject</span><span class="hljs-params">(String key)</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.41099583978945287</span></span> CosClientException, CosServiceException {
+    cosClient.deleteObject(cosClientConfig.getBucket(), key);
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6318792963522566</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4769025501706239</span></pre>
+<p>批量删除对象方法，一定要注意批量删除的调用路径不能以 <code>/</code> 开头！</p>
+<p>代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6647414838147747</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 批量删除对象
+ *
+ * <span class="hljs-doctag">@param</span> keyList
+ * <span class="hljs-doctag">@return</span>
+ * <span class="hljs-doctag">@throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.647384330954272</span></span> MultiObjectDeleteException
+ * <span class="hljs-doctag">@throws</span> CosClientException
+ * <span class="hljs-doctag">@throws</span> CosServiceException
+ */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7786893712958785</span></span>
+<span class="hljs-keyword">public</span> DeleteObjectsResult <span class="hljs-title function_">deleteObjects<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7790377910967057</span></span><span class="hljs-params">(List&lt;String&gt; keyList)</span>
+        <span class="hljs-keyword">throws</span> MultiObjectDeleteException, CosClientException, CosServiceException {
+    <span class="hljs-type">DeleteObjectsRequest<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6687031732398001</span></span> <span class="hljs-variable">deleteObjectsRequest</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5108823695158904</span></span> <span class="hljs-title class_">DeleteObjectsRequest</span>(cosClientConfig.getBucket());
+    <span class="hljs-comment">// 设置要删除的key列表, 最多一次删除1000个</span>
+    ArrayList&lt;DeleteObjectsRequest.KeyVersion&gt; keyVersions = <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.903496361662427</span></span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
+    <span class="hljs-comment">// 传入要删除的文件名</span>
+    <span class="hljs-comment">// 注意文件名不允许以正斜线/或者反斜线\开头，例如：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7402671389294329</span></span>
+    <span class="hljs-comment">// 存储桶目录下有a/b/c.txt文件，如果要删除，只能是 keyList.add(new KeyVersion("a/b/c.txt")), 若使用 keyList.add(new KeyVersion("/a/b/c.txt"))会导致删除不成功</span>
+    <span class="hljs-keyword">for</span> (String key : keyList) {
+        keyVersions.add(<span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.412399196698054</span></span> <span class="hljs-title class_">DeleteObjectsRequest</span>.KeyVersion(key));
+    }
+    deleteObjectsRequest.setKeys(keyVersions);
+    <span class="hljs-type">DeleteObjectsResult</span> <span class="hljs-variable">deleteObjectsResult<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2698832233575166</span></span> <span class="hljs-operator">=</span> cosClient.deleteObjects(deleteObjectsRequest);
+    <span class="hljs-keyword">return</span> deleteObjectsResult;
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.009043521623822492</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1511556979552955</span></pre>
+<p>删除目录，需要注意方法参数是目录前缀，而不是精确的目录，所以尽量以 <code>/</code> 结尾，防止误删文件。</p>
+<p>代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6494179418181716</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 删除目录
+ *
+ * <span class="hljs-doctag">@param</span> delPrefix
+ * <span class="hljs-doctag">@throws</span> CosClientException
+ * <span class="hljs-doctag">@throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2361654066089549</span></span> CosServiceException
+ */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.031351426052908415</span></span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.32248108414563115</span></span> <span class="hljs-title function_">deleteDir</span><span class="hljs-params">(String delPrefix)</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8324298541435897</span></span> CosClientException, CosServiceException {
+    <span class="hljs-type">ListObjectsRequest</span> <span class="hljs-variable">listObjectsRequest</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24718519711272213</span></span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ListObjectsRequest</span>();
+    <span class="hljs-comment">// 设置 bucket 名称<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0689383726423558</span></span>
+    listObjectsRequest.setBucketName(cosClientConfig.getBucket());
+    <span class="hljs-comment">// prefix 表示列出的对象名以 prefix 为前缀</span>
+    <span class="hljs-comment">// 这里填要列出的目录的相对 bucket 的路径</span>
+    listObjectsRequest.setPrefix(delPrefix);
+    <span class="hljs-comment">// 设置最大遍历出多少个对象, 一次 listobject 最大支持1000<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.35927170007809006</span></span>
+    listObjectsRequest.setMaxKeys(<span class="hljs-number">1000</span>);
+
+    <span class="hljs-comment">// 保存每次列出的结果</span>
+    <span class="hljs-type">ObjectListing<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7320446899314685</span></span> <span class="hljs-variable">objectListing</span> <span class="hljs-operator">=</span> <span class="hljs-literal">null<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4634712441911706</span></span>;
+
+    <span class="hljs-keyword">do</span> {
+        objectListing = cosClient.listObjects(listObjectsRequest);
+        <span class="hljs-comment">// 这里保存列出的对象列表</span>
+        List&lt;COSObjectSummary&gt; cosObjectSummaries = objectListing.getObjectSummaries();
+        <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6285443814292997</span></span> (CollUtil.isEmpty(cosObjectSummaries)) {
+            <span class="hljs-keyword">break</span>;
+        }
+        
+        ArrayList&lt;DeleteObjectsRequest.KeyVersion&gt; delObjects = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3158338696599965</span></span>&lt;&gt;();
+        <span class="hljs-keyword">for</span> (COSObjectSummary cosObjectSummary : cosObjectSummaries) {
+            delObjects.add(<span class="hljs-keyword">new</span> <span class="hljs-title class_">DeleteObjectsRequest<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05543160345870124</span></span>.KeyVersion(cosObjectSummary.getKey()));
+        }
+
+        <span class="hljs-type">DeleteObjectsRequest</span> <span class="hljs-variable">deleteObjectsRequest</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7141641267697048</span></span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">DeleteObjectsRequest</span>(cosClientConfig.getBucket());
+        deleteObjectsRequest.setKeys(delObjects);
+        cosClient.deleteObjects(deleteObjectsRequest);
+
+        <span class="hljs-comment">// 标记下一次开始的位置<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8901931471197653</span></span>
+        <span class="hljs-type">String</span> <span class="hljs-variable">nextMarker</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.040376111586706065</span></span> objectListing.getNextMarker();
+        listObjectsRequest.setMarker(nextMarker);
+    } <span class="hljs-keyword">while</span> (objectListing.isTruncated());
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18984323579374363</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9153611701953936</span></pre>
+<p>可以通过编写单元测试来验证删除方法，示例代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@SpringBootTest</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">CosManagerTest<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6196701989592157</span></span> {
+
+    <span class="hljs-meta">@Resource</span>
+    <span class="hljs-keyword">private</span> CosManager cosManager;
+
+    <span class="hljs-meta">@Test<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5597457658556284</span></span>
+    <span class="hljs-keyword">void</span> <span class="hljs-title function_">deleteObject</span><span class="hljs-params">()<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7431704623916802</span></span> {
+		cosManager.deleteObject(<span class="hljs-string">"/generator_make_template/1"</span>);
+    }
+
+    <span class="hljs-meta">@Test</span>
+    <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9194432322031918</span></span> <span class="hljs-title function_">deleteObjects</span><span class="hljs-params">()</span> {
+        cosManager.deleteObjects(Arrays.asList(<span class="hljs-string">"generator_make_template/1/a.zip"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8004170180224821</span></span>,
+                <span class="hljs-string">"generator_make_template/1/b.zip"</span>
+                ));
+    }
+
+    <span class="hljs-meta">@Test</span>
+    <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8619332291113189</span></span> <span class="hljs-title function_">deleteDir</span><span class="hljs-params">()</span> {
+        cosManager.deleteDir(<span class="hljs-string">"/generator_picture/1/"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.35932508655824513</span></span>);
+    }
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8706012925217579</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1370776643204099</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.42198943130666344</span></pre>
+<p>如果需要加载本地配置，需要添加 <code>--spring.profiles.active=local</code> 环境变量到启动参数中，否则可能会出现 COS 找不到主机的报错。</p>
+<h4 data-id="heading-21">4、开发定时任务</h4>
+<p>回顾需求：每天清理所有无用的文件，包括用户上传的模板制作文件（generator_make_template）、已删除的代码生成器对应的产物包文件（generator_dist）。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8450821562084021</span></p>
+<p>那么定时任务的核心逻辑是先查询出符合要求的文件，再进行删除。</p>
+<p>1）在 <code>GeneratorMapper</code> 中新增查询已删除数据的方法。</p>
+<p>因为我们开启了 MyBatis Plus 的自动逻辑删除，所以只能自己写 SQL 来查询已删除数据。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6252282952748247</span></p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">GeneratorMapper<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.22721543486264228</span></span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">BaseMapper</span>&lt;Generator&gt; {
+
+    <span class="hljs-meta">@Select("SELECT id, distPath FROM generator WHERE isDelete = 1")<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7975052439582686</span></span>
+    List&lt;Generator&gt; <span class="hljs-title function_">listDeletedGenerator</span><span class="hljs-params">()</span>;
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15862604083062504</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1416268777542149</span></pre>
+<p>2）在 <code>web.job</code> 包下新建 <code>ClearCosJobHandler</code> 任务处理器，代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.009544844016055487</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-meta">@Component</span>
+<span class="hljs-meta">@Slf4j</span>
+<span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9266518918582345</span></span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">ClearCosJobHandler</span> {
+
+    <span class="hljs-meta">@Resource<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7538835986342045</span></span>
+    <span class="hljs-keyword">private</span> CosManager cosManager;
+
+    <span class="hljs-meta">@Resource</span>
+    <span class="hljs-keyword">private<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9393983656993026</span></span> GeneratorMapper generatorMapper;
+
+    <span class="hljs-comment">/**
+     * 每天执行
+     *
+     * <span class="hljs-doctag">@throws</span> InterruptedException
+     */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9862149935696523</span></span>
+    <span class="hljs-meta">@XxlJob("clearCosJobHandler")</span>
+    <span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.404723575162367</span></span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">clearCosJobHandler</span><span class="hljs-params">()<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24208851442868373</span></span> <span class="hljs-keyword">throws</span> Exception {
+        log.info(<span class="hljs-string">"clearCosJobHandler start"</span>);
+        <span class="hljs-comment">// 编写业务逻辑<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49603845394125945</span></span>
+        <span class="hljs-comment">// 1. 包括用户上传的模板制作文件（generator_make_template）</span>
+        cosManager.deleteDir(<span class="hljs-string">"/generator_make_template/"</span>);
+
+        <span class="hljs-comment">// 2. 已删除的代码生成器对应的产物包文件（generator_dist）。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6983641319716261</span></span>
+        List&lt;Generator&gt; generatorList = generatorMapper.listDeletedGenerator();
+        List&lt;String&gt; keyList = generatorList.stream().map(Generator::getDistPath)
+                .filter(StrUtil::isNotBlank)
+                <span class="hljs-comment">// 移除 '/' 前缀</span>
+                .map(distPath -&gt; distPath.substring(<span class="hljs-number">1</span>))
+                .collect(Collectors.toList());
+
+        cosManager.deleteObjects(keyList);
+        log.info(<span class="hljs-string">"clearCosJobHandler end"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4165824235512816</span></span>);
+    }
+
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8175109133289902</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2708473853107052</span></pre>
+<p>然后在 XXL-JOB 管理面板新增任务，每天固定时间执行：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/06b1a997-2e81-466f-a9a9-580fb837648a.png" alt="image.png" width="100%" class="medium-zoom-image">
+<h4 data-id="heading-22">5、测试</h4>
+<p>首先确保执行器管理页面的执行器识别到了在线机器地址，如下图：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/673b4016-6cad-4a65-a54d-805a090c9eda.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>没识别到地址的话可以尝试重新启动项目、重新注册执行器等。</p>
+<p>然后进入任务管理，选择新增的执行器，执行一次清理任务，如下图：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ac99f3e2-07de-4c2f-942d-d9ef4500d4c0.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>能够看到任务成功日志：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/4ae4a736-c604-467c-aac0-2f06bc7aad26.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>如果执行失败，也可以查看失败原因，比如：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6943407550623157</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/7cb20c97-d7c2-4f04-876b-ed10c425f5cd.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>至此，文件清理机制开发完成。</p>
+<blockquote>
+<p>扩展：上述定时任务的代码有哪些可以优化的地方？比如查询已删除数据的过程。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5272851426146923</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.869236458897177</span></blockquote>
+<h2 data-id="heading-23">三、存储成本优化</h2>
+<p>前文已经分享了几个成本优化的方法，比如合适的技术选型、按量购买、节约空间等。</p>
+<p>如果使用的是第三方云服务，最好参考官方的成本优化方案，比如 COS 对象存储的成本优化解决方案文档：<a href="https://cloud.tencent.com/document/product/436/50201">https://cloud.tencent.com/document/product/436/50201</a>，写得非常详细，阅读一遍能收获很多思路。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5759663335207175</span></p>
+<p>鱼皮帮大家总结几个重点。</p>
+<p>对于大部分企业来说， <strong>存储容量费用</strong> 和 <strong>流量费用</strong> 是其云存储成本的主要组成部分。成本优化也可以从这些角度进行。</p>
+<h3>选择合适的存储<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.46911909707130617</span></h3>
+<p>要根据实际的需求和业务选择对象存储的类型和业务地域。</p>
+<p>腾讯云 COS 提供了标准存储、低频存储、归档存储、深度归档存储，后三种存储类型的存储容量费用较低。</p>
+<p>官方提供的费用参考表：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06644463278690882</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/b8bb7614-0c9a-4b55-abf0-9bfe166a80df.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>我们会发现， <strong>存储总费用最低的存储类型未必最合适</strong> 。如果业务数据下载量较低，则选择归档存储甚至深度归档存储能有效降低存储成本，最冷的深度归档存储相较标准存储可节省 90% 存储费用；但如果业务数据需要频繁下载，则低频存储、归档存储、深度归档存储的取回费用会带来额外的成本开销，导致整体费用反而更高。</p>
+<p>具体到业务场景中，官方推荐：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.707580907384018</span></p>
+<ol>
+<li>频繁读写场景：例如 UGC 场景、电商图片等读多写少的业务，可使用标准存储类型。如果业务对可用性和数据持久性有高要求，则可以考虑使用标准存储（多 AZ）。</li>
+<li>少量读场景（一个月读一次）：例如日志数据分析、网盘数据等业务，读取频率较低，但读取时对性能要求高，可使用低频存储类型。对可用性和数据持久性有高要求的业务可以使用低频存储（多 AZ）。</li>
+<li>极少量读场景（三个月读一次）：例如视频监控、日志数据归档等业务，读取频率极低，对读取性能要求较低，可使用归档存储类型。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06722709027803186</span></li>
+<li>基本不读取场景（半年读一次）：例如医疗影像、档案资料等业务，日常仅做长期备份用途，对读取性能几乎无要求，可使用深度归档存储类型。</li>
+</ol>
+<h3 data-id="heading-25">数据沉降</h3>
+<p>对于大部分数据而言，其访问热度一般随着存储时间延长而降低。因此，如果想严格控制成本，需要根据业务数据访问情况的变化，分析调整数据存储类型。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49104021193729896</span></p>
+<p>一般情况下，数据沉降分为 2 个阶段：先分析再沉降。</p>
+<p>1）先分析：通过对象存储提供的清单 / 访问日志分析，或者业务代码中自行统计分析。</p>
+<p>2）再沉降：可以直接通过对象存储提供的 <strong>生命周期</strong> 功能自动沉降数据，如下图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24013940336763628</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/495a43a1-3241-429d-8f9e-ea95b8c3eb7f.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>对于我们的项目，可以将很久不访问的代码生成器沉降到存储成本更低的低频存储中。除了利用生命周期功能外，也可以通过数据库记录代码生成器的使用和下载时间，自行调用 API 批量沉降数据或者转储到其他服务。</p>
+<h3>减少访问<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10948805361523561</span></h3>
+<p>减少访问的目的是降低流量费，比如使用本地文件缓存，减少访问对象存储的文件。</p>
+<p>CDN 本质上也是一种缓存，虽然能减少对象存储的访问（回源），但是会有额外的 CDN 流量费用。</p>
+<h2>四、存储安全性优化<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.305664948767461</span></h2>
+<p>存储安全是至关重要的，目前我们的对象存储访问权限为“公有读”，处于“半裸奔状态”。下面我们通过多种方式优化。</p>
+<h3 data-id="heading-28">官方建议</h3>
+<p>首先阅读官方文档：<a href="https://cloud.tencent.com/document/product/436/50200">https://cloud.tencent.com/document/product/436/50200</a><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.19468943940664163</span></p>
+<p>官方提供了很多种安全方案：</p>
+<p>1）KMS 白盒密钥：和设备绑定，安全性极高；但是成本较高。</p>
+<p>2）权限隔离：授权 CAM 用户 <strong>可以在哪种条件下，通过哪种方式对哪些资源进行哪种操作</strong> 。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.11856250548776681</span></p>
+<p>如下图：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/bbc85705-c464-4b31-9ef0-3f207f764a6a.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>3）对象锁定：对于一些核心敏感数据，如金融交易数据、医疗影像数据等，可通过对象锁定功能来防止文件在上传之后被删除或者篡改。配置对象锁定功能后，在配置的有效期内，存储桶内的所有数据将处于只读状态，不可覆盖写或者删除。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9379645435025201</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/0372e962-114d-4835-8863-af7e93c3aa28.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>4）数据灾备：通过版本控制和存储桶复制实现异地容灾，进一步保证数据持久性，确保数据误删或者被恶意删除时可从备份站点恢复数据。</p>
+<p>版本控制：每次操作都会创建一个新版本的文件，通过“删除标记”来区分文件是否被删除（逻辑删除）。可通过指定版本号访问过去任意版本的数据，还可以进行数据回滚，解决数据误删和覆盖的风险。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13281033175691426</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/f86dde34-b91e-4bc0-9fe1-aba7cf7397cd.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>存储桶复制：当主存储桶中的数据被删除时，可从备份存储桶中通过批量拷贝的方式恢复数据。</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ec10c8d5-1be5-4d4f-82f0-d81c30854374.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>冷备份：考虑到版本控制和存储桶复制功能都可能造成文件数增加，用户也可以通过生命周期功能将一些备份数据沉降至低频或者归档存储等更便宜的存储类型，从而实现低成本冷备。</p>
+<p>完整的冷备方案如下图：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/08ae58e6-963e-4a85-93f3-e7727a10e443.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>此外，还可以通过事中监控（操作对象存储时触发事件通知）、事后追溯（查看日志）等手段，帮助我们分析排查安全性问题。</p>
+<h3 data-id="heading-29">安全管理</h3>
+<p>COS 对象存储的控制台中提供了几个安全管理功能，如图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8678530528165762</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/2971fb57-9287-4032-b33a-8cbc39bfcb63.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>包括跨域设置、防盗链配置、服务端加密、安全风险检测等。</p>
+<h4>1、跨域访问设置<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.012756584474527877</span></h4>
+<p>跨域访问即通过 HTTP 请求，从一个域去请求另一个域的资源。只要协议、域名、端口有任何一个不相同，都会被当作是不同的域。</p>
+<p>注意，跨域是浏览器的限制，一般用于前端直传对象存储的场景。</p>
+<blockquote>
+<p>设置跨域访问的官方文档：<a href="https://cloud.tencent.com/document/product/436/13318">https://cloud.tencent.com/document/product/436/13318</a></p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7821084360324553</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.35854262891615085</span></blockquote>
+<p>进入跨域访问设置控制台：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/9de13ed7-e76e-4d80-a871-863e40fc8bd0.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>可以自由添加规则，根据自己的域名、请求方法、需要的请求头信息配置即可：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.37785398368294665</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/2e1c3dfd-5c53-4099-8ab8-6b6ede3aeb02.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>配置完成后，对象存储（服务端）就会允许该域名的跨域请求，可以灵活添加多条规则：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/40b14198-2cd6-4f1b-9880-e644cd214546.png" alt="image.png" width="100%" class="medium-zoom-image">
+<h4 data-id="heading-31">2、防盗链设置</h4>
+<blockquote>
+<p>官方文档：<a href="https://cloud.tencent.com/document/product/436/13319">https://cloud.tencent.com/document/product/436/13319</a></p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9570079816260131</span></blockquote>
+<p>盗链是指在网站或应用程序中，直接引用并展示其他网站上的资源（如图片、音频、视频等），而未经该资源拥有者的许可。比如 A 用户有一个壁纸网站，B 用户直接把 A 用户网站的所有图片爬取到自己网站中，并且用 A 网站的图片地址展示，实际消耗的还是 A 网站的流量！这是一种成本极低、危害极大的攻击方式。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.023922153914051947</span></p>
+<p>如何防盗链呢？</p>
+<p>可以通过请求头中的 referer（网站请求来源）来进行校验，如果请求头中没有该字段，或者不是预期的来源，就禁止请求。</p>
+<p>可以在控制台中进行防盗链配置。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6289738807348428</span></p>
+<p>假设项目上线的前端域名是 <code>yupi.com</code>，建议配置白名单，仅允许特定范围的域名访问，并且拒绝空 referer。如图：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/79d044ff-f604-4ec8-9750-2eadaf927c8a.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>保存防盗链设置后，再打开本地域名为 <code>localhost</code> 的前端网站，发现图片无法加载：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5698040978846868</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/8bafee05-7f0a-46f5-b6fc-fcd0c72f320d.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>打开控制台，发现图片加载请求报错 403，访问被禁止，说明防盗链生效：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/e525d888-27de-4d09-a7c2-79b54dafc3fa.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>再次修改防盗链允许的 Referer，增加 <code>localhost</code> 域名：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5e531786-1950-4430-823f-70477443b1c0.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>再次保存，这次图片正常加载：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.43664650575880315</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/a408c671-99d4-4af1-9fa9-8e1cc3df6ead.png" alt="image.png" width="100%" class="medium-zoom-image">
+<h4 data-id="heading-32">3、服务端加密</h4>
+<blockquote>
+<p>官方文档：<a href="https://cloud.tencent.com/document/product/436/40117">https://cloud.tencent.com/document/product/436/40117</a></p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.28433486393790486</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.93415639184053</span></blockquote>
+<p>服务端加密又分为：加密存储和加密传输，适用于安全性较高的使用场景。</p>
+<p>加密存储：数据写入磁盘之前，对数据进行加密，并在访问数据时自动解密。加密和解密这一操作过程都是在服务端完成，有效保护数据。</p>
+<p>加密传输：COS 提供用 HTTPS 部署 SSL 证书实现加密的功能，在传输链路层上建立加密层，确保数据在传输过程中不会被窃取及篡改。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3309048355304953</span></p>
+<p>需要注意的是，文件加密会有一定的性能影响，所以要慎重开启。以下是官方原文：</p>
+<blockquote>
+<p>文件加密需要用客户侧密钥，或者 COS 托管密钥，或者 KMS 密钥将文件内容加密成密文，因此会有一定的性能损耗，主要体现在访问延迟增加。这一延迟增加对大文件读写影响不明显，但在小文件读写中会有一定影响。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.39053712431736254</span></blockquote>
+<p>可以在服务器加密控制台开启：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.428252143286765</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/7db5faf9-4a75-4db8-af14-a35915a368bb.png" alt="image.png" width="100%" class="medium-zoom-image">
+<h4 data-id="heading-33">4、盗刷风险检测</h4>
+<p>COS 提供了盗刷风险检测功能，非常实用，可以轻松发现潜在的安全风险。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1810313612291341</span></p>
+<p>如下图，我们的存储访问权限存在风险：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/33469cca-a867-471f-a521-15393dbbbba8.png" alt="image.png" width="100%" class="medium-zoom-image">
+<h3>现存权限风险<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14582042707048815</span></h3>
+<p>我们对系统的预期是，仅允许登录用户下载代码生成器文件。而现在用户只要知道文件在 COS 的存储地址，不用登录也可以直接访问下载。</p>
+<p>比如访问：<a href="https://xxx.cos.ap-shanghai.myqcloud.com/generator_dist/1738875515482562562/7rkzyMn3-acm-template-pro-generator.zip">https://xxx.cos.ap-shanghai.myqcloud.com/generator_dist/1738875515482562562/7rkzyMn3-acm-template-pro-generator.zip</a>（示例链接）</p>
+<p>由于防盗链限制，无法直接得到文件：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.872886875866077</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/68d0888f-044a-4afc-87f1-c6c97a967dac.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>但别忘了，请求是可以构造的！比如复制请求信息为 cURL：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/0123d867-f211-4db8-ab0a-c879b31c960a.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>修改复制的脚本，追加请求头信息，并输出文件：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">shell</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-shell hljs" data-highlighted="yes">curl 'https://yuzi-1256524210.cos.ap-shanghai.myqcloud.com/generator_dist/1738875515482562562/7rkzyMn3-acm-template-pro-generator.zip' \
+  -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9' \
+  -H 'Cache-Control: no-cache' \
+  -H 'Referer: localhost:8000' \
+  -H 'Connection: keep-alive' \
+  -H 'Pragma: no-cache' \
+  -H 'Sec-Fetch-Dest: document' \
+  -H 'Sec-Fetch-Mode: navigate' \
+  -H 'Sec-Fetch-Site: none' \
+  -H 'Sec-Fetch-User: ?1' \
+  -H 'Upgrade-Insecure-Requests: 1' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' \
+  -H 'sec-ch-ua: "Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  --compressed
+  --output a.zip
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.02329516403399423</span></pre>
+<p>文件是能够被顺利下载的。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5821240318570171</span></p>
+<h3 data-id="heading-35">权限管理实践</h3>
+<p>首先明确我们的需求：对于图片资源，允许所有用户读；对于其他文件（比如代码生成器产物包），禁止匿名用户访问。</p>
+<p>COS 对象存储提供了几种权限管理方法，用户的总权限为这三种管理方法的组合。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.933029352767262</span></p>
+<p>如下图：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/fba9b99f-9efc-4bea-b22c-04a11f478249.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>1）存储桶访问权限：可以控制已有账号、子账号操作存储桶的权限。粒度较粗。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3918076900602723</span></p>
+<p>2）自定义 policy 权限：可以更灵活地控制某个用户、在某个条件下、对某个资源的、某种操作权限。粒度更细。</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/4f94be86-941d-4430-bee8-fd18e17a3cf7.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p><strong>实际使用时，建议两者结合。</strong><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.39572607718679564</span></p>
+<p>COS 对象存储权限校验的流程图如下：</p>
+<blockquote>
+<p>参考访问策略评估流程文档：<a href="https://cloud.tencent.com/document/product/436/41516">https://cloud.tencent.com/document/product/436/41516</a></p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5296016366050256</span></blockquote>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ae54539e-674d-4b9f-a79b-104ef1ba080f.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>下面我们来实践一下。</p>
+<h4 data-id="heading-36">1、创建子账户</h4>
+<p>首先创建一个子账户，不建议用主账户，因为权限过大、容易出现权限风险。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07795547748019138</span></p>
+<p>进入访问管理控制台：<a href="https://console.cloud.tencent.com/cam">https://console.cloud.tencent.com/cam</a></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/e3aea51c-8135-492d-a436-971edadc8fc5.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>快速创建子用户：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7807604464337208</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/526b7494-1c84-4f31-b384-bcce4aa1155a.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>注意修改访问方式和用户具有的权限：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/1f999d69-ea41-445c-9bdd-859924b5dc99.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>需要开启编程访问：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/24ff6ab0-a6ad-4d8e-9016-3fb9ef7e4c79.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>选择策略，直接取消所有默认权限，推荐一条一条按需添加：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8829514040307418</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/db040572-43f1-44ce-89b3-5fa8e6040429.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>新建用户成功后，一定要保存好密码和 SecretKey！用于使用腾讯云 API 访问云资源（包括对象存储）。</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/b55fcafe-999c-4ba3-beb6-441c1776e554.png" alt="image.png" width="100%" class="medium-zoom-image">
+<h4 data-id="heading-37">2、修改存储桶访问权限</h4>
+<p>遵循最小权限原则， 先将公共权限设置为 “私有读写”，保证只有授权用户才能访问。</p>
+<p>然后给新建的子用户增加访问存储桶的权限，注意保存：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18193841505380726</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5ebaa577-75ca-4072-b591-a49ab1909066.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>验证，图像已无法访问：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/8c5572cf-c3fa-4d3c-99c4-73dd41360ee6.png" alt="image.png" width="100%" class="medium-zoom-image">
+<h4 data-id="heading-38">3、配置 Policy 权限</h4>
+<p>下面要开放图片的公开读权限，配置 policy 权限：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/445a2b17-6164-4987-aa37-22a5883fa3d4.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>添加策略：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/6021634f-8db4-465e-82a4-2ecd3fd6b9c2.png" alt="image.png" width="100%" class="medium-zoom-image">指定允许访问的资源路径，用户头像目录和生成器封面目录：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/0b1506d5-bc49-4d0f-9c4a-6cf6435ad317.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>配置后再进行验证，用户头像和生成器封面能够正常加载。</p>
+<p>但是代码生成器无法直接通过客户端请求下载，如下图：</p>
+<blockquote>
+<p>可以先修改防盗链设置，允许空 referer，便于测试。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5648169946164252</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6344049109254661</span></blockquote>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/813d5be7-7b18-48f3-b193-3784dffdc769.png" alt="image.png" width="100%" class="medium-zoom-image">
+<h4 data-id="heading-39">4、验证程序访问</h4>
+<p>修改 web 项目的 <code>application.yml</code> 配置，更换访问密钥为子用户的（之前保存的）SecretId 和 SecretKey。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4464280906659135</span></p>
+<p>然后通过前端界面验证文件上传，成功上传：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/0f17246f-24f7-498d-9900-b6ed2a5f4d9c.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>如果上传失败，请勿必保证已按上述步骤为子用户开通了权限。修改权限后可能 <strong>需要等待几分钟</strong> 才能生效。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5305438451188145</span></p>
+<h4 data-id="heading-40">其他授权方式</h4>
+<p>除了在修改存储桶访问权限中添加用户外，还可以直接给整个子用户添加存储桶访问权限。</p>
+<p>进入用户详情页，添加使用策略：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8529668076750354</span></p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/ae9666da-290f-4d00-8dd9-7c07daa6e15d.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>添加对象存储数据读写权限：</p>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/e353b309-f646-4c03-85c8-8d8a6b8c21ea.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>保存权限设置后，在权限管理的 “关联 CAM 策略” 中可以看到权限设置：</p>
+<blockquote>
+<p>关联的 CAM 策略：分配的某个子账号或某个角色，具有的对象存储操作权限。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6136871281033187</span></blockquote>
+<img src="https://pic.code-nav.cn/post_picture/1610518142000300034/12818837-ea06-446d-a83b-406411d2269e.png" alt="image.png" width="100%" class="medium-zoom-image">
+<p>至此，对象存储的安全性优化已完成。还有一些保证安全性的方法，比如生成临时操作对象的密钥，但由于我们是服务端上传，而不是前端直传对象存储，所以不需要这么做。</p>
+<blockquote>
+</blockquote>
+<h2>最后<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.17110293197734805</span></h2>
+<p>以上就是本期教程，本节教程中我们学到了存储优化的思路，并且实践了几种存储优化的方法，希望大家能够灵活运用这些知识，持续优化自己的项目。</p>
+<h2 data-id="heading-42">本期作业</h2>
+<p>1）掌握常用的存储优化思路<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.39670310325517444</span></p>
+<p>2）掌握 XXL-JOB 分布式任务调度的部署和接入，自己开发一个测试任务。</p>
+<p>3）总结性能优化和存储优化的方法，编写自己的优化技巧文档，为其他项目的开发优化提供指导。</p>
+<p>4）自己编写代码实现本节项目，并且在自己的代码仓库完成一次提交。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.31328071581127737</span></p><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7572183362786977</span></div></div></div><div style="margin-bottom: 16px;"></div><div style="margin-bottom: 16px;"></div><div id="toggleArea" class="ant-row ant-row-no-wrap ant-row-space-between" style="margin-left: -10px; margin-right: -10px; margin-top: 40px; row-gap: 20px;"><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>上一节</div><a href="/course/1790980795074654209/section/1790996811674595329"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><span role="img" aria-label="double-left" class="anticon anticon-double-left" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-left" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M272.9 512l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L186.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H532c6.7 0 10.4-7.7 6.3-12.9L272.9 512zm304 0l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L490.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H836c6.7 0 10.4-7.7 6.3-12.9L576.9 512z"></path></svg></span></div><div class="ant-space-item"><div class="text-ellipsis">13. 性能优化</div></div></div></a></div><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>下一节</div><a href="/course/1790980795074654209/section/1790996894281412609"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><div class="text-ellipsis">15. 部署上线</div></div><div class="ant-space-item"><span role="img" aria-label="double-right" class="anticon anticon-double-right" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-right" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M533.2 492.3L277.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H188c-6.7 0-10.4 7.7-6.3 12.9L447.1 512 181.7 851.1A7.98 7.98 0 00188 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5zm304 0L581.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H492c-6.7 0-10.4 7.7-6.3 12.9L751.1 512 485.7 851.1A7.98 7.98 0 00492 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5z"></path></svg></span></div></div></a></div></div></div>

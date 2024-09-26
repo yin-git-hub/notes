@@ -1,0 +1,895 @@
+<div class="ant-card-body"><h1 class="ant-typography" style="font-size: 30px;" data-id="">12. 在线制作</h1><div class="ant-space ant-space-horizontal ant-space-align-center" style="margin-bottom: 15px; gap: 8px;"><div class="ant-space-item" style=""><a class="text-gray-500" target="_blank" href="/user/1601072287388278786">程序员鱼皮</a></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item" style=""><span class="text-gray-500">2024-05-16 14:44</span></div><span class="ant-space-item-split" style=""><div class="ant-divider ant-divider-vertical" role="separator"></div></span><div class="ant-space-item"><span class="text-gray-500">阅读 342</span></div></div><div style="margin-bottom: 16px;"></div><div class="course-container"><div class="md-viewer "><div class="markdown-body"><h2 data-id="heading-0">前情回顾</h2>
+<p>在上期教程中，我们实现了代码生成器的在线使用功能，用户已经能够直接在平台上使用别人发布的代码生成器。</p>
+<p>但是，如果用户上传的代码生成器不符合我们平台的规范，怎么办呢？我们怎么鼓励别人遵循平台的规范呢？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7856915258552435</span></p>
+<p>当然是直接在平台提供在线制作生成器的功能，使用我们自己的工具制作，得到的代码生成器肯定是符合规范的。</p>
+<p>所以本节教程，我们将开发在线代码生成器平台最后的一个核心功能  —— 在线制作代码生成器，提高代码生成器的制作效率，吸引更多用户发布自己的生成器。</p>
+<h2>本节重点<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8672879442235395</span></h2>
+<p>本节教程属于项目的第三阶段 —— 开发在线代码生成器平台。</p>
+<p>本节重点内容是开发在线制作功能，包括：</p>
+<ol>
+<li>需求分析</li>
+<li>核心设计</li>
+<li>后端开发<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.44351284517236556</span></li>
+<li>前端开发</li>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3468491990494713</span></ol>
+<p><strong>注意：本节教程开发量较大，建议看视频教程！</strong></p>
+<h2 data-id="heading-2">一、需求分析</h2>
+<p>现在，如果用户想要在我们的平台上发布代码生成器，必须要使用我们的 maker 项目来制作生成器文件，否则就无法让用户在线使用。这就意味着用户要先下载 maker 项目、本地跑起来项目、了解项目的运行机制、最后再生成，整个流程太麻烦了！<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.006093282627871233</span></p>
+<p>所以我们的需求是：在创建代码生成器时，能够让用户在线使用生成器制作工具，通过输入制作信息、上传模板文件，就能直接得到制作好的生成器。</p>
+<h2 data-id="heading-3">二、核心设计</h2>
+<h3>业务流程<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1955574058600844</span></h3>
+<p>让我们先来梳理一下业务流程：</p>
+<p>1）用户打开在线制作工具表单，上传生成器信息和模板文件（制作工具依赖的参数）</p>
+<p>2）后端下载模板文件到本地<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.849318256113595</span></p>
+<p>3）构造生成器需要的元信息对象，并指定输出路径</p>
+<p>4）后端调用 maker 制作工具，输入上述参数，得到代码生成器</p>
+<p>6）后端将代码生成器返回给用户，前端下载<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8329720787027877</span></p>
+<p>业务流程图如下：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/4ebdb215-0815-45c4-afc0-60fa4d4c4591.png" alt="" class="medium-zoom-image"></p>
+<h3>问题分析<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9525612590555872</span></h3>
+<p>分析上述流程，我们要思考几个问题：</p>
+<p>1）制作工具所需要的信息和文件从哪来？</p>
+<p>2）web 后端怎么调用 maker 制作工具项目来制作生成器代码？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.27446882456774824</span></p>
+<h4 data-id="heading-6">1、制作工具所需信息从哪来？</h4>
+<p>其实之前的创建页中，已经让用户输入了基本信息和模型配置，想要制作生成器，只需要再让用户输入文件配置、并上传模板文件压缩包即可。相当于把制作工具融合在了创建生成器的流程中，而不用专门开发一个制作工具页面，再让用户从 0 开始输入所有的信息。</p>
+<h4>2、如何调用制作工具项目？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49592802460735497</span></h4>
+<p>我们在项目的第二阶段花了大量的时间精力来开发 maker 制作工具项目，如何让 web 后端项目直接调用它的功能呢？</p>
+<p>这个问题约等于如何调用本地 Java 项目中的方法（接口）。</p>
+<p>典型的 3 种方案：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8571402895525098</span></p>
+<p>1）如果 Java 项目使用 Maven 管理，那么可以作为依赖在 web 项目中引入。</p>
+<p>这种方式的成本最低，对于学过微服务的同学，还可以考虑使用父 Maven pom.xml 配置文件对所有子项目进行统一的打包。</p>
+<p>2）使用 web 框架改造本地 Java 项目，提供 Http 调用接口供调用。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3971730173613761</span></p>
+<p>这种方式成本较大，不仅需要给项目引入额外的依赖，还要额外运行一个 web 服务，增加了部署成本。</p>
+<p>3）将 Java 项目制作为 jar 包，通过调用 jar 包的方式运行其方法。</p>
+<p>这种方式用的比较少，对于复杂的项目来说，一般都会用 Maven 或 Gradle 管理依赖，既然能作为依赖引入，又何必自己制作 jar 包呢？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.12335057618306045</span></p>
+<p>综上，由于我们的制作工具项目使用了 Maven 管理，所以更推荐第一种方案。</p>
+<p>明确了实现思路后，我们依次完成后端和前端开发。</p>
+<h2>三、后端开发<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.008960303133357828</span></h2>
+<p>后端开发工作分为：</p>
+<ol>
+<li>改造制作工具项目，支持传参调用</li>
+<li>在线制作接口开发</li>
+<li>接口测试<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2695429955841311</span></li>
+</ol>
+<h3>1、制作工具项目支持传参调用<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23759081931270676</span></h3>
+<p>之前的制作工具项目的生成方法 <code>doGenerate</code> 中，我们是固定使用 MetaManager 来读取资源路径下的特定 meta.json 文件。而现在需要支持被其他项目调用，所以要新增一个包含输入参数的生成方法。</p>
+<p>1）修改 maker 项目的 <code>GenerateTemplate</code>，增加新方法，支持动态传入元信息（meta）和 outputPath（输出路径）。并且让原有无参方法调用该方法，遵循开闭原则，只新增不修改。</p>
+<p>代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9446868337777694</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">doGenerate<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6897435436738704</span></span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> TemplateException, IOException, InterruptedException {
+    <span class="hljs-type">Meta<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3855098067818945</span></span> <span class="hljs-variable">meta</span> <span class="hljs-operator">=</span> MetaManager.getMetaObject();
+    <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7050278663501848</span></span> <span class="hljs-variable">projectPath</span> <span class="hljs-operator">=</span> System.getProperty(<span class="hljs-string">"user.dir"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15119945279931213</span></span>);
+    <span class="hljs-type">String</span> <span class="hljs-variable">outputPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.42069673234661087</span></span> projectPath + File.separator + <span class="hljs-string">"generated"</span> + File.separator + meta.getName();
+    doGenerate(meta,outputPath);
+}
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.34712184493237874</span></span> <span class="hljs-title function_">doGenerate</span><span class="hljs-params">(Meta meta, String outputPath)</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15985132544688185</span></span> TemplateException, IOException, InterruptedException {
+    <span class="hljs-keyword">if</span> (!FileUtil.exist(outputPath)) {
+        FileUtil.mkdir(outputPath);
+    }
+
+    <span class="hljs-comment">// 1、复制原始文件</span>
+    <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6195716777237537</span></span> <span class="hljs-variable">sourceCopyDestPath</span> <span class="hljs-operator">=</span> copySource(meta, outputPath);
+
+    <span class="hljs-comment">// 2、代码生成<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2751619741345839</span></span>
+    generateCode(meta, outputPath);
+
+    <span class="hljs-comment">// 3、构建 jar 包</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">jarPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8947179605628159</span></span> <span class="hljs-operator">=</span> buildJar(meta, outputPath);
+
+    <span class="hljs-comment">// 4、封装脚本</span>
+    <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.46256075291432586</span></span> <span class="hljs-variable">shellOutputFilePath</span> <span class="hljs-operator">=</span> buildScript(outputPath, jarPath);
+
+    <span class="hljs-comment">// 5、生成精简版的程序（产物包）<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5710012918774543</span></span>
+    buildDist(outputPath, sourceCopyDestPath, jarPath, shellOutputFilePath);
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.45346837682855123</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9448188826718227</span></pre>
+<p>2）使用 Maven 打包 maker 项目依赖。</p>
+<p>通过 IDEA 界面或者命令行工具执行 <code>mvn install</code> 即可，如图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3881534967098377</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/da63ef81-ce3e-4268-9fb4-47a9968a007b.png" alt="image.png" class="medium-zoom-image"></p>
+<p>3）在 web 后端项目中引入 maker 项目依赖包。</p>
+<p>除了引入 maker 项目外，还要移除之前的 freemarker 依赖，并且最好手动引入和 maker 项目一致的 freemarker 依赖版本，防止可能的冲突。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.509978348386847</span></p>
+<p>修改 pom.xml 部分代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">xml</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-xml hljs" data-highlighted="yes"><span class="hljs-comment">&lt;!-- 引入 maker 项目 --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1913015262300799</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5798332136349424</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6982295616356731</span></span>com.yupi<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7741387938098805</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7442884194229862</span></span>yuzi-generator-maker<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2602641852659697</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3862165952858365</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.46405331357455104</span></span>1.0-SNAPSHOT<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8921735214359243</span></span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9263598320775006</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6551317791275071</span></span>
+<span class="hljs-comment">&lt;!-- https://freemarker.apache.org/index.html --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.037549407715561145</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4969150801769431</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0016606407114814203</span></span>org.freemarker<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8138364176532897</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.585181864890409</span></span>freemarker<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6606476217166266</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5142860111198533</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08557084176551455</span></span>2.3.32<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7307692977415063</span></span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7675385971260029</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6279374210542179</span></span>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.17309489153222257</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6244532456906728</span></pre>
+<p>如果出现了依赖冲突，可以使用 <code>Maven Helper</code> 插件辅助依赖分析：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9175127215562924</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/bd95f39e-bfb4-49c1-b4e4-30ca3b7f95a7.png" alt="image.png" class="medium-zoom-image"></p>
+<p>引入后，将 web 项目中自己复制的 Meta 类删除，替换为 maker 包的 Meta 类。</p>
+<p>全局替换包名即可，如下图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.016875899606497047</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/5a701b1b-cc3d-4afd-b9b4-8578e2daa3a3.png" alt="image.png" class="medium-zoom-image"></p>
+<p>4）处理资源路径问题。</p>
+<p><strong>这点非常重要！</strong> 在 maker 项目中，需要读取 resources 目录下的 FTL 模板文件来生成代码，之前我们是通过路径拼接的方式获取的。但是，项目被制作为 jar 包被其他项目引入后，无法再通过文件路径获取模板文件。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6952302899609064</span></p>
+<p>解决方案是：不再通过文件路径获取资源，而是通过类加载器，根据资源的相对路径获取。</p>
+<p>在 FreeMarker 中，可以使用 TemplateLoader 实现，根据相对路径获取资源。参考代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 指定模板文件所在的路径</span>
+<span class="hljs-type">ClassTemplateLoader</span> <span class="hljs-variable">templateLoader<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7192701459366377</span></span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ClassTemplateLoader<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.977737478359548</span></span>(DynamicFileGenerator.class, basePackagePath);
+configuration.setTemplateLoader(templateLoader);
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.17478981857942766</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8456091200112752</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.25900089747089283</span></pre>
+<p>重写 <code>DynamicFileGenerator</code> 的 <code>doGenerate</code> 方法，并将原方法改名为 <code>doGenerateByPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6659010734742943</span></code>，这样我们就不用修改调用方的代码。</p>
+<p>修改的代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 使用相对路径生成文件
+ *
+ * <span class="hljs-doctag">@param</span> relativeInputPath 相对输入路径
+ * <span class="hljs-doctag">@param</span> outputPath        输出路径
+ * <span class="hljs-doctag">@param<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4869981064603419</span></span> model             数据模型
+ * <span class="hljs-doctag">@throws</span> IOException
+ * <span class="hljs-doctag">@throws</span> TemplateException
+ */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7308396116070759</span></span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23455750742903336</span></span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">doGenerate</span><span class="hljs-params">(String relativeInputPath, String outputPath, Object model)<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.778507653588312</span></span> <span class="hljs-keyword">throws</span> IOException, TemplateException {
+    <span class="hljs-comment">// new 出 Configuration 对象，参数为 FreeMarker 版本号</span>
+    <span class="hljs-type">Configuration<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14563892691393798</span></span> <span class="hljs-variable">configuration</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.32642742319898477</span></span> <span class="hljs-title class_">Configuration</span>(Configuration.VERSION_2_3_32);
+
+    <span class="hljs-type">int</span> <span class="hljs-variable">lastSplitIndex<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6830775551611059</span></span> <span class="hljs-operator">=</span> relativeInputPath.lastIndexOf(<span class="hljs-string">"/"</span>);
+    <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9511355227795395</span></span> <span class="hljs-variable">basePackagePath</span> <span class="hljs-operator">=</span> relativeInputPath.substring(<span class="hljs-number">0<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10146644914163816</span></span>, lastSplitIndex);
+    <span class="hljs-type">String</span> <span class="hljs-variable">templateName</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6213192295010204</span></span> relativeInputPath.substring(lastSplitIndex + <span class="hljs-number">1</span>);
+
+    <span class="hljs-comment">// 指定模板文件所在的路径</span>
+    <span class="hljs-type">ClassTemplateLoader<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.630594996942947</span></span> <span class="hljs-variable">templateLoader</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9419649063035751</span></span> <span class="hljs-title class_">ClassTemplateLoader</span>(DynamicFileGenerator.class, basePackagePath);
+    configuration.setTemplateLoader(templateLoader);
+
+    <span class="hljs-comment">// 设置模板文件使用的字符集</span>
+    configuration.setDefaultEncoding(<span class="hljs-string">"utf-8"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.12439671883918124</span></span>);
+
+    <span class="hljs-comment">// 创建模板对象，加载指定模板</span>
+    <span class="hljs-type">Template</span> <span class="hljs-variable">template<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06193850988289684</span></span> <span class="hljs-operator">=</span> configuration.getTemplate(templateName);
+
+    <span class="hljs-comment">// 文件不存在则创建文件和父目录</span>
+    <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.03877998605856736</span></span> (!FileUtil.exist(outputPath)) {
+        FileUtil.touch(outputPath);
+    }
+
+    <span class="hljs-comment">// 生成</span>
+    <span class="hljs-type">Writer</span> <span class="hljs-variable">out<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.33573190298337097</span></span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">FileWriter<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.22150974193033512</span></span>(outputPath);
+    template.process(model, out);
+
+    <span class="hljs-comment">// 生成文件后别忘了关闭哦</span>
+    out.close();
+}
+
+<span class="hljs-comment">/**
+ * 生成文件
+ *
+ * <span class="hljs-doctag">@param</span> inputPath  模板文件输入路径
+ * <span class="hljs-doctag">@param</span> outputPath 输出路径
+ * <span class="hljs-doctag">@param<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.197367514921027</span></span> model      数据模型
+ * <span class="hljs-doctag">@throws</span> IOException
+ * <span class="hljs-doctag">@throws</span> TemplateException
+ */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7373393557575794</span></span>
+<span class="hljs-meta">@Deprecated<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07371313711782679</span></span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13656807070629262</span></span> <span class="hljs-title function_">doGenerateByPath</span><span class="hljs-params">(String inputPath, String outputPath, Object model)</span> <span class="hljs-keyword">throws<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8938538827851412</span></span> IOException, TemplateException {
+    <span class="hljs-comment">// new 出 Configuration 对象，参数为 FreeMarker 版本号</span>
+    <span class="hljs-type">Configuration</span> <span class="hljs-variable">configuration<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6619828265728269</span></span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Configuration<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.30825507794685003</span></span>(Configuration.VERSION_2_3_32);
+
+    <span class="hljs-comment">// 指定模板文件所在的路径</span>
+    <span class="hljs-type">File</span> <span class="hljs-variable">templateDir<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9907356622840324</span></span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">File<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7391038008438904</span></span>(inputPath).getParentFile();
+    configuration.setDirectoryForTemplateLoading(templateDir);
+
+    <span class="hljs-comment">// 设置模板文件使用的字符集</span>
+    configuration.setDefaultEncoding(<span class="hljs-string">"utf-8"</span>);
+
+    <span class="hljs-comment">// 创建模板对象，加载指定模板<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05264345460290665</span></span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">templateName</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5510663079859686</span></span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(inputPath).getName();
+    <span class="hljs-type">Template<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8181610485114867</span></span> <span class="hljs-variable">template</span> <span class="hljs-operator">=</span> configuration.getTemplate(templateName);
+
+    <span class="hljs-comment">// 文件不存在则创建文件和父目录<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9877686057005206</span></span>
+    <span class="hljs-keyword">if</span> (!FileUtil.exist(outputPath)) {
+        FileUtil.touch(outputPath);
+    }
+
+    <span class="hljs-comment">// 生成</span>
+    <span class="hljs-type">Writer<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3779256702742768</span></span> <span class="hljs-variable">out</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8640473193147602</span></span> <span class="hljs-title class_">FileWriter</span>(outputPath);
+    template.process(model, out);
+
+    <span class="hljs-comment">// 生成文件后别忘了关闭哦</span>
+    out.close();
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9434894408855052</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.28778405562092724</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8336834203829555</span></pre>
+<p>修改 <code>GenerateTemplate</code> 的 <code>generateCode</code> 方法，只需修改输入资源路径变量即可，其他代码都不用改动！</p>
+<blockquote>
+<p>软件开发的最小修改原则：在进行系统修改时，应该尽量只修改必要的部分，以最小化对现有系统的影响。</p>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7723024850345994</span></blockquote>
+<p>修改的代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.27229491873877776</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">generateCode<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3688036047804726</span></span><span class="hljs-params">(Meta meta, String outputPath)</span> <span class="hljs-keyword">throws</span> IOException, TemplateException {
+    <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7424335096528882</span></span> <span class="hljs-variable">inputResourcePath</span> <span class="hljs-operator">=</span> <span class="hljs-string">""<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9811763890755199</span></span>;
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3039101088836118</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.801548874563293</span></pre>
+<h3 data-id="heading-10">2、在线制作接口</h3>
+<p>根据之前设计的业务流程，开发在线制作接口。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06799260729470813</span></p>
+<p>1）定义接口</p>
+<p>先明确接口的定义：接受用户输入的元信息配置和模板文件路径，返回代码生成器文件。</p>
+<p>需要注意的是，为了便于处理，用户上传的模板文件 <strong>必须遵循一定的规范</strong> 。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3537902463433287</span></p>
+<p>比如：</p>
+<ol>
+<li>必须为压缩包，有利于后端下载。</li>
+<li>必须直接把所有模板文件在根目录打包，而不能多套一层项目目录。</li>
+</ol>
+<p>web 后端的 <code>FileUploadBizEnum</code> 文件上传枚举要新增业务类别，用于存储用户上传的模板文件压缩包：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8920849187588933</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">GENERATOR_MAKE_TEMPLATE(<span class="hljs-string">"生成器制作模板文件"</span>, <span class="hljs-string">"generator_make_template"</span>);
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3505640824373073</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09175856863191845</span></pre>
+<p>在 <code>model.dto.generator</code> 包下新建请求类 <code>GeneratorMakeRequest</code>，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-keyword">package</span> com.yupi.web.model.dto.generator;
+
+<span class="hljs-keyword">import</span> com.yupi.maker.meta.Meta;
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24011294021869345</span></span> lombok.Data;
+
+<span class="hljs-keyword">import</span> java.io.Serializable;
+
+<span class="hljs-comment">/**
+ * 制作代码生成器请求
+ *
+ * <span class="hljs-doctag">@author</span> &lt;a href="https://github.com/liyupi"&gt;程序员鱼皮&lt;/a&gt;
+ * <span class="hljs-doctag">@from</span> &lt;a href="https://yupi.icu"&gt;编程导航知识星球&lt;/a&gt;
+ */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6410419150254645</span></span>
+<span class="hljs-meta">@Data<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0782553616074857</span></span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">GeneratorMakeRequest<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9312327347993588</span></span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Serializable</span> {
+
+    <span class="hljs-comment">/**
+     * 压缩文件路径
+     */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7961908810513647</span></span>
+    <span class="hljs-keyword">private</span> String zipFilePath;
+
+    <span class="hljs-comment">/**
+     * 元信息
+     */</span>
+    <span class="hljs-keyword">private<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7057653149158019</span></span> Meta meta;
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.027368840062480082</span></span> <span class="hljs-type">long</span> <span class="hljs-variable">serialVersionUID</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7953231894475219</span></span> <span class="hljs-number">1L</span>;
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8098147139174285</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6518982537691516</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6307158982037224</span></pre>
+<p>在 <code>GeneratorController</code> 中新增接口，代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 制作代码生成器
+ *
+ * <span class="hljs-doctag">@param</span> generatorMakeRequest
+ * <span class="hljs-doctag">@param</span> request
+ * <span class="hljs-doctag">@param<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.17066817804622425</span></span> response
+ */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5526844990847171</span></span>
+<span class="hljs-meta">@PostMapping("/make")</span>
+<span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5453870507526297</span></span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">makeGenerator</span><span class="hljs-params">(
+    <span class="hljs-meta">@RequestBody</span> GeneratorMakeRequest generatorMakeRequest,
+    HttpServletRequest request,
+    HttpServletResponse response)<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0676995150170534</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.056179473488039644</span></span> {
+    
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8412310705816803</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7751427500099919</span></pre>
+<p>2）创建工作空间，从对象存储下载模板文件压缩包。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6104959861777304</span></p>
+<p>先判断模板文件是否存在：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">String</span> <span class="hljs-variable">zipFilePath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4106269463641634</span></span> generatorMakeRequest.getZipFilePath();
+<span class="hljs-keyword">if</span> (StrUtil.isBlank(zipFilePath)) {
+    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9346573007693151</span></span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.NOT_FOUND_ERROR, <span class="hljs-string">"压缩包不存在"</span>);
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20205003484669493</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14882811354141579</span></pre>
+<p>定义一个独立的工作空间，用来存放下载的模板文件、其他临时文件等。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6499282271735947</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">// 工作空间</span>
+<span class="hljs-type">String</span> <span class="hljs-variable">projectPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.917857935084132</span></span> <span class="hljs-operator">=</span> System.getProperty(<span class="hljs-string">"user.dir"</span>);
+<span class="hljs-comment">// 随机 id<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5185868490801113</span></span>
+<span class="hljs-type">String</span> <span class="hljs-variable">id</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.27614726524011357</span></span> IdUtil.getSnowflakeNextId() + RandomUtil.randomString(<span class="hljs-number">6</span>);
+<span class="hljs-type">String</span> <span class="hljs-variable">tempDirPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7440148501718948</span></span> <span class="hljs-operator">=</span> String.format(<span class="hljs-string">"%s/.temp/make/%s"</span>, projectPath, id);
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6418022096017055</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14237063254088356</span></pre>
+<p>使用之前开发过的 <code>cosManager.download</code> 对象存储文件下载方法，下载压缩包：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">String</span> <span class="hljs-variable">localZipFilePath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9650826829557557</span></span> tempDirPath + <span class="hljs-string">"/project.zip"</span>;
+
+<span class="hljs-comment">// 新建文件</span>
+<span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5407064391813874</span></span> (!FileUtil.exist(localZipFilePath)) {
+    FileUtil.touch(localZipFilePath);
+}
+
+<span class="hljs-keyword">try</span> {
+    cosManager.download(zipFilePath, localZipFilePath);
+} <span class="hljs-keyword">catch</span> (InterruptedException e) {
+    <span class="hljs-keyword">throw<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.40370680123577585</span></span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.SYSTEM_ERROR, <span class="hljs-string">"压缩包下载失败"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9819705590215486</span></span>);
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1324287773562174</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5252179630807408</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.48036156909722605</span></pre>
+<p>3）解压文件，得到项目模板文件。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">File</span> <span class="hljs-variable">unzipDistDir</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.30581577696782025</span></span> ZipUtil.unzip(localZipFilePath);
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8274425980196158</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.19452639684947082</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24380441193909475</span></pre>
+<p>4）构造制作工具所需的参数，包括 Meta 对象和生成器文件输出路径。</p>
+<p>构造 Meta 对象时，一定要指定 sourceRootPath 为我们刚刚下载并解压的模板文件，才能让制作工具进行处理。并且还要调用 <code>MetaValidator.doValidAndFill</code> 给 meta 对象填充默认值，这个流程和之前我们在 maker 制作工具内执行是一致的。</p>
+<p>输出路径就放到工作空间下的 <code>generated</code> 目录中。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9863540589022726</span></p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">String</span> <span class="hljs-variable">sourceRootPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8771472113834748</span></span> unzipDistDir.getAbsolutePath();
+meta.getFileConfig().setSourceRootPath(sourceRootPath);
+MetaValidator.doValidAndFill(meta);
+<span class="hljs-type">String</span> <span class="hljs-variable">outputPath</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4675648013937834</span></span> String.format(<span class="hljs-string">"%s/generated/%s"</span>, tempDirPath, meta.getName());
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2592947489336148</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7489064323316506</span></pre>
+<p>5）调用制作工具<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5028385033449909</span></p>
+<p>我们已经引入了 maker 项目的生成方法，只需要将上一步构造好的参数传递传递给该方法调用即可。</p>
+<p>注意要使用压缩包生成器，便于用户下载。</p>
+<p>代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7661684989792565</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">GenerateTemplate</span> <span class="hljs-variable">generateTemplate</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.39191675543985127</span></span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ZipGenerator</span>();
+<span class="hljs-keyword">try<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.17692962200776585</span></span> {
+    generateTemplate.doGenerate(meta, outputPath);
+} <span class="hljs-keyword">catch</span> (Exception e) {
+    e.printStackTrace();
+    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6578781462548959</span></span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.SYSTEM_ERROR, <span class="hljs-string">"制作失败"</span>);
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4649070090822667</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08202473092780282</span></pre>
+<p>6）返回制作好的代码生成器压缩包。</p>
+<p>制作工具已经生成了代码生成器的压缩包，直接下载即可。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3929347850915743</span></p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-type">String</span> <span class="hljs-variable">suffix</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7135217662294728</span></span> <span class="hljs-string">"-dist.zip"</span>;
+<span class="hljs-type">String</span> <span class="hljs-variable">zipFileName<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8707390491365545</span></span> <span class="hljs-operator">=</span> meta.getName() + suffix;
+<span class="hljs-type">String</span> <span class="hljs-variable">distZipFilePath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1023240622312267</span></span> <span class="hljs-operator">=</span> outputPath + suffix;
+
+<span class="hljs-comment">// 下载文件</span>
+<span class="hljs-comment">// 设置响应头<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23052906983270138</span></span>
+response.setContentType(<span class="hljs-string">"application/octet-stream;charset=UTF-8"</span>);
+response.setHeader(<span class="hljs-string">"Content-Disposition"</span>, <span class="hljs-string">"attachment; filename="<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9320287479411324</span></span> + zipFileName);
+<span class="hljs-comment">// 写入响应</span>
+Files.copy(Paths.get(distZipFilePath), response.getOutputStream());
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8982480425730304</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2114702439273768</span></pre>
+<p>7）清理文件<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6105176554121101</span></p>
+<p>已经将结果返回给前端了，最后可以异步清理无用文件，目前可以直接清理整个工作空间。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes">CompletableFuture.runAsync(() -&gt; {
+    FileUtil.del(tempDirPath);
+});
+</code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.21126988752528164</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.855917029668716</span></pre>
+<p>该接口的完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">java</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-java hljs" data-highlighted="yes"><span class="hljs-comment">/**
+ * 制作代码生成器
+ *
+ * <span class="hljs-doctag">@param</span> generatorMakeRequest
+ * <span class="hljs-doctag">@param</span> request
+ * <span class="hljs-doctag">@param<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5249802752503703</span></span> response
+ */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.18297946896311124</span></span>
+<span class="hljs-meta">@PostMapping("/make")</span>
+<span class="hljs-keyword">public<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7633765246106758</span></span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">makeGenerator</span><span class="hljs-params">(<span class="hljs-meta">@RequestBody</span> GeneratorMakeRequest generatorMakeRequest, HttpServletRequest request, HttpServletResponse response)<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7788841139653051</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9694181662700607</span></span> <span class="hljs-keyword">throws</span> IOException {
+    <span class="hljs-comment">// 1）输入参数</span>
+    <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.698043293315681</span></span> <span class="hljs-variable">zipFilePath</span> <span class="hljs-operator">=</span> generatorMakeRequest.getZipFilePath();
+    <span class="hljs-type">Meta<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7236659470276008</span></span> <span class="hljs-variable">meta</span> <span class="hljs-operator">=</span> generatorMakeRequest.getMeta();
+
+    <span class="hljs-comment">// 需要登录<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3901818283232925</span></span>
+    <span class="hljs-type">User</span> <span class="hljs-variable">loginUser</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5056637953159451</span></span> userService.getLoginUser(request);
+
+    <span class="hljs-comment">// 2）创建独立工作空间，下载压缩包到本地</span>
+    <span class="hljs-keyword">if</span> (StrUtil.isBlank(zipFilePath)) {
+        <span class="hljs-keyword">throw<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.962093124562835</span></span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.NOT_FOUND_ERROR, <span class="hljs-string">"压缩包不存在"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15601889080508324</span></span>);
+    }
+
+    <span class="hljs-comment">// 工作空间</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">projectPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5079673918392655</span></span> <span class="hljs-operator">=</span> System.getProperty(<span class="hljs-string">"user.dir"</span>);
+    <span class="hljs-comment">// 随机 id<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4542431615771638</span></span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">id</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2612226850404178</span></span> IdUtil.getSnowflakeNextId() + RandomUtil.randomString(<span class="hljs-number">6</span>);
+    <span class="hljs-type">String</span> <span class="hljs-variable">tempDirPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.011865879233525112</span></span> <span class="hljs-operator">=</span> String.format(<span class="hljs-string">"%s/.temp/make/%s"</span>, projectPath, id);
+    <span class="hljs-type">String<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5668958206495935</span></span> <span class="hljs-variable">localZipFilePath</span> <span class="hljs-operator">=</span> tempDirPath + <span class="hljs-string">"/project.zip"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1273334858434907</span></span>;
+
+    <span class="hljs-comment">// 新建文件</span>
+    <span class="hljs-keyword">if</span> (!FileUtil.exist(localZipFilePath)) {
+        FileUtil.touch(localZipFilePath);
+    }
+
+    <span class="hljs-keyword">try<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6055031021730901</span></span> {
+        cosManager.download(zipFilePath, localZipFilePath);
+    } <span class="hljs-keyword">catch</span> (InterruptedException e) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.29584860063604324</span></span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.SYSTEM_ERROR, <span class="hljs-string">"压缩包下载失败"</span>);
+    }
+
+    <span class="hljs-comment">// 3）解压，得到项目模板文件<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24296294830175302</span></span>
+    <span class="hljs-type">File</span> <span class="hljs-variable">unzipDistDir</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1388930482793167</span></span> ZipUtil.unzip(localZipFilePath);
+
+    <span class="hljs-comment">// 4）构造 meta 对象和输出路径</span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">sourceRootPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9370143350034414</span></span> <span class="hljs-operator">=</span> unzipDistDir.getAbsolutePath();
+    meta.getFileConfig().setSourceRootPath(sourceRootPath);
+    MetaValidator.doValidAndFill(meta);
+    <span class="hljs-type">String</span> <span class="hljs-variable">outputPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.337475013939073</span></span> <span class="hljs-operator">=</span> String.format(<span class="hljs-string">"%s/generated/%s"</span>, tempDirPath, meta.getName());
+
+    <span class="hljs-comment">// 5）调用 maker 方法制作生成器<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4888472280611291</span></span>
+    <span class="hljs-type">GenerateTemplate</span> <span class="hljs-variable">generateTemplate</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.44712738376837313</span></span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ZipGenerator</span>();
+    <span class="hljs-keyword">try<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5783738620879129</span></span> {
+        generateTemplate.doGenerate(meta, outputPath);
+    } <span class="hljs-keyword">catch</span> (Exception e) {
+        e.printStackTrace();
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.03535079183793699</span></span> <span class="hljs-title class_">BusinessException</span>(ErrorCode.SYSTEM_ERROR, <span class="hljs-string">"制作失败"</span>);
+    }
+
+    <span class="hljs-comment">// 6）下载压缩的产物包文件<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7727494145238982</span></span>
+    <span class="hljs-type">String</span> <span class="hljs-variable">suffix</span> <span class="hljs-operator">=<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4441146278725141</span></span> <span class="hljs-string">"-dist.zip"</span>;
+    <span class="hljs-type">String</span> <span class="hljs-variable">zipFileName<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6197738846717771</span></span> <span class="hljs-operator">=</span> meta.getName() + suffix;
+    <span class="hljs-type">String</span> <span class="hljs-variable">distZipFilePath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15575942805902354</span></span> <span class="hljs-operator">=</span> outputPath + suffix;
+
+    <span class="hljs-comment">// 下载文件</span>
+    <span class="hljs-comment">// 设置响应头<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6511831431525172</span></span>
+    response.setContentType(<span class="hljs-string">"application/octet-stream;charset=UTF-8"</span>);
+    response.setHeader(<span class="hljs-string">"Content-Disposition"</span>, <span class="hljs-string">"attachment; filename="<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24814221212425225</span></span> + zipFileName);
+    <span class="hljs-comment">// 写入响应</span>
+    Files.copy(Paths.get(distZipFilePath), response.getOutputStream());
+
+    <span class="hljs-comment">// 7）清理文件</span>
+    CompletableFuture.runAsync(() -&gt; {
+        FileUtil.del(tempDirPath);
+    });
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07882416076269716</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20115517008202755</span></pre>
+<h3>3、接口测试<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9068233301224011</span></h3>
+<p>1）首先我们要准备模板文件压缩包，可以直接压缩 <code>yuzi-generator-demo-projects/acm-template-pro</code> 项目。注意要遵循规范，进入到目录中全选文件打包，不要把项目目录也打包进去了。</p>
+<p>2）利用已有的前端文件上传，将压缩包上传到对象存储，得到临时的文件路径（zipFilePath）。</p>
+<p>3）打开 Swagger 接口文档，复制 maker 项目中的 meta.json 文件，作为请求参数的元信息来测试。（注意移除 fileConfig 根层级的配置）<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9877919161156692</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/05b75ecd-5872-4424-8089-e182bb42b6f2.png" alt="image.png" class="medium-zoom-image"></p>
+<p>测试成功，能够下载到代码生成器压缩包。</p>
+<h2>四、前端页面开发<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8583535921197367</span></h2>
+<p>下面我们开发前端，依次完成：</p>
+<ol>
+<li>创建生成器的文件配置</li>
+<li>制作代码生成器功能</li>
+</ol>
+<h3>创建生成器的文件配置<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6259279881453725</span></h3>
+<h4 data-id="heading-14">开发</h4>
+<p>1）参考模型配置表单组件，复制为 <code>FileConfigForm</code> 组件，在此基础上进行开发。</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/9404fc1c-293b-41a4-937c-0a0733e8b49d.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8516996659038669</span></p>
+<p>2）页面开发</p>
+<p>首先全局替换部分变量，比如 “model” 替换为 “file”、“模型” 替换为 “文件”。</p>
+<p>然后修改表单项的内容，<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.528452633641298</span></p>
+<p>修改表单项，部分选项可枚举的表单项使用 Select 下拉选择组件，优化用户体验：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">&lt;<span class="hljs-title class_">Form</span>.<span class="hljs-property">Item</span> label=<span class="hljs-string">"类型"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5896800486576943</span></span> name={[field.<span class="hljs-property">name</span>, <span class="hljs-string">'type'</span>]}&gt;
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Select</span>
+    <span class="hljs-attr">style</span>=<span class="hljs-string">{{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5685438056055325</span></span>
+      <span class="hljs-attr">minWidth:</span> <span class="hljs-attr">80</span>,
+    }}
+    <span class="hljs-attr">options<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20438767794995338</span></span>=<span class="hljs-string">{[</span>
+      { <span class="hljs-attr">value:</span> '<span class="hljs-attr">file<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6847007323922933</span></span>', <span class="hljs-attr">label:</span> '<span class="hljs-attr">文件</span>' },
+      { <span class="hljs-attr">value:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5306618347594116</span></span> '<span class="hljs-attr">dir</span>', <span class="hljs-attr">label:</span> '<span class="hljs-attr">目录<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3739117938844363</span></span>' },
+    ]}
+  /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7250793104992868</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20958296858443215</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.868463995957647</span></span>
+&lt;/<span class="hljs-title class_">Form</span>.<span class="hljs-property">Item</span>&gt;
+<span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Form.Item</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"生成类型"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5074061729540817</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">{[field.name,</span> '<span class="hljs-attr">generateType<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23870235539022078</span></span>']}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7502201967414754</span></span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">Select</span>
+    <span class="hljs-attr">style</span>=<span class="hljs-string">{{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5462369078300107</span></span>
+      <span class="hljs-attr">minWidth:</span> <span class="hljs-attr">80</span>,
+    }}
+    <span class="hljs-attr">options<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6990858039703947</span></span>=<span class="hljs-string">{[</span>
+      { <span class="hljs-attr">value:</span> '<span class="hljs-attr">static<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.057272936930614415</span></span>', <span class="hljs-attr">label:</span> '<span class="hljs-attr">静态</span>' },
+      { <span class="hljs-attr">value:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6665226328175171</span></span> '<span class="hljs-attr">dynamic</span>', <span class="hljs-attr">label:</span> '<span class="hljs-attr">动态<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.673407677758252</span></span>' },
+    ]}
+  /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9909986561625528</span></span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">Form.Item</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7626561848303834</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2343068516977571</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.22942206045287117</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1160659666364019</span></span>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9950786641393357</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6807141243539252</span></pre>
+<p>需要注意，如果用户添加文件分组，要在默认值中补充分组信息（尤其是 type = group），代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6618688773557533</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">  &lt;<span class="hljs-title class_">Button</span>
+    <span class="hljs-keyword">type</span>=<span class="hljs-string">"dashed"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5380117041001522</span></span>
+    onClick={<span class="hljs-function">() =&gt;</span>
+      <span class="hljs-title function_">add</span>({
+        <span class="hljs-attr">groupName<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4454704842769226</span></span>: <span class="hljs-string">'分组'</span>,
+        <span class="hljs-attr">groupKey</span>: <span class="hljs-string">'group'<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.35076697286212233</span></span>,
+        <span class="hljs-attr">type</span>: <span class="hljs-string">'group'</span>,
+      })
+    }
+  &gt;
+    添加分组
+  &lt;/<span class="hljs-title class_">Button<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06312194276199734</span></span>&gt;
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7464579829098583</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4934123505779342</span></pre>
+<p>3）体验优化</p>
+<p>在创建生成器的过程中，因为文件配置是否填写都不影响用户的使用、而且用户一般并不关注，所以文件配置的填写优先级不高。可以将它和模型配置更换位置，并且增加提示语 “如果不需要使用在线制作功能，可不填写”，降低用户创建生成器的成本。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.19370048887027158</span></p>
+<p>生成器创建页的表单顺序调整：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">&lt;<span class="hljs-title class_">StepsForm</span>.<span class="hljs-property">StepForm</span> name=<span class="hljs-string">"modelConfig"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9068638063971506</span></span> title=<span class="hljs-string">"模型配置"</span>&gt;
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">ModelConfigForm</span> <span class="hljs-attr">formRef</span>=<span class="hljs-string">{formRef}<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6474411421315376</span></span> <span class="hljs-attr">oldData</span>=<span class="hljs-string">{oldData}</span> /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7076543254438337</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8801777961832928</span></span>
+&lt;/<span class="hljs-title class_">StepsForm<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23801626845815793</span></span>.<span class="hljs-property">StepForm</span>&gt;
+<span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">StepsForm.StepForm</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"fileConfig"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.39821884877909497</span></span> <span class="hljs-attr">title</span>=<span class="hljs-string">"文件配置"</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6148330620694726</span></span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">FileConfigForm</span> <span class="hljs-attr">formRef</span>=<span class="hljs-string">{formRef}<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5230440451638594</span></span> <span class="hljs-attr">oldData</span>=<span class="hljs-string">{oldData}</span> /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5868483105147406</span></span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">StepsForm.StepForm</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3816713627470072</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10543394027403785</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16602107314979597</span></span>
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5384783905707329</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6045365014514283</span></pre>
+<p>文件配置表单组件开头补充提示语：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3580107842247242</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">&lt;<span class="hljs-title class_">Alert</span> message=<span class="hljs-string">"如果不需要使用在线制作功能，可不填写"</span> <span class="hljs-keyword">type<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07964071832381903</span></span>=<span class="hljs-string">"warning"</span> closable /&gt;
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9537161046558131</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14094905802303814</span></pre>
+<p>4）测试创建和修改</p>
+<p>页面效果如下图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9441455686285181</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/6c5196f5-f8ca-47df-bc5e-8af16d0b3c1b.png" alt="image.png" class="medium-zoom-image"></p>
+<h4 data-id="heading-15">完整代码</h4>
+<p>文件配置表单的完整代码如下：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6380832523751532</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">CloseOutlined</span> } <span class="hljs-keyword">from<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.56216901181357</span></span> <span class="hljs-string">'@ant-design/icons'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Alert<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8940009316927087</span></span>, <span class="hljs-title class_">Button</span>, <span class="hljs-title class_">Card</span>, <span class="hljs-title class_">Form<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5298031478130851</span></span>, <span class="hljs-title class_">FormListFieldData</span>, <span class="hljs-title class_">Input</span>, <span class="hljs-title class_">Select<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9802062034485302</span></span>, <span class="hljs-title class_">Space</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.38841797324224303</span></span>;
+
+<span class="hljs-keyword">interface</span> <span class="hljs-title class_">Props</span> {
+  <span class="hljs-attr">formRef<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5971207625065333</span></span>: <span class="hljs-built_in">any</span>;
+  <span class="hljs-attr">oldData</span>: <span class="hljs-built_in">any<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.45069998913614606</span></span>;
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> (<span class="hljs-attr">props<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06461632028958153</span></span>: <span class="hljs-title class_">Props</span>) =&gt; {
+  <span class="hljs-keyword">const</span> { formRef, oldData } = props;
+
+  <span class="hljs-comment">/**
+   * 单个文件表单视图
+   * <span class="hljs-doctag">@param</span> <span class="hljs-variable">field</span>
+   * <span class="hljs-doctag">@param<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6037506174559326</span></span> <span class="hljs-variable">remove</span>
+   */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7829802835384942</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15404968968123267</span></span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">singleFieldFormView</span> = (<span class="hljs-params">
+    field: FormListFieldData,
+    remove?: (index: <span class="hljs-built_in">number</span> | <span class="hljs-built_in">number</span>[]) =&gt; <span class="hljs-built_in">void<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3070512532556118</span></span>,
+  <span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.939507520472745</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8423679367338819</span></span>) =&gt; {
+    <span class="hljs-keyword">return</span> (
+      <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Space</span> <span class="hljs-attr">key</span>=<span class="hljs-string">{field.key}<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9627341718139786</span></span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5677307483412244</span></span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Form.Item</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"输入路径"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8895267017266029</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">{[field.name,</span> '<span class="hljs-attr">inputPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6155851658142637</span></span>']}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8580244465342486</span></span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">Input</span> /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.889971329823189</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7787840036281188</span></span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">Form.Item</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8454321608394775</span></span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Form.Item</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"输出路径"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.08055732082907618</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">{[field.name,</span> '<span class="hljs-attr">outputPath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7640890864423302</span></span>']}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.022524965440219535</span></span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">Input</span> /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8580949365428381</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.723051861479084</span></span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">Form.Item</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9527794799589275</span></span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Form.Item</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"类型"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.45430273227210427</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">{[field.name,</span> '<span class="hljs-attr">type<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.940741246549301</span></span>']}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06029895209817693</span></span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">Select</span>
+            <span class="hljs-attr">style</span>=<span class="hljs-string">{{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8968365483923983</span></span>
+              <span class="hljs-attr">minWidth:</span> <span class="hljs-attr">80</span>,
+            }}
+            <span class="hljs-attr">options<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3594846214595655</span></span>=<span class="hljs-string">{[</span>
+              { <span class="hljs-attr">value:</span> '<span class="hljs-attr">file<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.04164394141351746</span></span>', <span class="hljs-attr">label:</span> '<span class="hljs-attr">文件</span>' },
+              { <span class="hljs-attr">value:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.11117139964258271</span></span> '<span class="hljs-attr">dir</span>', <span class="hljs-attr">label:</span> '<span class="hljs-attr">目录<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06681180362290151</span></span>' },
+            ]}
+          /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1713088374888454</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9361827237417224</span></span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">Form.Item</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6370251614850138</span></span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Form.Item</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"生成类型"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5299066608614509</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">{[field.name,</span> '<span class="hljs-attr">generateType<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.610863982872822</span></span>']}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3968666983502611</span></span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">Select</span>
+            <span class="hljs-attr">style</span>=<span class="hljs-string">{{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9763212982478204</span></span>
+              <span class="hljs-attr">minWidth:</span> <span class="hljs-attr">80</span>,
+            }}
+            <span class="hljs-attr">options<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5636667809516935</span></span>=<span class="hljs-string">{[</span>
+              { <span class="hljs-attr">value:</span> '<span class="hljs-attr">static<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5841916781826562</span></span>', <span class="hljs-attr">label:</span> '<span class="hljs-attr">静态</span>' },
+              { <span class="hljs-attr">value:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5227254033392612</span></span> '<span class="hljs-attr">dynamic</span>', <span class="hljs-attr">label:</span> '<span class="hljs-attr">动态<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9112023083003251</span></span>' },
+            ]}
+          /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7607403814209734</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5753049849640879</span></span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">Form.Item</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23801735366063514</span></span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">Form.Item</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"条件"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.43189200467893474</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">{[field.name,</span> '<span class="hljs-attr">condition<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.861035746168852</span></span>']}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9209190925623014</span></span>
+          <span class="hljs-tag">&lt;<span class="hljs-name">Input</span> /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.006687486214473681</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13656616172922575</span></span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">Form.Item</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8932863212790119</span></span>
+        {remove &amp;&amp; (
+          <span class="hljs-tag">&lt;<span class="hljs-name">Button</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"text"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5691435408841954</span></span> <span class="hljs-attr">danger</span> <span class="hljs-attr">onClick</span>=<span class="hljs-string">{()<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.11833977212554658</span></span> =&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4783421439048261</span></span> remove(field.name)}&gt;
+            删除
+          <span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.12184924668897534</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.19266488410446003</span></span>
+        )}
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Space</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.11264516495918153</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9548970969843507</span></span>
+    );
+  };
+
+  <span class="hljs-keyword">return<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49507474813028884</span></span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Alert</span> <span class="hljs-attr">message</span>=<span class="hljs-string">"如果不需要使用在线制作功能，可不填写"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7823813391277095</span></span> <span class="hljs-attr">type</span>=<span class="hljs-string">"warning"</span> <span class="hljs-attr">closable<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8173584585097777</span></span> /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6767612596478714</span></span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4158099928688661</span></span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">16</span> }} /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6994735795978786</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.22390256831559552</span></span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">Form.List</span> <span class="hljs-attr">name</span>=<span class="hljs-string">{[<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7314202000988106</span></span>'<span class="hljs-attr">fileConfig</span>', '<span class="hljs-attr">files</span>']}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8355857761561172</span></span>
+        {(fields, { add, remove }) =&gt; {
+          return (
+            <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49733116675458033</span></span> <span class="hljs-attr">display:</span> '<span class="hljs-attr">flex</span>', <span class="hljs-attr">rowGap:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9955077701463904</span></span> <span class="hljs-attr">16</span>, <span class="hljs-attr">flexDirection:</span> '<span class="hljs-attr">column<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09734053601925474</span></span>' }}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9387273334558717</span></span>
+              {fields.map((field) =&gt; {
+                const fileConfig =
+                  formRef?.current?.getFieldsValue()?.fileConfig ?? oldData?.fileConfig;
+                const groupKey = fileConfig.files?.[field.name]?.groupKey;
+
+                return (
+                  <span class="hljs-tag">&lt;<span class="hljs-name">Card</span>
+                    <span class="hljs-attr">size</span>=<span class="hljs-string">"small"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8102582487641503</span></span>
+                    <span class="hljs-attr">title</span>=<span class="hljs-string">{groupKey</span> ? '<span class="hljs-attr">分组<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8649262294059665</span></span>' <span class="hljs-attr">:</span> '<span class="hljs-attr">未分组文件</span>'}
+                    <span class="hljs-attr">key<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2458867043983224</span></span>=<span class="hljs-string">{field.key}</span>
+                    <span class="hljs-attr">extra</span>=<span class="hljs-string">{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6141611927314108</span></span>
+                      &lt;<span class="hljs-attr">CloseOutlined</span>
+                        <span class="hljs-attr">onClick</span>=<span class="hljs-string">{()<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6731070352746789</span></span> =&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.017190561783060554</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.29659014684938634</span></span> {
+                          remove(field.name);
+                        }}
+                      /&gt;
+                    }
+                  &gt;
+                    {groupKey ? (
+                      <span class="hljs-tag">&lt;<span class="hljs-name">Space</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.008637058336837145</span></span>
+                        <span class="hljs-tag">&lt;<span class="hljs-name">Form.Item</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"分组key"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3075969402336025</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">{[field.name,</span> '<span class="hljs-attr">groupKey<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5770710366184044</span></span>']}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.42131067905664255</span></span>
+                          <span class="hljs-tag">&lt;<span class="hljs-name">Input</span> /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.003548725473125236</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.13885601650352508</span></span>
+                        <span class="hljs-tag">&lt;/<span class="hljs-name">Form.Item</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5494585855881284</span></span>
+                        <span class="hljs-tag">&lt;<span class="hljs-name">Form.Item</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"组名"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.506508059799905</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">{[field.name,</span> '<span class="hljs-attr">groupName<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14241256977460104</span></span>']}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6133419508822577</span></span>
+                          <span class="hljs-tag">&lt;<span class="hljs-name">Input</span> /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15168470286011404</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7519466592320587</span></span>
+                        <span class="hljs-tag">&lt;/<span class="hljs-name">Form.Item</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.39352649547260565</span></span>
+                        <span class="hljs-tag">&lt;<span class="hljs-name">Form.Item</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"条件"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8325411923407544</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">{[field.name,</span> '<span class="hljs-attr">condition<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20674620779344277</span></span>']}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.020659402725937914</span></span>
+                          <span class="hljs-tag">&lt;<span class="hljs-name">Input</span> /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7065103450178674</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6839413862435679</span></span>
+                        <span class="hljs-tag">&lt;/<span class="hljs-name">Form.Item</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6998689961065196</span></span>
+                      <span class="hljs-tag">&lt;/<span class="hljs-name">Space</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2948497940217121</span></span>
+                    ) : (
+                      singleFieldFormView(field)
+                    )}
+
+                    {/* 组内文件 */}
+                    {groupKey &amp;&amp; (
+                      <span class="hljs-tag">&lt;<span class="hljs-name">Form.Item</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"组内文件"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4321706303183721</span></span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.14100502258452585</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.17532329557345028</span></span>
+                        <span class="hljs-tag">&lt;<span class="hljs-name">Form.List</span> <span class="hljs-attr">name</span>=<span class="hljs-string">{[field.name,<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06105645308754992</span></span> '<span class="hljs-attr">files</span>']}&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5228967404108176</span></span>
+                          {(subFields, subOpt) =&gt; (
+                            <span class="hljs-tag">&lt;<span class="hljs-name">div</span>
+                              <span class="hljs-attr">style</span>=<span class="hljs-string">{{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.26933704343652787</span></span>
+                                <span class="hljs-attr">display:</span> '<span class="hljs-attr">flex</span>',
+                                <span class="hljs-attr">flexDirection:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.19027839578478511</span></span> '<span class="hljs-attr">column</span>',
+                                <span class="hljs-attr">rowGap:</span> <span class="hljs-attr">16<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6302286186615047</span></span>,
+                              }}
+                            &gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6710024037083693</span></span>
+                              {subFields.map((subField) =&gt;
+                                singleFieldFormView(subField, subOpt.remove),
+                              )}
+                              <span class="hljs-tag">&lt;<span class="hljs-name">Button</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"dashed"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10097042598562522</span></span> <span class="hljs-attr">onClick</span>=<span class="hljs-string">{()</span> =&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9148544649707604</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07702122645608522</span></span> subOpt.add()} block&gt;
+                                添加组内文件
+                              <span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4749814811930029</span></span>
+                            <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8849678675810482</span></span>
+                          )}
+                        <span class="hljs-tag">&lt;/<span class="hljs-name">Form.List</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9717228877556927</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0514099706900657</span></span>
+                      <span class="hljs-tag">&lt;/<span class="hljs-name">Form.Item</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4579494599451486</span></span>
+                    )}
+                  <span class="hljs-tag">&lt;/<span class="hljs-name">Card</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8610375693421051</span></span>
+                );
+              })}
+              <span class="hljs-tag">&lt;<span class="hljs-name">Button</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"dashed"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7317404182703922</span></span> <span class="hljs-attr">onClick</span>=<span class="hljs-string">{()</span> =&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8825569491596941</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9215600124287102</span></span> add()}&gt;
+                添加文件
+              <span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05861382173580898</span></span>
+              <span class="hljs-tag">&lt;<span class="hljs-name">Button</span>
+                <span class="hljs-attr">type</span>=<span class="hljs-string">"dashed"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7150580338185559</span></span>
+                <span class="hljs-attr">onClick</span>=<span class="hljs-string">{()</span> =&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.07998271502628995</span></span>
+                  add({
+                    groupName: '分组',
+                    groupKey: 'group',
+                    type: 'group',
+                  })
+                }
+              &gt;
+                添加分组
+              <span class="hljs-tag">&lt;/<span class="hljs-name">Button</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7804873458696946</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7078041760006499</span></span>
+              <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">style</span>=<span class="hljs-string">{{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8896859754671176</span></span> <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">16</span> }} /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6986615360508606</span></span>
+            <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.22633915064302923</span></span>
+          );
+        }}
+      <span class="hljs-tag">&lt;/<span class="hljs-name">Form.List</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7509038569559736</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.19141325763923778</span></span>
+    <span class="hljs-tag">&lt;/&gt;</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.22382692767119838</span></span>
+  );
+};
+
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.20770978584765443</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.759985703225694</span></pre>
+<h3 data-id="heading-16">制作生成器功能</h3>
+<p>在核心设计中，我们提到 “要将制作功能融合到创建生成器的过程中”，所以不用单独开发制作生成器页面。直接在生成器文件上传的表单底部增加一个 “制作工具表单”，用户只需上传模板文件压缩包，系统会自动将之前已填写的模型配置、文件配置等信息填充到请求中，从而完成制作。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.45346278193223255</span></p>
+<h4 data-id="heading-17">开发</h4>
+<p>1）新建 <code>GeneratorMaker</code> 组件</p>
+<p>如下图：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.010941062056165407</span></p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/2da6b6a7-76d3-451a-accf-3720d01f1a7f.png" alt="image.png" class="medium-zoom-image"></p>
+<p>组件需要接受用户已填写的 meta 信息，作为属性：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">interface</span> <span class="hljs-title class_">Props</span> {
+  <span class="hljs-attr">meta<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8873160979418513</span></span>: <span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorAddRequest</span> | <span class="hljs-variable constant_">API<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.662210172971945</span></span>.<span class="hljs-property">GeneratorEditRequest</span>;
+}
+
+<span class="hljs-comment">/**
+ * 生成器制作
+ * <span class="hljs-doctag">@param</span> <span class="hljs-variable">props</span>
+ */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9278229061243832</span></span>
+<span class="hljs-keyword">export<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3500038523246638</span></span> <span class="hljs-keyword">default</span> (<span class="hljs-attr">props</span>: <span class="hljs-title class_">Props<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3197225210116743</span></span>) =&gt; {
+  <span class="hljs-keyword">const</span> { meta } = props;
+
+  <span class="hljs-keyword">return</span> <span class="language-xml"><span class="hljs-tag">&lt;&gt;</span><span class="hljs-tag">&lt;/&gt;</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.36845246985181324</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3934240840549448</span></span>;
+}
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7787889293499428</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8069823646464271</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.048347975369349205</span></pre>
+<p>2）创建页面引入该组件。</p>
+<p>由于 Ant Design 的分步表单组件中，通过 <code>formRef.current.getFieldsValue</code> 得到的表单值始终只有当前步骤的，不包括之前已填写的，无法直接传递给生成器制作组件。</p>
+<p>所以需要定义三个状态变量，记录表单数据：<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.47623337117990827</span></p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-comment">// 记录表单数据</span>
+<span class="hljs-keyword">const</span> [basicInfo, setBasicInfo] = useState&lt;<span class="hljs-variable constant_">API<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2836905158741987</span></span>.<span class="hljs-property">GeneratorEditRequest</span>&gt;();
+<span class="hljs-keyword">const</span> [modelConfig, setModelConfig] = useState&lt;<span class="hljs-variable constant_">API<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5594616678411162</span></span>.<span class="hljs-property">ModelConfig</span>&gt;();
+<span class="hljs-keyword">const</span> [fileConfig, setFileConfig] = useState&lt;<span class="hljs-variable constant_">API<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6744654677144628</span></span>.<span class="hljs-property">FileConfig</span>&gt;();
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3475376025802859</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5919355014407963</span></pre>
+<p>在每一个分步表单中，增加 <code>onFinish</code> 函数，用户点击 “下一步” 时，会更新内容到状态变量中：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">&lt;<span class="hljs-title class_">StepsForm</span>.<span class="hljs-property">StepForm</span>
+  name=<span class="hljs-string">"modelConfig"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9391961952269512</span></span>
+  title=<span class="hljs-string">"模型配置"</span>
+  onFinish={<span class="hljs-keyword">async</span> (values) =&gt; {
+    <span class="hljs-title function_">setModelConfig<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7931064669196097</span></span>(values);
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
+  }}
+&gt;
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">ModelConfigForm</span> <span class="hljs-attr">formRef</span>=<span class="hljs-string">{formRef}<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5521051961538144</span></span> <span class="hljs-attr">oldData</span>=<span class="hljs-string">{oldData}</span> /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.33452121490126063</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7822714984154369</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.734499382316472</span></span>
+&lt;/<span class="hljs-title class_">StepsForm</span>.<span class="hljs-property">StepForm</span>&gt;
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4832050703790236</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.23583747437609892</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7389650998851169</span></pre>
+<p>可以将生成器制作组件放到上传生成器文件的表单底部，并传递状态变量：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes">&lt;<span class="hljs-title class_">StepsForm</span>.<span class="hljs-property">StepForm</span> name=<span class="hljs-string">"dist"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09658068598140668</span></span> title=<span class="hljs-string">"生成器文件"</span>&gt;
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">ProFormItem</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"产物包"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.12381638930872563</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">"distPath"</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7636141928061815</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">FileUploader</span> <span class="hljs-attr">biz</span>=<span class="hljs-string">"generator_dist"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8113178394078848</span></span> <span class="hljs-attr">description</span>=<span class="hljs-string">"请上传生成器文件压缩包"</span> /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.505694313780785</span></span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">ProFormItem</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3378192301549736</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8968314511569602</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.983083597066922</span></span>
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">GeneratorMaker</span>
+    <span class="hljs-attr">meta</span>=<span class="hljs-string">{{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0015022392915851057</span></span>
+      <span class="hljs-attr">...basicInfo</span>,
+      <span class="hljs-attr">...modelConfig</span>,
+      <span class="hljs-attr">...fileConfig<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7628982737747043</span></span>,
+    }}
+  /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3248875549269352</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8792968182609515</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.046984411383991675</span></span>
+&lt;/<span class="hljs-title class_">StepsForm</span>.<span class="hljs-property">StepForm</span>&gt;
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.05571951265774788</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5825498793365842</span></pre>
+<p>3）组件开发<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4095929449269158</span></p>
+<p>结构比较简单，主要是一个文件上传表单，并且在外层使用折叠组件，可以控制表单的展开和收纳。</p>
+<p>页面核心代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-comment">/**
+ * 表单视图
+ */</span>
+<span class="hljs-keyword">const</span> formView = (
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">ProForm</span>
+    <span class="hljs-attr">form</span>=<span class="hljs-string">{form}<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9211830926216507</span></span>
+    <span class="hljs-attr">submitter</span>=<span class="hljs-string">{{</span>
+      <span class="hljs-attr">searchConfig:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3094371583956439</span></span> {
+        <span class="hljs-attr">submitText:</span> '<span class="hljs-attr">制作</span>',
+      },
+      <span class="hljs-attr">resetButtonProps:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.48799560593207314</span></span> {
+        <span class="hljs-attr">hidden:</span> <span class="hljs-attr">true</span>,
+      },
+    }}
+    <span class="hljs-attr">onFinish<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1593958265515487</span></span>=<span class="hljs-string">{doSubmit}</span>
+  &gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.630267646280239</span></span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">ProFormItem</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"模板文件"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.47317574359083947</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">"zipFilePath"</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5080816551106024</span></span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">FileUploader</span>
+        <span class="hljs-attr">biz</span>=<span class="hljs-string">"generator_make_template"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6105788071627638</span></span>
+        <span class="hljs-attr">description</span>=<span class="hljs-string">"请上传压缩包，打包时不要添加最外层目录！"</span>
+      /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6303408566997264</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7287601128546715</span></span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">ProFormItem</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4098686946841861</span></span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">ProForm</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.45118160638577476</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5886774392045773</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.756599051350241</span></span>
+);
+
+<span class="hljs-keyword">return</span> (
+  <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Collapse</span>
+    <span class="hljs-attr">style</span>=<span class="hljs-string">{{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16457125956281304</span></span>
+      <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">24</span>,
+    }}
+    <span class="hljs-attr">items<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9354734832345377</span></span>=<span class="hljs-string">{[</span>
+      {
+        <span class="hljs-attr">key:</span> '<span class="hljs-attr">maker<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10903881429830187</span></span>',
+        <span class="hljs-attr">label:</span> '<span class="hljs-attr">生成器制作工具</span>',
+        <span class="hljs-attr">children:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10624884796859102</span></span> <span class="hljs-attr">formView</span>,
+      },
+    ]}
+  /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6141358778232251</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49924681242214497</span></span>
+);
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.061202373726450654</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8739380517043558</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5064521438838556</span></pre>
+<p>然后编写提交表单的函数，和之前的文件上传逻辑类似，提交表单时需要校验、并将 file 对象转为 url 路径。</p>
+<p>代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">const</span> <span class="hljs-title function_">doSubmit</span> = <span class="hljs-keyword">async<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7996907030123179</span></span> (<span class="hljs-params">values: API.GeneratorMakeRequest</span>) =&gt; {
+  <span class="hljs-comment">// 校验</span>
+  <span class="hljs-keyword">if<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4273457832228498</span></span> (!meta.<span class="hljs-property">name</span>) {
+    message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'请填写名称'<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09941896455321353</span></span>);
+    <span class="hljs-keyword">return</span>;
+  }
+
+  <span class="hljs-keyword">const</span> zipFilePath = values.<span class="hljs-property">zipFilePath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4542299510746799</span></span>;
+  <span class="hljs-keyword">if</span> (!zipFilePath || zipFilePath.<span class="hljs-property">length</span> &lt; <span class="hljs-number">1<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7438192159483372</span></span>) {
+    message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'请上传模板文件压缩包'</span>);
+    <span class="hljs-keyword">return<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7137976272962332</span></span>;
+  }
+
+  <span class="hljs-comment">// 文件列表转 url</span>
+  <span class="hljs-comment">// @ts-ignore</span>
+  values.<span class="hljs-property">zipFilePath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8096669649672674</span></span> = zipFilePath[<span class="hljs-number">0</span>].<span class="hljs-property">response</span>;
+
+  <span class="hljs-keyword">try<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9321271886055524</span></span> {
+    <span class="hljs-keyword">const</span> blob = <span class="hljs-keyword">await</span> <span class="hljs-title function_">makeGeneratorUsingPost<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.98247073327836</span></span>(
+      {
+        meta,
+        <span class="hljs-attr">zipFilePath</span>: values.<span class="hljs-property">zipFilePath</span>,
+      },
+      {
+        <span class="hljs-attr">responseType<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8100296083189533</span></span>: <span class="hljs-string">'blob'</span>,
+      },
+    );
+    <span class="hljs-comment">// 使用 file-saver 来保存文件</span>
+    <span class="hljs-title function_">saveAs<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.0034781937697672127</span></span>(blob, meta.<span class="hljs-property">name</span> + <span class="hljs-string">'.zip'</span>);
+  } <span class="hljs-keyword">catch<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4896843074357049</span></span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any</span>) {
+    message.<span class="hljs-title function_">error<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8552331511322144</span></span>(<span class="hljs-string">'下载失败，'</span> + error.<span class="hljs-property">message</span>);
+  }
+};
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8764239070939828</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9718159895226495</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.29058097944775385</span></pre>
+<p>4）测试</p>
+<p>页面效果如下图：</p>
+<p><img src="https://pic.code-nav.cn/post_picture/1610518142000300034/8e38d9da-0c04-466c-b45a-28d50e3c9778.png" alt="image.png" class="medium-zoom-image"><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2681863104019113</span></p>
+<h4 data-id="heading-18">完整代码</h4>
+<p>生成器制作组件的完整代码如下：</p>
+<pre style="position: relative; padding-top: 3em; overflow: auto;"><div class="code-block-extension-header" style="position: absolute; top: 0; left: 0; width: 100%; height:28px; font-size:1em; background-color: rgb(248, 248, 248); box-shadow: 0px 4px 5px -6px #888888; display: flex; justify-content: space-between; align-items: center; padding: 0.5em 1em;"><div class="code-block-extension-headerLeft" style="filter: invert(0.5); opacity: 0.6;"><span class="code-block-extension-lang">tsx</span></div><div class="code-block-extension-headerRight" style="cursor: pointer;"><div class="code-block-extension-copyCodeBtn" style="filter: invert(0.5); opacity: 0.6;">复制代码</div></div></div><code class="language-tsx hljs language-typescript" data-highlighted="yes"><span class="hljs-keyword">import</span> <span class="hljs-title class_">FileUploader</span> <span class="hljs-keyword">from<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6744060889742989</span></span> <span class="hljs-string">'@/components/FileUploader'</span>;
+<span class="hljs-keyword">import</span> { makeGeneratorUsingPost } <span class="hljs-keyword">from<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.38213844636865857</span></span> <span class="hljs-string">'@/services/backend/generatorController'</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">ProForm<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2867987771131786</span></span>, <span class="hljs-title class_">ProFormItem</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">'@ant-design/pro-form'<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7390810947618516</span></span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Collapse</span>, <span class="hljs-title class_">Form<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5725484373055914</span></span>, message } <span class="hljs-keyword">from</span> <span class="hljs-string">'antd'</span>;
+<span class="hljs-keyword">import<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3794415362751844</span></span> { saveAs } <span class="hljs-keyword">from</span> <span class="hljs-string">'file-saver'</span>;
+
+<span class="hljs-keyword">interface<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.27439876904664806</span></span> <span class="hljs-title class_">Props</span> {
+  <span class="hljs-attr">meta</span>: <span class="hljs-variable constant_">API<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.946800688973779</span></span>.<span class="hljs-property">GeneratorAddRequest</span> | <span class="hljs-variable constant_">API</span>.<span class="hljs-property">GeneratorEditRequest<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.399086215747285</span></span>;
+}
+
+<span class="hljs-comment">/**
+ * 生成器制作
+ * <span class="hljs-doctag">@param</span> <span class="hljs-variable">props</span>
+ */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6644180111398035</span></span>
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.882722399095099</span></span> (<span class="hljs-attr">props</span>: <span class="hljs-title class_">Props</span>) =&gt; {
+  <span class="hljs-keyword">const<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9689061287341085</span></span> { meta } = props;
+  <span class="hljs-keyword">const</span> [form] = <span class="hljs-title class_">Form</span>.<span class="hljs-title function_">useForm<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5192783610532583</span></span>();
+
+  <span class="hljs-comment">/**
+   * 提交
+   * <span class="hljs-doctag">@param</span> <span class="hljs-variable">values</span>
+   */<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.2525948566897571</span></span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">doSubmit<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7568697955125108</span></span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">values: API.GeneratorMakeRequest</span>) =&gt; {
+    <span class="hljs-comment">// 校验<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.030011359032229512</span></span>
+    <span class="hljs-keyword">if</span> (!meta.<span class="hljs-property">name</span>) {
+      message.<span class="hljs-title function_">error<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5433580043991999</span></span>(<span class="hljs-string">'请填写名称'</span>);
+      <span class="hljs-keyword">return</span>;
+    }
+
+    <span class="hljs-keyword">const<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.24850007294051957</span></span> zipFilePath = values.<span class="hljs-property">zipFilePath</span>;
+    <span class="hljs-keyword">if</span> (!zipFilePath || zipFilePath.<span class="hljs-property">length<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.39926717555900426</span></span> &lt; <span class="hljs-number">1</span>) {
+      message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'请上传模板文件压缩包'<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.007794898158129504</span></span>);
+      <span class="hljs-keyword">return</span>;
+    }
+
+    <span class="hljs-comment">// 文件列表转 url</span>
+    <span class="hljs-comment">// @ts-ignore<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.9872245320330801</span></span>
+    values.<span class="hljs-property">zipFilePath</span> = zipFilePath[<span class="hljs-number">0</span>].<span class="hljs-property">response<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.3217827897247094</span></span>;
+
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">const</span> blob = <span class="hljs-keyword">await<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.4970201039214337</span></span> <span class="hljs-title function_">makeGeneratorUsingPost</span>(
+        {
+          meta,
+          <span class="hljs-attr">zipFilePath</span>: values.<span class="hljs-property">zipFilePath<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.672996104268359</span></span>,
+        },
+        {
+          <span class="hljs-attr">responseType</span>: <span class="hljs-string">'blob'</span>,
+        },
+      );
+      <span class="hljs-comment">// 使用 file-saver 来保存文件<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1323701080812385</span></span>
+      <span class="hljs-title function_">saveAs</span>(blob, meta.<span class="hljs-property">name</span> + <span class="hljs-string">'.zip'<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06033259763315768</span></span>);
+    } <span class="hljs-keyword">catch</span> (<span class="hljs-attr">error</span>: <span class="hljs-built_in">any<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.09501030610496564</span></span>) {
+      message.<span class="hljs-title function_">error</span>(<span class="hljs-string">'下载失败，'</span> + error.<span class="hljs-property">message<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.37532013245729035</span></span>);
+    }
+  };
+
+  <span class="hljs-comment">/**
+   * 表单视图
+   */</span>
+  <span class="hljs-keyword">const</span> formView = (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">ProForm</span>
+      <span class="hljs-attr">form</span>=<span class="hljs-string">{form}<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7408284028759466</span></span>
+      <span class="hljs-attr">submitter</span>=<span class="hljs-string">{{</span>
+        <span class="hljs-attr">searchConfig:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5110928912822066</span></span> {
+          <span class="hljs-attr">submitText:</span> '<span class="hljs-attr">制作</span>',
+        },
+        <span class="hljs-attr">resetButtonProps:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5989551125768822</span></span> {
+          <span class="hljs-attr">hidden:</span> <span class="hljs-attr">true</span>,
+        },
+      }}
+      <span class="hljs-attr">onFinish<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.16224243587078813</span></span>=<span class="hljs-string">{doSubmit}</span>
+    &gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8352523802680578</span></span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">ProFormItem</span> <span class="hljs-attr">label</span>=<span class="hljs-string">"模板文件"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.49607588945172276</span></span> <span class="hljs-attr">name</span>=<span class="hljs-string">"zipFilePath"</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7481413833836648</span></span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">FileUploader</span>
+          <span class="hljs-attr">biz</span>=<span class="hljs-string">"generator_make_template"<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.33072605064997873</span></span>
+          <span class="hljs-attr">description</span>=<span class="hljs-string">"请上传压缩包，打包时不要添加最外层目录！"</span>
+        /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.10903332874499116</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6527677664271585</span></span>
+      <span class="hljs-tag">&lt;/<span class="hljs-name">ProFormItem</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.29070135664847774</span></span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">ProForm</span>&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8808567580109359</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.47393465092607356</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.15217632701729933</span></span>
+  );
+
+  <span class="hljs-keyword">return</span> (
+    <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">Collapse</span>
+      <span class="hljs-attr">style</span>=<span class="hljs-string">{{<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.48963871404877946</span></span>
+        <span class="hljs-attr">marginBottom:</span> <span class="hljs-attr">24</span>,
+      }}
+      <span class="hljs-attr">items<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.06777810579078714</span></span>=<span class="hljs-string">{[</span>
+        {
+          <span class="hljs-attr">key:</span> '<span class="hljs-attr">maker<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7169459888407499</span></span>',
+          <span class="hljs-attr">label:</span> '<span class="hljs-attr">生成器制作工具</span>',
+          <span class="hljs-attr">children:<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.7814732114180867</span></span> <span class="hljs-attr">formView</span>,
+        },
+      ]}
+    /&gt;<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6010998936642058</span></span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.8725823280024014</span></span>
+  );
+};
+<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.42845341198921716</span></code><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.5669798403428687</span><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6641251843016192</span></pre>
+<h2 data-id="heading-19">扩展思路</h2>
+<p>至此，在线制作功能已经开发完成，分享一些扩展思路：</p>
+<p>1）填写文件配置信息是个比较麻烦的操作，能否支持先上传模板文件，然后自动生成文件配置信息？或者支持上传文件夹，自动识别出文件列表？<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.6317987161292382</span></p>
+<p>2）支持传入 meta.json 元信息配置文件来创建生成器。用户如果使用本地模板制作工具得到了现成的元信息文件，就能够在制作完成后直接创建、自动填充表单、再二次修改，不用完全从 0 开始在前端填写。</p>
+<p>3）给代码生成器增加更多状态，比如制作中、打包中、待发布、审核中、已发布，设置一套完备的状态流转逻辑。</p>
+<p>4）补充前后端的异常处理逻辑，比如后端响应异常时，前端仍然能下载文件。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.442422089623528</span></p>
+<h2 data-id="heading-20">最后</h2>
+<p>以上就是本节教程，我们开发完成了在线代码生成器平台的文件配置填写、制作代码生成器功能，用户已经可以高效地在我们的平台制作生成器了。</p>
+<p>至此，本项目的核心功能全部开发完成，从下节教程开始，我们将对项目进行优化，带大家学到更多企业开发的实用技术和经验。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.1280692742262839</span></p>
+<h2 data-id="heading-21">本期作业</h2>
+<p>1）掌握本地调用其他 Java 程序的方法。</p>
+<p>2）测试整个代码生成平台项目的核心业务流程：创建 =&gt; 在线制作 =&gt; 查看列表 =&gt; 查看详情 =&gt; 在线使用。<span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.005086817208858951</span></p>
+<p>3）回顾整个代码生成平台项目，思考有哪些可以优化的地方？</p>
+<p>4）自己编写代码实现本节项目，并且在自己的代码仓库完成一次提交。</p><span class="yuyuan-water-mark" style="color: transparent; position: absolute; width: 0px; height: 0px; z-index: -1;">1638649696178216961_0.505714029805294</span></div></div></div><div style="margin-bottom: 16px;"></div><div style="margin-bottom: 16px;"></div><div id="toggleArea" class="ant-row ant-row-no-wrap ant-row-space-between" style="margin-left: -10px; margin-right: -10px; margin-top: 40px; row-gap: 20px;"><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>上一节</div><a href="/course/1790980795074654209/section/1790996735464091649"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><span role="img" aria-label="double-left" class="anticon anticon-double-left" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-left" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M272.9 512l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L186.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H532c6.7 0 10.4-7.7 6.3-12.9L272.9 512zm304 0l265.4-339.1c4.1-5.2.4-12.9-6.3-12.9h-77.3c-4.9 0-9.6 2.3-12.6 6.1L490.8 492.3a31.99 31.99 0 000 39.5l255.3 326.1c3 3.9 7.7 6.1 12.6 6.1H836c6.7 0 10.4-7.7 6.3-12.9L576.9 512z"></path></svg></span></div><div class="ant-space-item"><div class="text-ellipsis">11. 在线使用</div></div></div></a></div><div class="ant-col" style="padding-left: 10px; padding-right: 10px;"><div>下一节</div><a href="/course/1790980795074654209/section/1790996811674595329"><div class="ant-space ant-space-horizontal ant-space-align-center" style="gap: 8px;"><div class="ant-space-item" style=""><div class="text-ellipsis">13. 性能优化</div></div><div class="ant-space-item"><span role="img" aria-label="double-right" class="anticon anticon-double-right" style="font-size: 10px;"><svg viewBox="64 64 896 896" focusable="false" data-icon="double-right" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M533.2 492.3L277.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H188c-6.7 0-10.4 7.7-6.3 12.9L447.1 512 181.7 851.1A7.98 7.98 0 00188 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5zm304 0L581.9 166.1c-3-3.9-7.7-6.1-12.6-6.1H492c-6.7 0-10.4 7.7-6.3 12.9L751.1 512 485.7 851.1A7.98 7.98 0 00492 864h77.3c4.9 0 9.6-2.3 12.6-6.1l255.3-326.1c9.1-11.7 9.1-27.9 0-39.5z"></path></svg></span></div></div></a></div></div></div>
